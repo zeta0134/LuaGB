@@ -8,13 +8,15 @@ require("gameboy/input")
 local ubuntu_font
 
 local game_screen_canvas
+local debug_tile_canvas
 
 function love.load(args)
+  love.window.setMode(1280,800)
   love.graphics.setDefaultFilter("nearest", "nearest")
   love.graphics.setPointStyle("rough")
   ubuntu_font = love.graphics.newFont("UbuntuMono-R.ttf", 24)
   game_screen_canvas = love.graphics.newCanvas(256, 256)
-  game_screen_canvas:setFilter("nearest", "nearest")
+  debug_tile_canvas = love.graphics.newCanvas(256, 256)
 
   local game_name = args[2]
 
@@ -103,7 +105,7 @@ end
 
 function print_instructions()
   love.graphics.setColor(255, 255, 255)
-  love.graphics.print("[Space] = Step | [H] = Run until HBlank | [V] = Run until VBlank", 0, 576)
+  love.graphics.print("[Space] = Step | [H] = Run until HBlank | [V] = Run until VBlank", 0, 780)
   --print("[Space] = Step | [K] = Run 1000")
   --print("[R] = Run Until Error or Breakpoint")
   --print("[V] = Run Until VBlank")
@@ -113,7 +115,7 @@ end
 
 function draw_game_screen(dx, dy, scale)
   love.graphics.setCanvas(game_screen_canvas)
-  love.graphics.scale(1, 1)
+  love.graphics.clear()
   for y = 0, 143 do
     for x = 0, 159 do
       love.graphics.setColor(game_screen[y][x][1], game_screen[y][x][2], game_screen[y][x][3], 255)
@@ -122,9 +124,62 @@ function draw_game_screen(dx, dy, scale)
   end
   love.graphics.setColor(255, 255, 255)
   love.graphics.setCanvas() -- reset to main FB
+  love.graphics.push()
   love.graphics.scale(scale, scale)
   love.graphics.draw(game_screen_canvas, dx / scale, dy / scale)
-  love.graphics.scale(1, 1)
+  love.graphics.pop()
+end
+
+function draw_tile(address, sx, sy)
+  local x = 0
+  local y = 0
+  for y = 0, 7 do
+    for x = 0, 7 do
+      color = getColorFromTile(address, x, y)
+      love.graphics.setColor(color[1], color[2], color[3])
+      love.graphics.point(0.5 + sx + x, 0.5 + sy + y)
+    end
+  end
+end
+
+function draw_tiles(dx, dy, tiles_across, scale)
+  love.graphics.setCanvas(debug_tile_canvas)
+  love.graphics.clear()
+  local tile_address = 0x8000
+  local x = 0
+  local y = 0
+  for i = 0, 384 - 1 do
+    draw_tile(tile_address, x, y)
+    x = x + 8
+    if x >= tiles_across * 8 then
+      x = 0
+      y = y + 8
+    end
+    tile_address = tile_address + 16
+  end
+  love.graphics.setColor(255, 255, 255)
+  love.graphics.setCanvas() -- reset to main FB
+  love.graphics.push()
+  love.graphics.scale(scale, scale)
+  love.graphics.draw(debug_tile_canvas, dx / scale, dy / scale)
+  love.graphics.pop()
+end
+
+function draw_tilemap(dx, dy, address, scale)
+  love.graphics.setCanvas(debug_tile_canvas)
+  love.graphics.clear()
+  for y = 0, 255 do
+    for x = 0, 255 do
+      local color = getColorFromTilemap(address, x, y)
+      love.graphics.setColor(color[1], color[2], color[3])
+      love.graphics.point(0.5 + x, 0.5 + y)
+    end
+  end
+  love.graphics.setCanvas() -- reset to main FB
+  love.graphics.push()
+  love.graphics.scale(scale, scale)
+  love.graphics.draw(debug_tile_canvas, dx / scale, dy / scale)
+  love.graphics.pop()
 end
 
 function run_one_opcode()
@@ -153,9 +208,20 @@ function love.textinput(char)
   end
 end
 
+function draw_background()
+  draw_tilemap(0, 500, LCD_Control.BackgroundTilemap(), 1)
+end
+
+function draw_window()
+  draw_tilemap(256, 500, LCD_Control.WindowTilemap(), 1)
+end
+
 function love.draw()
   love.graphics.setFont(ubuntu_font)
   print_register_values()
   print_instructions()
   draw_game_screen(0, 200, 2)
+  draw_tiles(320, 200, 32, 2)
+  draw_window()
+  draw_background()
 end

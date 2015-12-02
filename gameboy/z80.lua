@@ -1159,7 +1159,11 @@ end
 opcodes[0x00] = function() end
 
 -- halt
-opcodes[0x76] = function() halted = 1 end
+opcodes[0x76] = function()
+  if interrupts_enabled then
+    halted = 1
+  end
+end
 
 -- stop
 opcodes[0x10] = function()

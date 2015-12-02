@@ -236,21 +236,9 @@ function debug_draw_screen()
   end
 end
 
-function getColorFromTilemap(map_address, x, y)
-  local tile_x = bit32.rshift(x, 3)
-  local tile_y = bit32.rshift(y, 3)
-  local tile_index = memory[map_address + (tile_y * 32) + (tile_x)]
-  if LCD_Control.TileData() == 0x8800 then
-    if tile_index > 127 then
-      tile_index = tile_index - 256
-    end
-  end
-  tile_address = LCD_Control.TileData() + tile_index * 16
-
-  local subpixel_x = x - (tile_x * 8)
-  local subpixel_y = y - (tile_y * 8)
+function getColorFromTile(tile_address, subpixel_x, subpixel_y)
   -- move to the row we need this pixel from
-  while subpixel_y >= 0 do
+  while subpixel_y > 0 do
     tile_address = tile_address + 2
     subpixel_y = subpixel_y - 1
   end
@@ -266,6 +254,23 @@ function getColorFromTilemap(map_address, x, y)
   -- finally, return the color from the table, based on this index
   -- todo: allow specifying the palette?
   return colors[palette_index]
+end
+
+function getColorFromTilemap(map_address, x, y)
+  local tile_x = bit32.rshift(x, 3)
+  local tile_y = bit32.rshift(y, 3)
+  local tile_index = memory[map_address + (tile_y * 32) + (tile_x)]
+  if LCD_Control.TileData() == 0x8800 then
+    if tile_index > 127 then
+      tile_index = tile_index - 256
+    end
+  end
+  tile_address = LCD_Control.TileData() + tile_index * 16
+
+  local subpixel_x = x - (tile_x * 8)
+  local subpixel_y = y - (tile_y * 8)
+
+  return getColorFromTile(tile_address, subpixel_x, subpixel_y)
 end
 
 function draw_scanline(scanline)
