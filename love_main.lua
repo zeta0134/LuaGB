@@ -7,8 +7,14 @@ require("gameboy/input")
 
 local ubuntu_font
 
+local game_screen_canvas
+
 function love.load(args)
+  love.graphics.setDefaultFilter("nearest", "nearest")
+  love.graphics.setPointStyle("rough")
   ubuntu_font = love.graphics.newFont("UbuntuMono-R.ttf", 24)
+  game_screen_canvas = love.graphics.newCanvas(256, 256)
+  game_screen_canvas:setFilter("nearest", "nearest")
 
   local game_name = args[2]
 
@@ -105,13 +111,20 @@ function print_instructions()
   --print("Draw: [T] Tiles, [B] = BG, [W] = Window, [S] = Sprites, [D] = Entire Screen")
 end
 
-function draw_game_screen(dx, dy)
+function draw_game_screen(dx, dy, scale)
+  love.graphics.setCanvas(game_screen_canvas)
+  love.graphics.scale(1, 1)
   for y = 0, 143 do
     for x = 0, 159 do
-      love.graphics.setColor(game_screen[y][x][1], game_screen[y][x][2], game_screen[y][x][3])
-      love.graphics.point(0.5 + x + dx, 0.5 + y + dy)
+      love.graphics.setColor(game_screen[y][x][1], game_screen[y][x][2], game_screen[y][x][3], 255)
+      love.graphics.point(0.5 + x, 0.5 + y)
     end
   end
+  love.graphics.setColor(255, 255, 255)
+  love.graphics.setCanvas() -- reset to main FB
+  love.graphics.scale(scale, scale)
+  love.graphics.draw(game_screen_canvas, dx / scale, dy / scale)
+  love.graphics.scale(1, 1)
 end
 
 function run_one_opcode()
@@ -142,8 +155,7 @@ end
 
 function love.draw()
   love.graphics.setFont(ubuntu_font)
-  love.graphics.setDefaultFilter("nearest", "nearest")
   print_register_values()
   print_instructions()
-  draw_game_screen(0, 200)
+  draw_game_screen(0, 200, 2)
 end

@@ -153,9 +153,9 @@ handle_mode[0] = function()
     if scanline() >= 144 then
       Status.SetMode(1)
       request_interrupt(Interrupt.VBlank)
-      if bit32.band(STAT(), 0x10) ~= Scanline0 then
+      if bit32.band(STAT(), 0x10) ~= 0 then
         -- This is weird; LCDStat mirrors VBlank?
-        request_interrupt(InterruptScanlineLCDStat)
+        request_interrupt(Interrupt.LCDStat)
       end
       -- TODO: Draw the real screen here?
     else
@@ -192,7 +192,6 @@ handle_mode[2] = function()
     Status.SetMode(3)
   end
 end
-Scanline
 -- VRAM Read: Neither VRAM, OAM, nor CGB palettes can be read
 handle_mode[3] = function()
   if clock - last_edge > 172 then
