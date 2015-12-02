@@ -77,16 +77,19 @@ Status.Mode = function()
   return bit32.band(memory[0xFF41], 0x3)
 end
 
+vblank_count = 0
+
 Status.SetMode = function(mode)
   memory[0xFF41] = bit32.band(STAT(), 0xF8) + bit32.band(mode, 0x3)
   if mode == 0 then
     -- HBlank
-    --draw_scanline(scanline())
+    draw_scanline(scanline())
   end
   if mode == 1 then
     if LCD_Control.DisplayEnabled() then
       -- VBlank
       --draw_screen()
+      vblank_count = vblank_count + 1
     else
       --clear_screen()
     end
@@ -150,9 +153,9 @@ handle_mode[0] = function()
     if scanline() >= 144 then
       Status.SetMode(1)
       request_interrupt(Interrupt.VBlank)
-      if bit32.band(STAT(), 0x10) ~= 0 then
+      if bit32.band(STAT(), 0x10) ~= Scanline0 then
         -- This is weird; LCDStat mirrors VBlank?
-        request_interrupt(Interrupt.LCDStat)
+        request_interrupt(InterruptScanlineLCDStat)
       end
       -- TODO: Draw the real screen here?
     else
@@ -189,7 +192,7 @@ handle_mode[2] = function()
     Status.SetMode(3)
   end
 end
-
+Scanline
 -- VRAM Read: Neither VRAM, OAM, nor CGB palettes can be read
 handle_mode[3] = function()
   if clock - last_edge > 172 then
@@ -217,17 +220,15 @@ colors[3] = {255, 255, 255}
 game_screen = {}
 for y = 0, 143 do
   game_screen[y] = {}
-  for x = 1, 160 * 4 + 4 do
-    game_screen[y][x] = 255
+  for x = 0, 159 do
+    game_screen[y][x] = {255, 255, 255}
   end
 end
 
 function plot_pixel(buffer, x, y, r, g, b)
-  local weird_offset = 4
-  buffer[y][x + weird_offset    ] = r
-  buffer[y][x + weird_offset + 1] = g
-  buffer[y][x + weird_offset + 2] = b
-  buffer[y][x + weird_offset + 3] = 255
+  buffer[y][x][1] = r
+  buffer[y][x][2] = g
+  buffer[y][x][3] = b
 end
 
 function debug_draw_screen()
@@ -245,7 +246,7 @@ function getColorFromTilemap(map_address, x, y)
       tile_index = tile_index - 256
     end
   end
-  tile_address = LCD_Control.TileData() + index * 16
+  tile_address = LCD_Control.TileData() + tile_index * 16
 
   local subpixel_x = x - (tile_x * 8)
   local subpixel_y = y - (tile_y * 8)
