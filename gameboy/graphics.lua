@@ -134,13 +134,13 @@ handle_mode[0] = function()
     last_edge = last_edge + 204
     set_scanline(scanline() + 1)
     -- If enabled, fire an HBlank interrupt
-    if bit32.btest(STAT(), 0x08) then
+    if bit32.band(STAT(), 0x08) ~= 0 then
       request_interrupt(Interrupt.LCDStat)
     end
     if scanline() == scanline_compare() then
       -- set the LY compare bit
       setSTAT(bit32.bor(STAT(), 0x4))
-      if bit32.btest(STAT(), 0x40) then
+      if bit32.band(STAT(), 0x40) ~= 0 then
         request_interrupt(Interrupt.LCDStat)
       end
     else
@@ -150,14 +150,14 @@ handle_mode[0] = function()
     if scanline() >= 144 then
       Status.SetMode(1)
       request_interrupt(Interrupt.VBlank)
-      if bit32.btest(STAT(), 0x10) then
+      if bit32.band(STAT(), 0x10) ~= 0 then
         -- This is weird; LCDStat mirrors VBlank?
         request_interrupt(Interrupt.LCDStat)
       end
       -- TODO: Draw the real screen here?
     else
       Status.SetMode(2)
-      if bit32.btest(STAT(), 0x20) then
+      if bit32.band(STAT(), 0x20) ~= 0 then
         request_interrupt(Interrupt.LCDStat)
       end
     end
@@ -173,7 +173,7 @@ handle_mode[1] = function()
   if scanline() >= 154 then
     set_scanline(0)
     Status.SetMode(2)
-    if bit32.btest(STAT(), 0x20) then
+    if bit32.band(STAT(), 0x20) ~= 0 then
       request_interrupt(Interrupt.LCDStat)
     end
   end
@@ -214,9 +214,6 @@ colors[1] = {128, 128, 128}
 colors[2] = {192, 192, 192}
 colors[3] = {255, 255, 255}
 
-gpu = peripheral.wrap("left")
-background_texture = gpu.createTexture(256,256)
-
 game_screen = {}
 for y = 0, 143 do
   game_screen[y] = {}
@@ -233,31 +230,10 @@ function plot_pixel(buffer, x, y, r, g, b)
   buffer[y][x + weird_offset + 3] = 255
 end
 
-function draw_buffer(buffer, width, height, x, y)
-  -- This is to work around an indexing bug in CCLights 2; when this is
-  -- eventually fixed, I believe the correct behavior will simply be to
-  -- remove the offsets on width and the x coordinate.
-  for dy = 0, height - 1 do
-    gpu.setPixels(width + 1, 1, x - 1, y + dy, buffer[dy])
-  end
-end
-
-function draw_screen()
-  draw_buffer(game_screen, 160, 144, 0, 0)
-end
-
-function clear_screen()
-  gpu.setColor(255, 255, 255, 255)
-  gpu.filledRectangle(0, 0, 160, 144)
-end
-
 function debug_draw_screen()
   for i = 0, 143 do
     draw_scanline(i)
   end
-  print("Plotting screen to GPU")
-  draw_screen()
-  print("Didn't crash?")
 end
 
 function getColorFromTilemap(map_address, x, y)
@@ -351,10 +327,10 @@ function draw_tile(address, px, py)
     address = address + 1
     for x = 0, 7 do
       local color_index = 0
-      if bit32.btest(low_bits, bit32.lshift(0x1, 7 - x)) then
+      if bit32.band(low_bits, bit32.lshift(0x1, 7 - x)) ~= 0 then
         color_index = color_index + 1
       end
-      if bit32.btest(high_bits, bit32.lshift(0x1, 7 - x)) then
+      if bit32.band(high_bits, bit32.lshift(0x1, 7 - x)) ~= 0 then
         color_index = color_index + 2
       end
       gpu.setColor(unpack(colors[color_index]))

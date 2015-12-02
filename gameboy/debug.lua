@@ -21,7 +21,9 @@ write("Initializing main memory...")
 initialize_memory()
 print("Done!")
 
+write("Initializing graphics...")
 initialize_graphics()
+print("Done!")
 
 write("Copying cart data into lower 0x7FFF of main memory...")
 for i = 0, 0x7FFF do
