@@ -15,6 +15,35 @@ reg.sp = 0xFFFE
 
 memory = {}
 
+write_mask = {}
+write_mask[0xFF00] = 0xF0
+
+write_logic = {}
+
+write_logic[0xFF04] = function(byte)
+  -- Timer DIV register; any write resets this value to 0
+  memory[0xFF04] = 0
+end
+
+write_logic[0xFF44] = function(byte)
+  -- LY, writes reset the counter
+  memory[0xFF44] = 0
+end
+
+write_logic[0xFF46] = function(byte)
+  -- DMA Transfer. Copies data from 0x0000 + 0x100 * byte, into OAM data
+  local source = 0x0000 + 0x100 * byte
+  local destination = 0xFE00
+  while destination <= 0xFE9F do
+    memory[destination] = memory[source]
+    destination = destination + 1
+    source = source + 1
+  end
+  -- TODO: Implement memory access cooldown; real hardware requires
+  -- programs to call DMA transfer from High RAM and then wait there
+  -- for several clocks while it finishes.
+end
+
 function read_byte(address)
   -- todo: make this respect memory regions
   -- and VRAM / OAM access limits.
@@ -23,6 +52,15 @@ function read_byte(address)
 end
 
 function write_byte(address, byte)
+  if write_mask[address] then
+    byte = bit32.band(byte, write_mask[address]) + bit32.band(memory[address], bit32.bnot(write_mask[address]))
+  end
+  if write_logic[address] then
+    -- Some addresses (mostly IO ports) have fancy logic or do strange things on
+    -- writes, so we handle those here.
+    write_logic[address](byte)
+    return
+  end
   if address <= 0x7FFF then
     -- ROM area; we should not actually write data here, but should
     -- handle some special case addresses
