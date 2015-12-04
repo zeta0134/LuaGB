@@ -22,16 +22,23 @@ write_mask[0xFF44] = 0x00
 
 read_logic = {}
 read_logic[0xFF04] = function()
-  print("Read from DIV")
+  --print("Read from DIV")
   return memory[0xFF04]
 end
 
 read_logic[0xFF05] = function()
-  print("Read from TIMA")
+  --print("Read from TIMA")
   return memory[0xFF05]
 end
 
 write_logic = {}
+
+write_logic[0xFF00] = function(byte)
+  memory[0xFF00] = bit32.band(byte, 0xF0)
+  update_input()
+end
+
+local div_offset = 0
 
 write_logic[0xFF04] = function(byte)
   -- Timer DIV register; any write resets this value to 0
@@ -1534,7 +1541,16 @@ function process_interrupts()
   return false
 end
 
+function update_timing_registers()
+  if clock > div_offset + 256 then
+    memory[0xFF04] = bit32.band(memory[0xFF04] + 1, 0xFF)
+    div_offset = div_offset + 256
+  end
+end
+
 function process_instruction()
+  update_timing_registers()
+
   -- BGB, another gameboy emulator, disagrees with the interrupt timing.
   -- It allows one extra instruction to be processed after an EI instruction
   -- is called, before actually servicing the interrupt. I'm not sure what's

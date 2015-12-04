@@ -286,6 +286,60 @@ function love.textinput(char)
   end
 end
 
+function love.keypressed(key)
+  if key == "up" then
+    GbKeys.Up = 1
+  end
+  if key == "down" then
+    GbKeys.Down = 1
+  end
+  if key == "left" then
+    GbKeys.Left = 1
+  end
+  if key == "right" then
+    GbKeys.Right = 1
+  end
+  if key == "x" then
+    GbKeys.A = 1
+  end
+  if key == "z" then
+    GbKeys.B = 1
+  end
+  if key == "return" then
+    GbKeys.Start = 1
+  end
+  if key == "rshift" then
+    GbKeys.Select = 1
+  end
+end
+
+function love.keyreleased(key)
+  if key == "up" then
+    GbKeys.Up = 0
+  end
+  if key == "down" then
+    GbKeys.Down = 0
+  end
+  if key == "left" then
+    GbKeys.Left = 0
+  end
+  if key == "right" then
+    GbKeys.Right = 0
+  end
+  if key == "x" then
+    GbKeys.A = 0
+  end
+  if key == "z" then
+    GbKeys.B = 0
+  end
+  if key == "return" then
+    GbKeys.Start = 0
+  end
+  if key == "rshift" then
+    GbKeys.Select = 0
+  end
+end
+
 function draw_background()
   draw_tilemap(0, 500, 0x9800, 1)
 end
