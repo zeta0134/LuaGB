@@ -16,7 +16,20 @@ reg.sp = 0xFFFE
 memory = {}
 
 write_mask = {}
-write_mask[0xFF00] = 0xF0
+write_mask[0xFF00] = 0x30
+write_mask[0xFF41] = 0x78
+write_mask[0xFF44] = 0x00
+
+read_logic = {}
+read_logic[0xFF04] = function()
+  print("Read from DIV")
+  return memory[0xFF04]
+end
+
+read_logic[0xFF05] = function()
+  print("Read from TIMA")
+  return memory[0xFF05]
+end
 
 write_logic = {}
 
@@ -45,6 +58,9 @@ write_logic[0xFF46] = function(byte)
 end
 
 function read_byte(address)
+  if read_logic[address] then
+    return read_logic[address]()
+  end
   -- todo: make this respect memory regions
   -- and VRAM / OAM access limits.
   -- Also, cart bank switching would be cool.
@@ -86,6 +102,15 @@ function initialize_memory()
   for i = 0, 0xFFFF do
     memory[i] = 0
   end
+
+  -- write out default starting states for IO registers
+  -- skipping sound for now
+  memory[0xFF26] = 0xF1
+  memory[0xFF40] = 0x91
+  memory[0xFF47] = 0xFC
+  memory[0xFF48] = 0xFF
+  memory[0xFF49] = 0xFF
+
 end
 
 interrupts_enabled = 1
@@ -741,7 +766,7 @@ opcodes[0x27] = function()
   if bit32.band(0x0F, reg.a) > 0x09 or reg.flags.h == 1 then
     reg.a = reg.a + 0x06
   end
-  if bit.band(0xF0, reg.a) > 0x90 or reg.flags.c == 1 then
+  if bit32.band(0xF0, reg.a) > 0x90 or reg.flags.c == 1 then
     reg.a = reg.a + 0x60
     reg.flags.c = 1
   else
@@ -1198,7 +1223,7 @@ opcodes[0x00] = function() end
 
 -- halt
 opcodes[0x76] = function()
-  if interrupts_enabled then
+  if interrupts_enabled == 1 then
     halted = 1
   end
 end
@@ -1271,7 +1296,7 @@ opcodes[0xCA] = function()
 end
 
 -- jp c, nnnn
-opcodes[0xCA] = function()
+opcodes[0xDA] = function()
   if reg.flags.c == 1 then
     jump_to_nnnn()
     clock = clock + 4
@@ -1479,9 +1504,6 @@ opcodes[0xEF] = function() call_address(0x28) end
 opcodes[0xF7] = function() call_address(0x30) end
 opcodes[0xFF] = function() call_address(0x38) end
 
-local break_on = {}
---break_on[0xFB] = 1
-
 function process_interrupts()
   if interrupts_enabled ~= 0 then
     local fired = bit32.band(memory[0xFFFF], memory[0xFF0F])
@@ -1509,33 +1531,37 @@ function process_interrupts()
       return true
     end
   end
+  return false
 end
 
 function process_instruction()
-  process_interrupts()
+  -- BGB, another gameboy emulator, disagrees with the interrupt timing.
+  -- It allows one extra instruction to be processed after an EI instruction
+  -- is called, before actually servicing the interrupt. I'm not sure what's
+  -- correct hardware wise, and this doesn't seem like a broken implementation,
+  -- so I want to leave it like it is for now.
+  if process_interrupts() then
+    return true --interrupt firing counts as one instruction, for debugging
+  end
 
   --  If the processor is currently halted, then do nothing.
   if halted ~= 0 then
     clock = clock + 4
     return true
-  end
-
-  opcode = read_byte(reg.pc)
-  reg.pc = bit32.band(reg.pc + 1, 0xFFFF)
-  if opcodes[opcode] ~= nil then
-    -- run this instruction!
-    opcodes[opcode]()
-    -- add a base clock of 4 to every instruction
-    clock = clock + 4
   else
-    print(string.format("Unhandled opcode: %x", opcode))
-    return false
+    opcode = read_byte(reg.pc)
+    reg.pc = bit32.band(reg.pc + 1, 0xFFFF)
+    if opcodes[opcode] ~= nil then
+      -- run this instruction!
+      opcodes[opcode]()
+      -- add a base clock of 4 to every instruction
+      clock = clock + 4
+    else
+      print(string.format("Unhandled opcode: %x", opcode))
+      return false
+    end
+    return true
   end
-  if break_on[read_byte(reg.pc)] then
-    print("BREAK")
-    return false
-  end
-  return true
 end
 
 Interrupt = {}

@@ -1,6 +1,10 @@
 Tetris Log
 ==========
 
+137760 - First VBlank busy loop after zeroing out DFFF and initializing a lot of IO ports.
+137780 - Disable the display (!)
+144088 - Finish zeroing out DF00-DFFF
+242608 - Finish zeroing out
 [before this] - zero out all of memory
 448752 - start initializing high RAM from cart at 0x2AC7
 494272 - Finish writing 0x2F to all of BG 0x9800 (??? Why?)

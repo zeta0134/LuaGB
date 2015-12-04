@@ -207,7 +207,13 @@ function initialize_graphics()
 end
 
 function update_graphics()
-  handle_mode[Status.Mode()]()
+  if LCD_Control.DisplayEnabled() then
+    handle_mode[Status.Mode()]()
+  else
+    -- erase our clock debt, so we don't do stupid timing things when the
+    -- display is enabled again later
+    last_edge = clock
+  end
 end
 
 colors = {}

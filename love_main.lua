@@ -100,12 +100,12 @@ function print_register_values()
   love.graphics.print(string.format("GPU: Mode: %d", Status.Mode()), 380, 24)
   love.graphics.print(string.format("Scanline: %d", scanline()), 380, 48)
   love.graphics.print(string.format("Frame: %d", vblank_count), 380, 72)
-  love.graphics.print(string.format("Halted: %d  IME: %d  IE: %04X  IF: %04X", halted, interrupts_enabled, read_byte(0xFFFF), read_byte(0xFF0F)), 0, 168)
+  love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X", halted, interrupts_enabled, read_byte(0xFFFF), read_byte(0xFF0F)), 0, 168)
 end
 
 function print_instructions()
   love.graphics.setColor(255, 255, 255)
-  love.graphics.print("[Space] = Step | [H] = Run until HBlank | [V] = Run until VBlank", 0, 780)
+  love.graphics.print("[Space] = Step | [K] = Run 1000 instructions | [H] = Run until HBlank | [V] = Run until VBlank", 0, 780)
   --print("[Space] = Step | [K] = Run 1000")
   --print("[R] = Run Until Error or Breakpoint")
   --print("[V] = Run Until VBlank")
@@ -261,6 +261,11 @@ function love.textinput(char)
   if char == " " then
     run_one_opcode()
   end
+  if char == "k" then
+    for i = 1, 1000 do
+      run_one_opcode()
+    end
+  end
   if char == "h" then
     old_scanline = scanline()
     while old_scanline == scanline() do
@@ -278,11 +283,11 @@ function love.textinput(char)
 end
 
 function draw_background()
-  draw_tilemap(0, 500, LCD_Control.BackgroundTilemap(), 1)
+  draw_tilemap(0, 500, 0x9800, 1)
 end
 
 function draw_window()
-  draw_tilemap(512, 500, LCD_Control.WindowTilemap(), 1)
+  draw_tilemap(512, 500, 0x9C00, 1)
 end
 
 function love.draw()
