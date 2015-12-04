@@ -352,10 +352,8 @@ function draw_sprites_into_scanline(scanline)
       plot_pixel(game_screen, x, scanline, unpack(subpixel_color))
       x = x + 1
     end
-    --print("Sprite at " .. sprite_x .. ", " .. sprite_y)
   end
   if #active_sprites > 0 then
-    --print("Drew " .. #active_sprites .. " sprites on line " .. scanline)
   end
 end
 

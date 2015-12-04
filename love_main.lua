@@ -15,6 +15,7 @@ function love.load(args)
   love.graphics.setDefaultFilter("nearest", "nearest")
   love.graphics.setPointStyle("rough")
   ubuntu_font = love.graphics.newFont("UbuntuMono-R.ttf", 24)
+  love.graphics.setFont(ubuntu_font)
   game_screen_canvas = love.graphics.newCanvas(256, 256)
   debug_tile_canvas = love.graphics.newCanvas(256, 256)
 
@@ -105,7 +106,7 @@ end
 
 function print_instructions()
   love.graphics.setColor(255, 255, 255)
-  love.graphics.print("[Space] = Step | [K] = Run 1000 instructions | [H] = Run until HBlank | [V] = Run until VBlank", 0, 780)
+  love.graphics.print("[Space] = Step | [R] = Run | [P] = Pause | [H] = Run until HBlank | [V] = Run until VBlank", 0, 780)
   --print("[Space] = Step | [K] = Run 1000")
   --print("[R] = Run Until Error or Breakpoint")
   --print("[V] = Run Until VBlank")
@@ -257,14 +258,17 @@ function run_one_opcode()
   return process_instruction()
 end
 
+local emulator_running = false
+
 function love.textinput(char)
   if char == " " then
     run_one_opcode()
   end
-  if char == "k" then
-    for i = 1, 100000 do
-      run_one_opcode()
-    end
+  if char == "r" then
+    emulator_running = true
+  end
+  if char == "p" then
+    emulator_running = false
   end
   if char == "h" then
     old_scanline = scanline()
@@ -290,13 +294,28 @@ function draw_window()
   draw_tilemap(512, 500, 0x9C00, 1)
 end
 
+function love.update()
+  if emulator_running then
+    -- Run until a vblank happens
+    while scanline() == 144 do
+      run_one_opcode()
+    end
+    while scanline() ~= 144 do
+      run_one_opcode()
+    end
+  end
+end
+
 function love.draw()
-  love.graphics.setFont(ubuntu_font)
-  print_register_values()
-  print_instructions()
-  print_io_values()
-  draw_game_screen(0, 200, 2)
-  draw_tiles(320, 200, 32, 2)
-  draw_window()
-  draw_background()
+  if emulator_running then
+    draw_game_screen(0, 200, 2)
+  else
+    print_register_values()
+    print_instructions()
+    print_io_values()
+    draw_game_screen(0, 200, 2)
+    draw_tiles(320, 200, 32, 2)
+    draw_window()
+    draw_background()
+  end
 end
