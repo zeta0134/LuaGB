@@ -266,7 +266,7 @@ function getColorFromTilemap(map_address, x, y)
   local tile_x = bit32.rshift(x, 3)
   local tile_y = bit32.rshift(y, 3)
   local tile_index = memory[map_address + (tile_y * 32) + (tile_x)]
-  if LCD_Control.TileData() == 0x8800 then
+  if LCD_Control.TileData() == 0x9000 then
     if tile_index > 127 then
       tile_index = tile_index - 256
     end
