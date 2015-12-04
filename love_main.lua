@@ -262,7 +262,7 @@ function love.textinput(char)
     run_one_opcode()
   end
   if char == "k" then
-    for i = 1, 1000 do
+    for i = 1, 100000 do
       run_one_opcode()
     end
   end

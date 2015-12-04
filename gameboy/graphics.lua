@@ -217,10 +217,10 @@ function update_graphics()
 end
 
 colors = {}
-colors[0] = {0, 0, 0}
-colors[1] = {128, 128, 128}
-colors[2] = {192, 192, 192}
-colors[3] = {255, 255, 255}
+colors[0] = {255, 255, 255}
+colors[1] = {192, 192, 192}
+colors[2] = {128, 128, 128}
+colors[3] = {0, 0, 0}
 
 game_screen = {}
 for y = 0, 143 do
@@ -242,7 +242,8 @@ function debug_draw_screen()
   end
 end
 
-function getColorFromTile(tile_address, subpixel_x, subpixel_y)
+function getColorFromTile(tile_address, subpixel_x, subpixel_y, palette)
+  palette = palette or 0xE4
   -- move to the row we need this pixel from
   while subpixel_y > 0 do
     tile_address = tile_address + 2
@@ -259,7 +260,11 @@ function getColorFromTile(tile_address, subpixel_x, subpixel_y)
   end
   -- finally, return the color from the table, based on this index
   -- todo: allow specifying the palette?
-  return colors[palette_index]
+  while palette_index > 0 do
+    palette = bit32.rshift(palette, 2)
+    palette_index = palette_index - 1
+  end
+  return colors[bit32.band(palette, 0x3)]
 end
 
 function getColorFromTilemap(map_address, x, y)
@@ -276,7 +281,82 @@ function getColorFromTilemap(map_address, x, y)
   local subpixel_x = x - (tile_x * 8)
   local subpixel_y = y - (tile_y * 8)
 
-  return getColorFromTile(tile_address, subpixel_x, subpixel_y)
+  return getColorFromTile(tile_address, subpixel_x, subpixel_y, memory[0xFF47])
+end
+
+local oam = 0xFE00
+
+function draw_sprites_into_scanline(scanline)
+  local active_sprites = {}
+  local sprite_size = 8
+  if LCD_Control.LargeSprites() then
+    sprite_size = 16
+  end
+
+  -- Collect up to the 10 highest priority sprites in a list.
+  -- Sprites have priority first by their X coordinate, then by their index
+  -- in the list.
+  local i = 0
+  while i < 40 do
+    -- is this sprite being displayed on this scanline? (respect to Y coordinate)
+    local sprite_y = memory[oam + i * 4]
+    local sprite_lower = sprite_y - 16
+    local sprite_upper = sprite_y - 16 + sprite_size
+    if scanline >= sprite_lower and scanline < sprite_upper then
+      if #active_sprites < 10 then
+        table.insert(active_sprites, i)
+      else
+        -- There are more than 10 sprites in the table, so we need to pick
+        -- a candidate to vote off the island (possibly this one)
+        local lowest_priority = i
+        local lowest_priotity_index = nil
+        for j = 1, #active_sprites do
+          local lowest_x = memory[oam + lowest_priority * 4 + 1]
+          local candidate_x = memory[oam + active_sprites[j] * 4 + 1]
+          if candidate_x > lowest_x then
+            lowest_priority = active_sprites[j]
+            lowest_priority_index = j
+          end
+        end
+        if lowest_priority_index then
+          active_sprites[lowest_priority_index] = i
+        end
+      end
+    end
+    i = i + 1
+  end
+
+  -- now, for every sprite in the list, display it on the current scanline
+  for i = #active_sprites, 1, -1 do
+    local sprite_address = oam + active_sprites[i] * 4
+    local sprite_y = memory[sprite_address]
+    local sprite_x = memory[sprite_address + 1]
+    local sprite_tile = memory[sprite_address + 2]
+    if sprite_size == 16 then
+      sprite_tile = bit32.band(sprite_tile, 0xFE)
+    end
+    local sprite_flags = memory[sprite_address + 3]
+
+    local sub_y = 16 - (sprite_y - scanline)
+
+    local sprite_palette = memory[0xFF48]
+    if bit32.band(sprite_flags, 0x10) ~= 0 then
+      sprite_palette = memory[0xFF49]
+    end
+
+    local start_x = math.max(0, sprite_x - 8)
+    local end_x = math.min(159, sprite_x)
+    local x = start_x
+    while x < end_x do
+      local subpixel_color = getColorFromTile(0x8000 + sprite_tile * 16, x - sprite_x + 8, sub_y, sprite_palette)
+      plot_pixel(game_screen, x, scanline, unpack(subpixel_color))
+      x = x + 1
+    end
+    --print("Sprite at " .. sprite_x .. ", " .. sprite_y)
+  end
+  if #active_sprites > 0 then
+    --print("Drew " .. #active_sprites .. " sprites on line " .. scanline)
+  end
 end
 
 function draw_scanline(scanline)
@@ -312,6 +392,8 @@ function draw_scanline(scanline)
     end
     w_x = w_x + 1
   end
+
+  draw_sprites_into_scanline(scanline)
 end
 
 function draw_half_scale(destination, source, dx, dy)
