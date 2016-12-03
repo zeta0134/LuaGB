@@ -53,62 +53,86 @@ function love.load(args)
 end
 
 function print_register_values()
-  local c = reg.flags.c == 1 and "c" or " "
-  local n = reg.flags.n == 1 and "n" or " "
-  local h = reg.flags.h == 1 and "h" or " "
-  local z = reg.flags.z == 1 and "z" or " "
+  local grid = {
+    x = {0, 80, 160, 380},
+    y = {0, 24, 48, 72, 120, 144, 168}
+  }
 
-  --io.write(string.format("AF: 0x%02X 0x%02X - ", reg.a, reg.f()))
-  --print(string.format("BC: 0x%02X 0x%02X  ", reg.b, reg.c))
-  --io.write(string.format("DE: 0x%02X 0x%02X - ", reg.d, reg.e))
-  --print(string.format("HL: 0x%02X 0x%02X", reg.h, reg.l))
+  local function get_register(name)
+    return function() return reg[name] end
+  end
+  local registers = {
+    {255, 255, 64, "A", get_register("a"), 1, 1},
+    {64, 128, 64, "F", reg.f, 2, 1},
+    {108, 108, 255, "B", get_register("b"), 1, 2},
+    {152, 80, 32, "C", get_register("c"), 2, 2},
+    {192, 128, 64, "D", get_register("d"), 1, 3},
+    {64, 255, 64, "E", get_register("e"), 2, 3},
+    {224, 196, 128, "H", get_register("h"), 1, 4},
+    {255, 255, 255, "L", get_register("l"), 2, 4}
+  }
+  for _, register in ipairs(registers) do
+    local r, g, b = register[1], register[2], register[3]
+    local name, accessor = register[4], register[5]
+    local x, y = register[6], register[7]
 
-  love.graphics.setColor(255,255,64)
-  love.graphics.print(string.format("A: %02X", reg.a), 0, 0)
-  love.graphics.setColor(64,128,64)
-  love.graphics.print(string.format("F: %02X", reg.f()), 80, 0)
-  love.graphics.setColor(108,108,255)
-  love.graphics.print(string.format("B: %02X", reg.b), 0, 24)
-  love.graphics.setColor(152,80,32)
-  love.graphics.print(string.format("C: %02X", reg.c), 80, 24)
-  love.graphics.setColor(192,128,64)
-  love.graphics.print(string.format("D: %02X", reg.d), 0, 48)
-  love.graphics.setColor(64,255,64)
-  love.graphics.print(string.format("E: %02X", reg.e), 80, 48)
-  love.graphics.setColor(224,196,128)
-  love.graphics.print(string.format("H: %02X", reg.h), 0, 72)
-  love.graphics.setColor(255,255,255)
-  love.graphics.print(string.format("L: %02X", reg.l), 80, 72)
+    love.graphics.setColor(r, g, b)
+    love.graphics.print(string.format("%s: %02X", name, accessor()), grid.x[x], grid.y[y])
+  end
 
-  love.graphics.setColor(192,192,192)
-  love.graphics.print(string.format("Flags: [%s %s %s %s])", c, n, h, z), 160, 0)
-  love.graphics.setColor(108,108,255)
-  love.graphics.print(string.format("BC: %04X (BC): %02X", reg.bc(), memory.read_byte(reg.bc())), 160, 24)
-  love.graphics.setColor(192,128,64)
-  love.graphics.print(string.format("DE: %04X (DE): %02X", reg.de(), memory.read_byte(reg.de())), 160, 48)
-  love.graphics.setColor(224,196,128)
-  love.graphics.print(string.format("HL: %04X (HL): %02X", reg.hl(), memory.read_byte(reg.hl())), 160, 72)
+  local function flag_string(flag) return reg.flags[flag] == 1 and flag or "" end
+  love.graphics.setColor(192, 192, 192)
+  love.graphics.print(string.format("Flags: [%1s %1s %1s %1s])", flag_string("c"), flag_string("n"), flag_string("h"), flag_string("z")), grid.x[3], grid.y[0])
 
-  love.graphics.setColor(192, 192, 255)
-  love.graphics.print(string.format("SP: %04X (SP): %02X %02X %02X %02X", reg.sp,
-                      memory.read_byte(reg.sp),
-                      memory.read_byte(reg.sp + 1),
-                      memory.read_byte(reg.sp + 2),
-                      memory.read_byte(reg.sp + 3)), 0, 120)
+  local wide_registers = {
+    {108, 108, 255, "BC", "bc", 3, 2},
+    {192, 128, 64, "DE", "de", 3, 3},
+    {224, 196, 128, "HL", "hl", 3, 4}
+  }
+  for _, register in ipairs(wide_registers) do
+    local r, g, b = register[1], register[2], register[3]
+    local name, accessor = register[4], register[5]
+    local x, y = register[6], register[7]
+    local value = reg[accessor]()
+    local indirect_value = memory.read_byte(value)
 
-  love.graphics.setColor(255, 192, 192)
-  love.graphics.print(string.format("PC: %04X (PC): %02X %02X %02X %02X", reg.pc,
-                      memory.read_byte(reg.pc),
-                      memory.read_byte(reg.pc + 1),
-                      memory.read_byte(reg.pc + 2),
-                      memory.read_byte(reg.pc + 3)), 0, 144)
+    love.graphics.setColor(r, g, b)
+    love.graphics.print(string.format("%s: %04X (%s): %02X", name, value, name, indirect_value), grid.x[x], grid.y[y])
+  end
 
+  local pointer_registers = {
+    {192, 192, 255, "SP", "sp", 1, 5},
+    {255, 192, 192, "PC", "pc", 1, 6}
+  }
+  for _, register in ipairs(pointer_registers) do
+    local r, g, b = register[1], register[2], register[3]
+    local name, accessor = register[4], register[5]
+    local x, y = register[6], register[7]
+    local value = reg[accessor]
+
+    love.graphics.setColor(r, g, b)
+    love.graphics.print(string.format("%s: %04X (%s): %02X %02X %02X %02X", name, value, name,
+                                      memory.read_byte(value),
+                                      memory.read_byte(value + 1),
+                                      memory.read_byte(value + 2),
+                                      memory.read_byte(value + 3)), grid.x[x], grid.y[y])
+  end
+
+  local status = {
+    {"Clock", function() return clock end, 4, 1},
+    {"GPU Mode", graphics.Status.Mode, 4, 2},
+    {"Scanline", graphics.scanline, 4, 3},
+    {"Frame", function() return graphics.vblank_count end, 4, 4}
+  }
   love.graphics.setColor(255, 255, 255)
-  love.graphics.print(string.format("Clock: %d", clock), 380, 0)
-  love.graphics.print(string.format("GPU: Mode: %d", graphics.Status.Mode()), 380, 24)
-  love.graphics.print(string.format("Scanline: %d", graphics.scanline()), 380, 48)
-  love.graphics.print(string.format("Frame: %d", graphics.vblank_count), 380, 72)
-  love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X", halted, interrupts_enabled, memory.read_byte(0xFFFF), memory.read_byte(0xFF0F)), 0, 168)
+  for _, state in ipairs(status) do
+    local name, accessor = state[1], state[2]
+    local x, y = state[3], state[4]
+
+    love.graphics.print(string.format("%s: %d", name, accessor()), grid.x[x], grid.y[y])
+  end
+
+  love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X", halted, interrupts_enabled, memory.read_byte(0xFFFF), memory.read_byte(0xFF0F)), grid.x[1], grid.y[7])
 end
 
 function print_instructions()
