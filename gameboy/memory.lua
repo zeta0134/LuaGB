@@ -1,39 +1,33 @@
 local memory = {}
 
-local write_mask = {}
-write_mask[0xFF00] = 0x30
-write_mask[0xFF41] = 0x78
-write_mask[0xFF44] = 0x00
+memory.write_mask = {}
+memory.write_mask[0xFF00] = 0x30
+memory.write_mask[0xFF41] = 0x78
+memory.write_mask[0xFF44] = 0x00
 
-local read_logic = {}
-read_logic[0xFF04] = function()
+memory.read_logic = {}
+memory.read_logic[0xFF04] = function()
   --print("Read from DIV")
   return memory[0xFF04]
 end
 
-read_logic[0xFF05] = function()
+memory.read_logic[0xFF05] = function()
   --print("Read from TIMA")
   return memory[0xFF05]
 end
 
-local write_logic = {}
-
-write_logic[0xFF00] = function(byte)
-  memory[0xFF00] = bit32.band(byte, 0xF0)
-  update_input()
-end
-
-write_logic[0xFF04] = function(byte)
+memory.write_logic = {}
+memory.write_logic[0xFF04] = function(byte)
   -- Timer DIV register; any write resets this value to 0
   memory[0xFF04] = 0
 end
 
-write_logic[0xFF44] = function(byte)
+memory.write_logic[0xFF44] = function(byte)
   -- LY, writes reset the counter
   memory[0xFF44] = 0
 end
 
-write_logic[0xFF46] = function(byte)
+memory.write_logic[0xFF46] = function(byte)
   -- DMA Transfer. Copies data from 0x0000 + 0x100 * byte, into OAM data
   local source = 0x0000 + 0x100 * byte
   local destination = 0xFE00
@@ -48,8 +42,8 @@ write_logic[0xFF46] = function(byte)
 end
 
 memory.read_byte = function(address)
-  if read_logic[address] then
-    return read_logic[address]()
+  if memory.read_logic[address] then
+    return memory.read_logic[address]()
   end
   -- todo: make this respect memory regions
   -- and VRAM / OAM access limits.
@@ -58,13 +52,13 @@ memory.read_byte = function(address)
 end
 
 memory.write_byte = function(address, byte)
-  if write_mask[address] then
-    byte = bit32.band(byte, write_mask[address]) + bit32.band(memory[address], bit32.bnot(write_mask[address]))
+  if memory.write_mask[address] then
+    byte = bit32.band(byte, memory.write_mask[address]) + bit32.band(memory[address], bit32.bnot(memory.write_mask[address]))
   end
-  if write_logic[address] then
+  if memory.write_logic[address] then
     -- Some addresses (mostly IO ports) have fancy logic or do strange things on
     -- writes, so we handle those here.
-    write_logic[address](byte)
+    memory.write_logic[address](byte)
     return
   end
   if address <= 0x7FFF then

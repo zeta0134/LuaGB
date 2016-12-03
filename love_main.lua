@@ -4,7 +4,7 @@ local memory = require("gameboy/memory")
 require("gameboy/z80")
 require("gameboy/graphics")
 require("gameboy/rom_header")
-require("gameboy/input")
+local input = require("gameboy/input")
 
 local ubuntu_font
 
@@ -261,7 +261,7 @@ end
 
 function run_one_opcode()
   update_graphics()
-  update_input()
+  input.update()
   return process_instruction()
 end
 
@@ -295,55 +295,55 @@ end
 
 function love.keypressed(key)
   if key == "up" then
-    GbKeys.Up = 1
+    input.keys.Up = 1
   end
   if key == "down" then
-    GbKeys.Down = 1
+    input.keys.Down = 1
   end
   if key == "left" then
-    GbKeys.Left = 1
+    input.keys.Left = 1
   end
   if key == "right" then
-    GbKeys.Right = 1
+    input.keys.Right = 1
   end
   if key == "x" then
-    GbKeys.A = 1
+    input.keys.A = 1
   end
   if key == "z" then
-    GbKeys.B = 1
+    input.keys.B = 1
   end
   if key == "return" then
-    GbKeys.Start = 1
+    input.keys.Start = 1
   end
   if key == "rshift" then
-    GbKeys.Select = 1
+    input.keys.Select = 1
   end
 end
 
 function love.keyreleased(key)
   if key == "up" then
-    GbKeys.Up = 0
+    input.keys.Up = 0
   end
   if key == "down" then
-    GbKeys.Down = 0
+    input.keys.Down = 0
   end
   if key == "left" then
-    GbKeys.Left = 0
+    input.keys.Left = 0
   end
   if key == "right" then
-    GbKeys.Right = 0
+    input.keys.Right = 0
   end
   if key == "x" then
-    GbKeys.A = 0
+    input.keys.A = 0
   end
   if key == "z" then
-    GbKeys.B = 0
+    input.keys.B = 0
   end
   if key == "return" then
-    GbKeys.Start = 0
+    input.keys.Start = 0
   end
   if key == "rshift" then
-    GbKeys.Select = 0
+    input.keys.Select = 0
   end
 end
 
