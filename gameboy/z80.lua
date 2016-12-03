@@ -4,6 +4,13 @@ local memory = require("gameboy/memory")
 local read_byte = memory.read_byte
 local write_byte = memory.write_byte
 
+local lshift = bit32.lshift
+local rshift = bit32.rshift
+local band = bit32.band
+local bxor = bit32.bxor
+local bor = bit32.bor
+local bnot = bit32.bnot
+
 -- Initialize registers to what the GB's
 -- iternal state would be after executing
 -- BIOS code
@@ -25,33 +32,33 @@ clock = 0
 div_offset = 0
 
 reg.f = function()
-  value = bit32.lshift(reg.flags.z, 7) +
-          bit32.lshift(reg.flags.n, 6) +
-          bit32.lshift(reg.flags.h, 5) +
-          bit32.lshift(reg.flags.c, 4)
+  value = lshift(reg.flags.z, 7) +
+          lshift(reg.flags.n, 6) +
+          lshift(reg.flags.h, 5) +
+          lshift(reg.flags.c, 4)
   return value
 end
 
 reg.set_f = function(value)
-  if bit32.band(value, 0x80) ~= 0 then
+  if band(value, 0x80) ~= 0 then
     reg.flags.z = 1
   else
     reg.flags.z = 0
   end
 
-  if bit32.band(value, 0x40) ~= 0 then
+  if band(value, 0x40) ~= 0 then
     reg.flags.n = 1
   else
     reg.flags.n = 0
   end
 
-  if bit32.band(value, 0x20) ~= 0 then
+  if band(value, 0x20) ~= 0 then
     reg.flags.h = 1
   else
     reg.flags.h = 0
   end
 
-  if bit32.band(value, 0x10) ~= 0 then
+  if band(value, 0x10) ~= 0 then
     reg.flags.c = 1
   else
     reg.flags.c = 0
@@ -59,34 +66,34 @@ reg.set_f = function(value)
 end
 
 reg.af = function()
-  return bit32.lshift(reg.a, 8) + reg.f()
+  return lshift(reg.a, 8) + reg.f()
 end
 
 reg.bc = function()
-  return bit32.lshift(reg.b, 8) + reg.c
+  return lshift(reg.b, 8) + reg.c
 end
 
 reg.de = function()
-  return bit32.lshift(reg.d, 8) + reg.e
+  return lshift(reg.d, 8) + reg.e
 end
 
 reg.hl = function()
-  return bit32.lshift(reg.h, 8) + reg.l
+  return lshift(reg.h, 8) + reg.l
 end
 
 reg.set_bc = function(value)
-  reg.b = bit32.rshift(bit32.band(value, 0xFF00), 8)
-  reg.c = bit32.band(value, 0xFF)
+  reg.b = rshift(band(value, 0xFF00), 8)
+  reg.c = band(value, 0xFF)
 end
 
 reg.set_de = function(value)
-  reg.d = bit32.rshift(bit32.band(value, 0xFF00), 8)
-  reg.e = bit32.band(value, 0xFF)
+  reg.d = rshift(band(value, 0xFF00), 8)
+  reg.e = band(value, 0xFF)
 end
 
 reg.set_hl = function(value)
-  reg.h = bit32.rshift(bit32.band(value, 0xFF00), 8)
-  reg.l = bit32.band(value, 0xFF)
+  reg.h = rshift(band(value, 0xFF00), 8)
+  reg.l = band(value, 0xFF)
 end
 
 opcodes = {}
@@ -206,7 +213,7 @@ end
 
 opcodes[0xFA] = function()
   lower = read_nn()
-  upper = bit32.lshift(read_nn(), 8)
+  upper = lshift(read_nn(), 8)
   reg.a = read_byte(upper + lower)
   clock = clock + 4
 end
@@ -224,7 +231,7 @@ end
 
 opcodes[0xEA] = function()
   lower = read_nn()
-  upper = bit32.lshift(read_nn(), 8)
+  upper = lshift(read_nn(), 8)
   write_byte(upper + lower, reg.a)
   clock = clock + 4
 end
@@ -299,7 +306,7 @@ end
 -- ld SP, nnnn
 opcodes[0x31] = function()
   lower = read_nn()
-  upper = bit32.lshift(read_nn(), 8)
+  upper = lshift(read_nn(), 8)
   reg.sp = upper + lower
 end
 
@@ -384,7 +391,7 @@ end
 -- ====== GMB 8bit-Arithmetic/logical Commands ======
 add_to_a = function(value)
   -- half-carry
-  if bit32.band(reg.a, 0xF) + bit32.band(value, 0xF) > 0xF then
+  if band(reg.a, 0xF) + band(value, 0xF) > 0xF then
     reg.flags.h = 1
   else
     reg.flags.h = 0
@@ -394,7 +401,7 @@ add_to_a = function(value)
 
   -- carry (and overflow correction)
   if reg.a > 0xFF or reg.a < 0x00 then
-    reg.a = bit32.band(reg.a, 0xFF)
+    reg.a = band(reg.a, 0xFF)
     reg.flags.c = 1
   else
     reg.flags.c = 0
@@ -437,7 +444,7 @@ opcodes[0xCE] = function() add_to_a(read_nn() + reg.flags.c) end
 
 sub_from_a = function(value)
   -- half-carry
-  if bit32.band(reg.a, 0xF) - bit32.band(value, 0xF) < 0 then
+  if band(reg.a, 0xF) - band(value, 0xF) < 0 then
     reg.flags.h = 1
   else
     reg.flags.h = 0
@@ -447,7 +454,7 @@ sub_from_a = function(value)
 
   -- carry (and overflow correction)
   if reg.a < 0 or reg.a > 0xFF then
-    reg.a = bit32.band(reg.a, 0xFF)
+    reg.a = band(reg.a, 0xFF)
     reg.flags.c = 1
   else
     reg.flags.c = 0
@@ -489,7 +496,7 @@ opcodes[0x9F] = function() sub_from_a(reg.a + reg.flags.c) end
 opcodes[0xDE] = function() sub_from_a(read_nn() + reg.flags.c) end
 
 and_a_with = function(value)
-  reg.a = bit32.band(reg.a, value)
+  reg.a = band(reg.a, value)
   if reg.a == 0 then
     reg.flags.z = 1
   else
@@ -514,7 +521,7 @@ opcodes[0xA7] = function() and_a_with(reg.a) end
 opcodes[0xE6] = function() and_a_with(read_nn()) end
 
 xor_a_with = function(value)
-  reg.a = bit32.bxor(reg.a, value)
+  reg.a = bxor(reg.a, value)
   if reg.a == 0 then
     reg.flags.z = 1
   else
@@ -539,7 +546,7 @@ opcodes[0xAF] = function() xor_a_with(reg.a) end
 opcodes[0xEE] = function() xor_a_with(read_nn()) end
 
 or_a_with = function(value)
-  reg.a = bit32.bor(reg.a, value)
+  reg.a = bor(reg.a, value)
   if reg.a == 0 then
     reg.flags.z = 1
   else
@@ -565,7 +572,7 @@ opcodes[0xF6] = function() or_a_with(read_nn()) end
 
 cp_with_a = function(value)
   -- half-carry
-  if bit32.band(reg.a, 0xF) - bit32.band(value, 0xF) < 0 then
+  if band(reg.a, 0xF) - band(value, 0xF) < 0 then
     reg.flags.h = 1
   else
     reg.flags.h = 0
@@ -575,7 +582,7 @@ cp_with_a = function(value)
 
   -- carry (and overflow correction)
   if temp < 0 or temp > 0xFF then
-    temp  = bit32.band(temp, 0xFF)
+    temp  = band(temp, 0xFF)
     reg.flags.c = 1
   else
     reg.flags.c = 0
@@ -612,7 +619,7 @@ set_inc_flags = function(value)
   end
 
   -- half-carry
-  if bit32.band(value, 0xF) == 0x0 then
+  if band(value, 0xF) == 0x0 then
     reg.flags.h = 1
   else
     reg.flags.h = 0
@@ -630,7 +637,7 @@ set_dec_flags = function(value)
   end
 
   -- half-carry
-  if bit32.band(value, 0xF) == 0xF then
+  if band(value, 0xF) == 0xF then
     reg.flags.h = 1
   else
     reg.flags.h = 0
@@ -640,39 +647,39 @@ set_dec_flags = function(value)
 end
 
 -- inc r
-opcodes[0x04] = function() reg.b = bit32.band(reg.b + 1, 0xFF); set_inc_flags(reg.b) end
-opcodes[0x0C] = function() reg.c = bit32.band(reg.c + 1, 0xFF); set_inc_flags(reg.c) end
-opcodes[0x14] = function() reg.d = bit32.band(reg.d + 1, 0xFF); set_inc_flags(reg.d) end
-opcodes[0x1C] = function() reg.e = bit32.band(reg.e + 1, 0xFF); set_inc_flags(reg.e) end
-opcodes[0x24] = function() reg.h = bit32.band(reg.h + 1, 0xFF); set_inc_flags(reg.h) end
-opcodes[0x2C] = function() reg.l = bit32.band(reg.l + 1, 0xFF); set_inc_flags(reg.l) end
+opcodes[0x04] = function() reg.b = band(reg.b + 1, 0xFF); set_inc_flags(reg.b) end
+opcodes[0x0C] = function() reg.c = band(reg.c + 1, 0xFF); set_inc_flags(reg.c) end
+opcodes[0x14] = function() reg.d = band(reg.d + 1, 0xFF); set_inc_flags(reg.d) end
+opcodes[0x1C] = function() reg.e = band(reg.e + 1, 0xFF); set_inc_flags(reg.e) end
+opcodes[0x24] = function() reg.h = band(reg.h + 1, 0xFF); set_inc_flags(reg.h) end
+opcodes[0x2C] = function() reg.l = band(reg.l + 1, 0xFF); set_inc_flags(reg.l) end
 opcodes[0x34] = function()
-  write_byte(reg.hl(), bit32.band(read_byte(reg.hl()) + 1, 0xFF))
+  write_byte(reg.hl(), band(read_byte(reg.hl()) + 1, 0xFF))
   set_inc_flags(read_byte(reg.hl()))
   clock = clock + 8
 end
-opcodes[0x3C] = function() reg.a = bit32.band(reg.a + 1, 0xFF); set_inc_flags(reg.a) end
+opcodes[0x3C] = function() reg.a = band(reg.a + 1, 0xFF); set_inc_flags(reg.a) end
 
 -- dec r
-opcodes[0x05] = function() reg.b = bit32.band(reg.b - 1, 0xFF); set_dec_flags(reg.b) end
-opcodes[0x0D] = function() reg.c = bit32.band(reg.c - 1, 0xFF); set_dec_flags(reg.c) end
-opcodes[0x15] = function() reg.d = bit32.band(reg.d - 1, 0xFF); set_dec_flags(reg.d) end
-opcodes[0x1D] = function() reg.e = bit32.band(reg.e - 1, 0xFF); set_dec_flags(reg.e) end
-opcodes[0x25] = function() reg.h = bit32.band(reg.h - 1, 0xFF); set_dec_flags(reg.h) end
-opcodes[0x2D] = function() reg.l = bit32.band(reg.l - 1, 0xFF); set_dec_flags(reg.l) end
+opcodes[0x05] = function() reg.b = band(reg.b - 1, 0xFF); set_dec_flags(reg.b) end
+opcodes[0x0D] = function() reg.c = band(reg.c - 1, 0xFF); set_dec_flags(reg.c) end
+opcodes[0x15] = function() reg.d = band(reg.d - 1, 0xFF); set_dec_flags(reg.d) end
+opcodes[0x1D] = function() reg.e = band(reg.e - 1, 0xFF); set_dec_flags(reg.e) end
+opcodes[0x25] = function() reg.h = band(reg.h - 1, 0xFF); set_dec_flags(reg.h) end
+opcodes[0x2D] = function() reg.l = band(reg.l - 1, 0xFF); set_dec_flags(reg.l) end
 opcodes[0x35] = function()
-  write_byte(reg.hl(), bit32.band(read_byte(reg.hl()) - 1, 0xFF))
+  write_byte(reg.hl(), band(read_byte(reg.hl()) - 1, 0xFF))
   set_dec_flags(read_byte(reg.hl()))
   clock = clock + 8
 end
-opcodes[0x3D] = function() reg.a = bit32.band(reg.a - 1, 0xFF); set_dec_flags(reg.a) end
+opcodes[0x3D] = function() reg.a = band(reg.a - 1, 0xFF); set_dec_flags(reg.a) end
 
 -- daa
 opcodes[0x27] = function()
-  if bit32.band(0x0F, reg.a) > 0x09 or reg.flags.h == 1 then
+  if band(0x0F, reg.a) > 0x09 or reg.flags.h == 1 then
     reg.a = reg.a + 0x06
   end
-  if bit32.band(0xF0, reg.a) > 0x90 or reg.flags.c == 1 then
+  if band(0xF0, reg.a) > 0x90 or reg.flags.c == 1 then
     reg.a = reg.a + 0x60
     reg.flags.c = 1
   else
@@ -683,14 +690,14 @@ end
 
 -- cpl
 opcodes[0x2F] = function()
-  reg.a = bit32.bxor(reg.a, 0xFF)
+  reg.a = bxor(reg.a, 0xFF)
   reg.flags.n = 1
   reg.flags.h = 1
 end
 
 add_to_hl = function(value)
   -- half carry
-  if bit32.band(reg.hl(), 0xFFF) + bit32.band(value, 0xFFF) > 0xFFF then
+  if band(reg.hl(), 0xFFF) + band(value, 0xFFF) > 0xFFF then
     reg.flags.h = 1
   else
     reg.flags.h = 0
@@ -700,7 +707,7 @@ add_to_hl = function(value)
 
   -- carry
   if reg.hl() > 0xFFFF or reg.hl() < 0x0000 then
-    reg.set_hl(bit32.band(reg.hl, 0xFFFF))
+    reg.set_hl(band(reg.hl, 0xFFFF))
     reg.flags.c = 1
   else
     reg.flags.c = 0
@@ -717,37 +724,37 @@ opcodes[0x39] = function() add_to_hl(reg.sp) end
 
 -- inc rr
 opcodes[0x03] = function()
-  reg.set_bc(bit32.band(reg.bc() + 1, 0xFFFF))
+  reg.set_bc(band(reg.bc() + 1, 0xFFFF))
   clock = clock + 4
 end
 opcodes[0x13] = function()
-  reg.set_de(bit32.band(reg.de() + 1, 0xFFFF))
+  reg.set_de(band(reg.de() + 1, 0xFFFF))
   clock = clock + 4
 end
 opcodes[0x23] = function()
-  reg.set_hl(bit32.band(reg.hl() + 1, 0xFFFF))
+  reg.set_hl(band(reg.hl() + 1, 0xFFFF))
   clock = clock + 4
 end
 opcodes[0x33] = function()
-  reg.sp = bit32.band(reg.sp + 1, 0xFFFF)
+  reg.sp = band(reg.sp + 1, 0xFFFF)
   clock = clock + 4
 end
 
 -- dec rr
 opcodes[0x0B] = function()
-  reg.set_bc(bit32.band(reg.bc() - 1, 0xFFFF))
+  reg.set_bc(band(reg.bc() - 1, 0xFFFF))
   clock = clock + 4
 end
 opcodes[0x1B] = function()
-  reg.set_de(bit32.band(reg.de() - 1, 0xFFFF))
+  reg.set_de(band(reg.de() - 1, 0xFFFF))
   clock = clock + 4
 end
 opcodes[0x2B] = function()
-  reg.set_hl(bit32.band(reg.hl() - 1, 0xFFFF))
+  reg.set_hl(band(reg.hl() - 1, 0xFFFF))
   clock = clock + 4
 end
 opcodes[0x3B] = function()
-  reg.sp = bit32.band(reg.sp - 1, 0xFFFF)
+  reg.sp = band(reg.sp - 1, 0xFFFF)
   clock = clock + 4
 end
 
@@ -761,14 +768,14 @@ opcodes[0xE8] = function()
 
   -- half carry
   if offset >= 0 then
-    if bit32.band(reg.sp, 0xFFF) + offset > 0xFFF then
+    if band(reg.sp, 0xFFF) + offset > 0xFFF then
       reg.flags.h = 1
     else
       reg.flags.h = 0
     end
   else
      -- (note: weird! not sure if this is right)
-    if bit32.band(bit32.band(reg.sp, 0xFFF) - offset, 0xF00) == 0xF00 then
+    if band(band(reg.sp, 0xFFF) - offset, 0xF00) == 0xF00 then
       reg.flags.h = 1
     else
       reg.flags.h = 0
@@ -779,7 +786,7 @@ opcodes[0xE8] = function()
 
   -- carry
   if reg.sp > 0xFFFF or reg.sp < 0x0000 then
-    reg.sp = bit32.band(reg.sp, 0xFFFF)
+    reg.sp = band(reg.sp, 0xFFFF)
     reg.flags.c = 1
   else
     reg.flags.c = 0
@@ -804,10 +811,10 @@ end
 
 -- ====== GMB Rotate and Shift Commands ======
 local reg_rlc = function(value)
-  value = bit32.lshift(value, 1)
+  value = lshift(value, 1)
   -- move what would be bit 8 into the carry
-  if bit32.band(value, 0x100) ~= 0 then
-    value = bit32.band(value, 0xFF)
+  if band(value, 0x100) ~= 0 then
+    value = band(value, 0xFF)
     reg.flags.c = 1
   else
     reg.flags.c = 0
@@ -825,12 +832,12 @@ local reg_rlc = function(value)
 end
 
 local reg_rl = function(value)
-  value = bit32.lshift(value, 1)
+  value = lshift(value, 1)
   -- move the carry into bit 0
   value = value + reg.flags.c
   -- now move what would be bit 8 into the carry
-  if bit32.band(value, 0x100) ~= 0 then
-    value = bit32.band(value, 0xFF)
+  if band(value, 0x100) ~= 0 then
+    value = band(value, 0xFF)
     reg.flags.c = 1
   else
     reg.flags.c = 0
@@ -847,14 +854,14 @@ end
 
 local reg_rrc = function(value)
   -- move bit 0 into the carry
-  if bit32.band(value, 0x1) ~= 0 then
+  if band(value, 0x1) ~= 0 then
     reg.flags.c = 1
   else
     reg.flags.c = 0
   end
-  value = bit32.rshift(value, 1)
+  value = rshift(value, 1)
   -- also copy the carry into bit 7
-  value = value + bit32.lshift(reg.flags.c, 7)
+  value = value + lshift(reg.flags.c, 7)
   if value == 0 then
     reg.flags.z = 1
   else
@@ -867,16 +874,16 @@ end
 
 local reg_rr = function(value)
   -- first, copy the carry into bit 8 (!!)
-  value = value + bit32.lshift(reg.flags.c, 8)
+  value = value + lshift(reg.flags.c, 8)
   -- move bit 0 into the carry
-  if bit32.band(value, 0x1) ~= 0 then
+  if band(value, 0x1) ~= 0 then
     reg.flags.c = 1
   else
     reg.flags.c = 0
   end
-  value = bit32.rshift(value, 1)
+  value = rshift(value, 1)
   -- for safety, this should be a nop?
-  value = bit32.band(value, 0xFF)
+  value = band(value, 0xFF)
   if value == 0 then
     reg.flags.z = 1
   else
@@ -945,12 +952,12 @@ cb[0x1F] = function() reg.a = reg_rr(reg.a); clock = clock + 4 end
 
 reg_sla = function(value)
   -- copy bit 7 into carry
-  if bit32.band(value, 0x80) == 1 then
+  if band(value, 0x80) == 1 then
     reg.flags.c = 1
   else
     reg.flags.c = 0
   end
-  value = bit32.band(bit32.lshift(value, 1), 0xFF)
+  value = band(lshift(value, 1), 0xFF)
   if value == 0 then
     reg.flags.z = 1
   else
@@ -964,12 +971,12 @@ end
 
 reg_srl = function(value)
   -- copy bit 0 into carry
-  if bit32.band(value, 0x1) == 1 then
+  if band(value, 0x1) == 1 then
     reg.flags.c = 1
   else
     reg.flags.c = 0
   end
-  value = bit32.rshift(value, 1)
+  value = rshift(value, 1)
   if value == 0 then
     reg.flags.z = 1
   else
@@ -984,7 +991,7 @@ end
 reg_sra = function(value)
   local arith_value = reg_srl(value)
   -- if bit 6 is set, copy it to bit 7
-  if bit32.band(arith_value, 0x40) ~= 0 then
+  if band(arith_value, 0x40) ~= 0 then
     arith_value = arith_value + 0x80
   end
   clock = clock + 4
@@ -992,7 +999,7 @@ reg_sra = function(value)
 end
 
 reg_swap = function(value)
-  value = bit32.rshift(bit32.band(value, 0xF0), 4) + bit32.lshift(bit32.band(value, 0xF), 4)
+  value = rshift(band(value, 0xF0), 4) + lshift(band(value, 0xF), 4)
   if value == 0 then
     reg.flags.z = 1
   else
@@ -1047,7 +1054,7 @@ cb[0x3F] = function() reg.a = reg_srl(reg.a) end
 
 -- ====== GMB Singlebit Operation Commands ======
 reg_bit = function(value, bit)
-  if bit32.band(value, bit32.lshift(0x1, bit)) ~= 0 then
+  if band(value, lshift(0x1, bit)) ~= 0 then
     reg.flags.z = 0
   else
     reg.flags.z = 1
@@ -1065,9 +1072,9 @@ opcodes[0xCB] = function()
     cb[cb_op]()
     return
   end
-  high_half_nybble = bit32.rshift(bit32.band(cb_op, 0xC0), 6)
-  reg_index = bit32.band(cb_op, 0x7)
-  bit = bit32.rshift(bit32.band(cb_op, 0x38), 3)
+  high_half_nybble = rshift(band(cb_op, 0xC0), 6)
+  reg_index = band(cb_op, 0x7)
+  bit = rshift(band(cb_op, 0x38), 3)
   if high_half_nybble == 0x1 then
     -- bit n,r
     if reg_index == 0 then reg_bit(reg.b, bit) end
@@ -1084,27 +1091,27 @@ opcodes[0xCB] = function()
     -- res n, r
     -- note: this is REALLY stupid, but it works around some floating point
     -- limitations in Lua.
-    if reg_index == 0 then reg.b = bit32.band(reg.b, bit32.bxor(reg.b, bit32.lshift(0x1, bit))) end
-    if reg_index == 1 then reg.c = bit32.band(reg.c, bit32.bxor(reg.c, bit32.lshift(0x1, bit))) end
-    if reg_index == 2 then reg.d = bit32.band(reg.d, bit32.bxor(reg.d, bit32.lshift(0x1, bit))) end
-    if reg_index == 3 then reg.e = bit32.band(reg.e, bit32.bxor(reg.e, bit32.lshift(0x1, bit))) end
-    if reg_index == 4 then reg.h = bit32.band(reg.h, bit32.bxor(reg.h, bit32.lshift(0x1, bit))) end
-    if reg_index == 5 then reg.l = bit32.band(reg.l, bit32.bxor(reg.l, bit32.lshift(0x1, bit))) end
-    if reg_index == 6 then write_byte(reg.hl(), bit32.band(read_byte(reg.hl()), bit32.bxor(read_byte(reg.hl()), bit32.lshift(0x1, bit)))); clock = clock + 8 end
-    if reg_index == 7 then reg.a = bit32.band(reg.a, bit32.bxor(reg.a, bit32.lshift(0x1, bit))) end
+    if reg_index == 0 then reg.b = band(reg.b, bxor(reg.b, lshift(0x1, bit))) end
+    if reg_index == 1 then reg.c = band(reg.c, bxor(reg.c, lshift(0x1, bit))) end
+    if reg_index == 2 then reg.d = band(reg.d, bxor(reg.d, lshift(0x1, bit))) end
+    if reg_index == 3 then reg.e = band(reg.e, bxor(reg.e, lshift(0x1, bit))) end
+    if reg_index == 4 then reg.h = band(reg.h, bxor(reg.h, lshift(0x1, bit))) end
+    if reg_index == 5 then reg.l = band(reg.l, bxor(reg.l, lshift(0x1, bit))) end
+    if reg_index == 6 then write_byte(reg.hl(), band(read_byte(reg.hl()), bxor(read_byte(reg.hl()), lshift(0x1, bit)))); clock = clock + 8 end
+    if reg_index == 7 then reg.a = band(reg.a, bxor(reg.a, lshift(0x1, bit))) end
     clock = clock + 4
   end
 
   if high_half_nybble == 0x3 then
     -- set n, r
-    if reg_index == 0 then reg.b = bit32.bor(bit32.lshift(0x1, bit), reg.b) end
-    if reg_index == 1 then reg.c = bit32.bor(bit32.lshift(0x1, bit), reg.c) end
-    if reg_index == 2 then reg.d = bit32.bor(bit32.lshift(0x1, bit), reg.d) end
-    if reg_index == 3 then reg.e = bit32.bor(bit32.lshift(0x1, bit), reg.e) end
-    if reg_index == 4 then reg.h = bit32.bor(bit32.lshift(0x1, bit), reg.h) end
-    if reg_index == 5 then reg.l = bit32.bor(bit32.lshift(0x1, bit), reg.l) end
-    if reg_index == 6 then write_byte(reg.hl(), bit32.bor(bit32.lshift(0x1, bit), read_byte(reg.hl()))); clock = clock + 8 end
-    if reg_index == 7 then reg.a = bit32.bor(bit32.lshift(0x1, bit), reg.a) end
+    if reg_index == 0 then reg.b = bor(lshift(0x1, bit), reg.b) end
+    if reg_index == 1 then reg.c = bor(lshift(0x1, bit), reg.c) end
+    if reg_index == 2 then reg.d = bor(lshift(0x1, bit), reg.d) end
+    if reg_index == 3 then reg.e = bor(lshift(0x1, bit), reg.e) end
+    if reg_index == 4 then reg.h = bor(lshift(0x1, bit), reg.h) end
+    if reg_index == 5 then reg.l = bor(lshift(0x1, bit), reg.l) end
+    if reg_index == 6 then write_byte(reg.hl(), bor(lshift(0x1, bit), read_byte(reg.hl()))); clock = clock + 8 end
+    if reg_index == 7 then reg.a = bor(lshift(0x1, bit), reg.a) end
     clock = clock + 4
   end
 end
@@ -1112,7 +1119,7 @@ end
 -- ====== GMB CPU-Controlcommands ======
 -- ccf
 opcodes[0x3F] = function()
-  reg.flags.c = bit32.bnot(reg.flags.c)
+  reg.flags.c = bnot(reg.flags.c)
   reg.flags.n = 0
   reg.flags.h = 0
 end
@@ -1153,7 +1160,7 @@ opcodes[0xFB] = function() interrupts_enabled = 1 end
 -- ====== GMB Jumpcommands ======
 jump_to_nnnn = function()
   lower = read_nn()
-  upper = bit32.lshift(read_nn(), 8)
+  upper = lshift(read_nn(), 8)
   reg.pc = upper + lower
 end
 
@@ -1217,7 +1224,7 @@ function jump_relative_to_nn()
   if offset > 127 then
     offset = offset - 256
   end
-  reg.pc = bit32.band(reg.pc + offset, 0xFFFF)
+  reg.pc = band(reg.pc + offset, 0xFFFF)
 end
 
 -- jr nn
@@ -1268,13 +1275,13 @@ end
 
 call_nnnn = function()
   lower = read_nn()
-  upper = bit32.lshift(read_nn(), 8)
+  upper = lshift(read_nn(), 8)
   -- at this point, reg.pc points at the next instruction after the call,
   -- so store the current PC to the stack
   reg.sp = reg.sp - 1
-  write_byte(reg.sp, bit32.rshift(bit32.band(reg.pc, 0xFF00), 8))
+  write_byte(reg.sp, rshift(band(reg.pc, 0xFF00), 8))
   reg.sp = reg.sp - 1
-  write_byte(reg.sp, bit32.band(reg.pc, 0xFF))
+  write_byte(reg.sp, band(reg.pc, 0xFF))
 
   reg.pc = upper + lower
 end
@@ -1332,7 +1339,7 @@ end
 local ret = function()
   lower = read_byte(reg.sp)
   reg.sp = reg.sp + 1
-  upper = bit32.lshift(read_byte(reg.sp), 8)
+  upper = lshift(read_byte(reg.sp), 8)
   reg.sp = reg.sp + 1
   reg.pc = upper + lower
   clock = clock + 12
@@ -1392,9 +1399,9 @@ function call_address(address)
   -- reg.pc points at the next instruction after the call,
   -- so store the current PC to the stack
   reg.sp = reg.sp - 1
-  write_byte(reg.sp, bit32.rshift(bit32.band(reg.pc, 0xFF00), 8))
+  write_byte(reg.sp, rshift(band(reg.pc, 0xFF00), 8))
   reg.sp = reg.sp - 1
-  write_byte(reg.sp, bit32.band(reg.pc, 0xFF))
+  write_byte(reg.sp, band(reg.pc, 0xFF))
 
   reg.pc = address
   clock = clock + 12
@@ -1412,7 +1419,7 @@ opcodes[0xFF] = function() call_address(0x38) end
 
 function process_interrupts()
   if interrupts_enabled ~= 0 then
-    local fired = bit32.band(memory[0xFFFF], memory[0xFF0F])
+    local fired = band(memory[0xFFFF], memory[0xFF0F])
     if fired ~= 0 then
       -- an interrupt happened that we care about! How thoughtful
 
@@ -1426,13 +1433,13 @@ function process_interrupts()
       -- interrupt vector
       local vector = 0x40
       local count = 0
-      while bit32.band(fired, 0x1) == 0 and count < 5 do
+      while band(fired, 0x1) == 0 and count < 5 do
         vector = vector + 0x08
-        fired = bit32.rshift(fired, 1)
+        fired = rshift(fired, 1)
         count = count + 1
       end
       -- we need to clear the corresponding bit first, to avoid infinite loops
-      memory[0xFF0F] = bit32.bxor(bit32.lshift(0x1, count), memory[0xFF0F])
+      memory[0xFF0F] = bxor(lshift(0x1, count), memory[0xFF0F])
       call_address(vector)
       return true
     end
@@ -1442,7 +1449,7 @@ end
 
 function update_timing_registers()
   if clock > div_offset + 256 then
-    memory[0xFF04] = bit32.band(memory[0xFF04] + 1, 0xFF)
+    memory[0xFF04] = band(memory[0xFF04] + 1, 0xFF)
     div_offset = div_offset + 256
   end
 end
@@ -1465,7 +1472,7 @@ function process_instruction()
     return true
   else
     opcode = read_byte(reg.pc)
-    reg.pc = bit32.band(reg.pc + 1, 0xFFFF)
+    reg.pc = band(reg.pc + 1, 0xFFFF)
     if opcodes[opcode] ~= nil then
       -- run this instruction!
       opcodes[opcode]()
@@ -1487,8 +1494,8 @@ Interrupt.Serial = 0x8
 Interrupt.Joypad = 0x16
 
 function request_interrupt(bitmask)
-  memory[0xFF0F] = bit32.band(bit32.bor(memory[0xFF0F], bitmask), 0x1F)
-  if bit32.band(memory[0xFFFF], bitmask) ~= 0 then
+  memory[0xFF0F] = band(bor(memory[0xFF0F], bitmask), 0x1F)
+  if band(memory[0xFFFF], bitmask) ~= 0 then
     halted = 0
   end
 end
