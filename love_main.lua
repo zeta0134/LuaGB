@@ -20,9 +20,9 @@ function love.load(args)
   game_screen_canvas = love.graphics.newCanvas(256, 256)
   debug_tile_canvas = love.graphics.newCanvas(256, 256)
 
-  local game_name = args[2]
+  local game_name = "games/" .. args[2]
 
-  file_data, size = love.filesystem.read("games/"..game_name)
+  file_data, size = love.filesystem.read(game_name)
   if file_data then
     print("Reading cartridge into memory...")
     cart_data = {}
@@ -122,71 +122,77 @@ function print_instructions()
 end
 
 function print_io_value(name, address, x, y)
-  love.graphics.print(string.format("%04X [%s] %02X", address, name, memory[address]), x, y)
+  love.graphics.print(string.format("%04X [%- 4s] %02X", address, name, memory[address]), x, y)
 end
+
+local io_values = {
+  [850] = {
+    -- joypad
+    {0xFF00, "JOY"},
+    -- serial transfer cable (unimplemented entirely)
+    {0xFF01, "SB"},
+    {0xFF02, "SC"},
+    -- timers
+    {0xFF04, "DIV"},
+    {0xFF05, "TIMA"},
+    {0xFF06, "TMA"},
+    {0xFF07, "TAC"},
+    -- interrupt flags (this holds currently requested interrupts)
+    {0xFF0F, "IF"},
+    -- graphics
+    {0xFF40, "LCDC"},
+    {0xFF41, "STAT"},
+    {0xFF42, "SCY"},
+    {0xFF43, "SCX"},
+    {0xFF44, "LY"},
+    {0xFF45, "LYC"},
+    {0xFF47, "BGP"},
+    {0xFF48, "OBP0"},
+    {0xFF49, "OBP1"},
+    {0xFF4A, "WY"},
+    {0xFF4B, "WX"},
+    -- Interrupt enable
+    {0xFFFF, "IE"}
+  },
+  [1100] = {
+    -- sound
+    {0xFF10, "NR10"},
+    {0xFF11, "NR11"},
+    {0xFF12, "NR12"},
+    {0xFF13, "NR13"},
+    {0xFF14, "NR14"},
+    {},
+    {0xFF16, "NR21"},
+    {0xFF17, "NR22"},
+    {0xFF18, "NR23"},
+    {0xFF19, "NR24"},
+    {},
+    {0xFF1A, "NR30"},
+    {0xFF1B, "NR31"},
+    {0xFF1C, "NR32"},
+    {0xFF1D, "NR33"},
+    {0xFF1E, "NR34"},
+    {},
+    {0xFF20, "NR41"},
+    {0xFF21, "NR42"},
+    {0xFF22, "NR43"},
+    {0xFF23, "NR44"},
+    {},
+    {0xFF24, "NR50"},
+    {0xFF25, "NR51"},
+    {0xFF26, "NR52"},
+  }
+}
 
 function print_io_values()
   love.graphics.setColor(255, 255, 255)
-  local x = 850
-  local y = 0
-  -- joypad
-  print_io_value("JOY ", 0xFF00, x, y); y = y + 24
-  -- serial transfer cable (unimplemented entirely)
-  print_io_value("SB  ", 0xFF01, x, y); y = y + 24
-  print_io_value("SC  ", 0xFF02, x, y); y = y + 24
-  -- timers
-  print_io_value("DIV ", 0xFF04, x, y); y = y + 24
-  print_io_value("TIMA", 0xFF05, x, y); y = y + 24
-  print_io_value("TMA ", 0xFF06, x, y); y = y + 24
-  print_io_value("TAC ", 0xFF07, x, y); y = y + 24
-  -- interrupt flags (this holds currently requested interrupts)
-  print_io_value("IF  ", 0xFF0F, x, y); y = y + 24
-
-  -- graphics
-  print_io_value("LCDC", 0xFF40, x, y); y = y + 24
-  print_io_value("STAT", 0xFF41, x, y); y = y + 24
-  print_io_value("SCY ", 0xFF42, x, y); y = y + 24
-  print_io_value("SCX ", 0xFF43, x, y); y = y + 24
-  print_io_value("LY  ", 0xFF44, x, y); y = y + 24
-  print_io_value("LYC ", 0xFF45, x, y); y = y + 24
-  print_io_value("BGP ", 0xFF47, x, y); y = y + 24
-  print_io_value("OBP0", 0xFF48, x, y); y = y + 24
-  print_io_value("OBP1", 0xFF49, x, y); y = y + 24
-  print_io_value("WY  ", 0xFF4A, x, y); y = y + 24
-  print_io_value("WX  ", 0xFF4B, x, y); y = y + 24
-
-  -- Interrupt enable
-  print_io_value("IE  ", 0xFFFF, x, y); y = y + 24
-
-  -- sound
-  x = 1100
-  y = 0
-  print_io_value("NR10", 0xFF10, x, y); y = y + 24
-  print_io_value("NR11", 0xFF11, x, y); y = y + 24
-  print_io_value("NR12", 0xFF12, x, y); y = y + 24
-  print_io_value("NR13", 0xFF13, x, y); y = y + 24
-  print_io_value("NR14", 0xFF14, x, y); y = y + 24
-  y = y + 24
-  print_io_value("NR21", 0xFF16, x, y); y = y + 24
-  print_io_value("NR22", 0xFF17, x, y); y = y + 24
-  print_io_value("NR23", 0xFF18, x, y); y = y + 24
-  print_io_value("NR24", 0xFF19, x, y); y = y + 24
-  y = y + 24
-  print_io_value("NR30", 0xFF1A, x, y); y = y + 24
-  print_io_value("NR31", 0xFF1B, x, y); y = y + 24
-  print_io_value("NR32", 0xFF1C, x, y); y = y + 24
-  print_io_value("NR33", 0xFF1D, x, y); y = y + 24
-  print_io_value("NR34", 0xFF1E, x, y); y = y + 24
-  y = y + 24
-  print_io_value("NR41", 0xFF20, x, y); y = y + 24
-  print_io_value("NR42", 0xFF21, x, y); y = y + 24
-  print_io_value("NR43", 0xFF22, x, y); y = y + 24
-  print_io_value("NR44", 0xFF23, x, y); y = y + 24
-  y = y + 24
-  print_io_value("NR50", 0xFF24, x, y); y = y + 24
-  print_io_value("NR51", 0xFF25, x, y); y = y + 24
-  print_io_value("NR52", 0xFF26, x, y); y = y + 24
-  -- WHEW
+  for x, column in pairs(io_values) do
+    for i, io_value in ipairs(column) do
+      if #io_value == 2 then
+        print_io_value(io_value[2], io_value[1], x, 24 * (i - 1))
+      end
+    end
+  end
 end
 
 function draw_game_screen(dx, dy, scale)
@@ -317,6 +323,9 @@ function love.keypressed(key)
   end
   if key == "rshift" then
     input.keys.Select = 1
+  end
+  if key == "escape" then
+    love.event.quit()
   end
 end
 
