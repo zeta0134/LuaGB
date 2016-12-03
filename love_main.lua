@@ -1,5 +1,6 @@
 bit32 = require("bit")
 
+local memory = require("gameboy/memory")
 require("gameboy/z80")
 require("gameboy/graphics")
 require("gameboy/rom_header")
@@ -36,7 +37,7 @@ function love.load(args)
   end
 
   print("Initializing main memory...")
-  initialize_memory()
+  memory.initialize()
   print("Done!")
 
   print("Initializing graphics...")
@@ -82,26 +83,32 @@ function print_register_values()
   love.graphics.setColor(192,192,192)
   love.graphics.print(string.format("Flags: [%s %s %s %s])", c, n, h, z), 160, 0)
   love.graphics.setColor(108,108,255)
-  love.graphics.print(string.format("BC: %04X (BC): %02X", reg.bc(), read_byte(reg.bc())), 160, 24)
+  love.graphics.print(string.format("BC: %04X (BC): %02X", reg.bc(), memory.read_byte(reg.bc())), 160, 24)
   love.graphics.setColor(192,128,64)
-  love.graphics.print(string.format("DE: %04X (DE): %02X", reg.de(), read_byte(reg.de())), 160, 48)
+  love.graphics.print(string.format("DE: %04X (DE): %02X", reg.de(), memory.read_byte(reg.de())), 160, 48)
   love.graphics.setColor(224,196,128)
-  love.graphics.print(string.format("HL: %04X (HL): %02X", reg.hl(), read_byte(reg.hl())), 160, 72)
+  love.graphics.print(string.format("HL: %04X (HL): %02X", reg.hl(), memory.read_byte(reg.hl())), 160, 72)
 
   love.graphics.setColor(192, 192, 255)
-  love.graphics.print(string.format("SP: %04X (SP): %02X %02X %02X %02X",
-                      reg.sp, read_byte(reg.sp), read_byte(reg.sp + 1), read_byte(reg.sp + 2), read_byte(reg.sp + 3)), 0, 120)
+  love.graphics.print(string.format("SP: %04X (SP): %02X %02X %02X %02X", reg.sp,
+                      memory.read_byte(reg.sp),
+                      memory.read_byte(reg.sp + 1),
+                      memory.read_byte(reg.sp + 2),
+                      memory.read_byte(reg.sp + 3)), 0, 120)
 
   love.graphics.setColor(255, 192, 192)
-  love.graphics.print(string.format("PC: %04X (PC): %02X %02X %02X %02X",
-                      reg.pc, read_byte(reg.pc), read_byte(reg.pc + 1), read_byte(reg.pc + 2), read_byte(reg.pc + 3)), 0, 144)
+  love.graphics.print(string.format("PC: %04X (PC): %02X %02X %02X %02X", reg.pc,
+                      memory.read_byte(reg.pc),
+                      memory.read_byte(reg.pc + 1),
+                      memory.read_byte(reg.pc + 2),
+                      memory.read_byte(reg.pc + 3)), 0, 144)
 
   love.graphics.setColor(255, 255, 255)
   love.graphics.print(string.format("Clock: %d", clock), 380, 0)
   love.graphics.print(string.format("GPU: Mode: %d", Status.Mode()), 380, 24)
   love.graphics.print(string.format("Scanline: %d", scanline()), 380, 48)
   love.graphics.print(string.format("Frame: %d", vblank_count), 380, 72)
-  love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X", halted, interrupts_enabled, read_byte(0xFFFF), read_byte(0xFF0F)), 0, 168)
+  love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X", halted, interrupts_enabled, memory.read_byte(0xFFFF), memory.read_byte(0xFF0F)), 0, 168)
 end
 
 function print_instructions()

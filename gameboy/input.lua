@@ -1,3 +1,5 @@
+memory = require("gameboy/memory")
+
 GbKeys = {}
 GbKeys.Left = 0
 GbKeys.Right = 0

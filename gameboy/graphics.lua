@@ -1,3 +1,5 @@
+local memory = require("gameboy/memory")
+
 -- Various functions for manipulating IO in memory
 local LCDC = function()
   return memory[0xFF40]
