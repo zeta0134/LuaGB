@@ -51,6 +51,14 @@ memory.read_byte = function(address)
   return memory[bit32.band(address, 0xFFFF)]
 end
 
+--TODO: After implementing proper mapping blocks, remove this / handle this
+--logic as part of the graphics / VRAM subsystem instead.
+graphics = {}
+graphics.Status = {}
+graphics.Status.Mode = function()
+  return bit32.band(memory[0xFF41], 0x3)
+end
+
 memory.write_byte = function(address, byte)
   if memory.write_mask[address] then
     byte = bit32.band(byte, memory.write_mask[address]) + bit32.band(memory[address], bit32.bnot(memory.write_mask[address]))
@@ -65,13 +73,13 @@ memory.write_byte = function(address, byte)
     -- ROM area; we should not actually write data here, but should
     -- handle some special case addresses
     -- TODO: Handle bank switching logic here.
-  elseif address >= 0x8000 and address <= 0x9FFF and Status.Mode() == 3 then
+  elseif address >= 0x8000 and address <= 0x9FFF and graphics.Status.Mode() == 3 then
     -- silently discard this write; the GPU has exclusive access to VRAM
     -- during this time
 
     --debug: or not
     memory[bit32.band(address, 0xFFFF)] = bit32.band(byte, 0xFF)
-  elseif address >= 0xFE00 and address <= 0xFE9F and Status.Mode() >= 2 and Status.Mode() <= 3 then
+  elseif address >= 0xFE00 and address <= 0xFE9F and graphics.Status.Mode() >= 2 and graphics.Status.Mode() <= 3 then
     -- silently discard this write; the GPU has exclusive access to OAM memory
 
     --debug: or not

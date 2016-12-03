@@ -2,7 +2,7 @@ bit32 = require("bit")
 
 local memory = require("gameboy/memory")
 require("gameboy/z80")
-require("gameboy/graphics")
+local graphics = require("gameboy/graphics")
 require("gameboy/rom_header")
 local input = require("gameboy/input")
 
@@ -41,7 +41,7 @@ function love.load(args)
   print("Done!")
 
   print("Initializing graphics...")
-  initialize_graphics()
+  graphics.initialize()
   print("Done!")
 
   -- TODO: Not this please.
@@ -105,9 +105,9 @@ function print_register_values()
 
   love.graphics.setColor(255, 255, 255)
   love.graphics.print(string.format("Clock: %d", clock), 380, 0)
-  love.graphics.print(string.format("GPU: Mode: %d", Status.Mode()), 380, 24)
-  love.graphics.print(string.format("Scanline: %d", scanline()), 380, 48)
-  love.graphics.print(string.format("Frame: %d", vblank_count), 380, 72)
+  love.graphics.print(string.format("GPU: Mode: %d", graphics.Status.Mode()), 380, 24)
+  love.graphics.print(string.format("Scanline: %d", graphics.scanline()), 380, 48)
+  love.graphics.print(string.format("Frame: %d", graphics.vblank_count), 380, 72)
   love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X", halted, interrupts_enabled, memory.read_byte(0xFFFF), memory.read_byte(0xFF0F)), 0, 168)
 end
 
@@ -200,7 +200,7 @@ function draw_game_screen(dx, dy, scale)
   love.graphics.clear()
   for y = 0, 143 do
     for x = 0, 159 do
-      love.graphics.setColor(game_screen[y][x][1], game_screen[y][x][2], game_screen[y][x][3], 255)
+      love.graphics.setColor(graphics.game_screen[y][x][1], graphics.game_screen[y][x][2], graphics.game_screen[y][x][3], 255)
       love.graphics.points(0.5 + x, 0.5 + y)
     end
   end
@@ -217,7 +217,7 @@ function draw_tile(address, sx, sy)
   local y = 0
   for y = 0, 7 do
     for x = 0, 7 do
-      color = getColorFromTile(address, x, y)
+      local color = graphics.getColorFromTile(address, x, y)
       love.graphics.setColor(color[1], color[2], color[3])
       love.graphics.points(0.5 + sx + x, 0.5 + sy + y)
     end
@@ -252,7 +252,7 @@ function draw_tilemap(dx, dy, address, scale)
   love.graphics.clear()
   for y = 0, 255 do
     for x = 0, 255 do
-      local color = getColorFromTilemap(address, x, y)
+      local color = graphics.getColorFromTilemap(address, x, y)
       love.graphics.setColor(color[1], color[2], color[3])
       love.graphics.points(0.5 + x, 0.5 + y)
     end
@@ -266,7 +266,7 @@ function draw_tilemap(dx, dy, address, scale)
 end
 
 function run_one_opcode()
-  update_graphics()
+  graphics.update()
   input.update()
   return process_instruction()
 end
@@ -284,16 +284,16 @@ function love.textinput(char)
     emulator_running = false
   end
   if char == "h" then
-    old_scanline = scanline()
-    while old_scanline == scanline() do
+    old_scanline = graphics.scanline()
+    while old_scanline == graphics.scanline() do
       run_one_opcode()
     end
   end
   if char == "v" then
-    while scanline() == 144 do
+    while graphics.scanline() == 144 do
       run_one_opcode()
     end
-    while scanline() ~= 144 do
+    while graphics.scanline() ~= 144 do
       run_one_opcode()
     end
   end
@@ -367,10 +367,10 @@ end
 function love.update()
   if emulator_running then
     -- Run until a vblank happens
-    while scanline() == 144 do
+    while graphics.scanline() == 144 do
       run_one_opcode()
     end
-    while scanline() ~= 144 do
+    while graphics.scanline() ~= 144 do
       run_one_opcode()
     end
   end

@@ -1,5 +1,7 @@
 local memory = require("gameboy/memory")
 
+local graphics = {}
+
 -- Various functions for manipulating IO in memory
 local LCDC = function()
   return memory[0xFF40]
@@ -13,7 +15,7 @@ local setSTAT = function(value)
   memory[0xFF41] = value
 end
 
-LCD_Control = {}
+local LCD_Control = {}
 LCD_Control.DisplayEnabled = function()
   return bit32.band(0x80, LCDC()) ~= 0
 end
@@ -58,7 +60,8 @@ LCD_Control.BackgroundEnabled = function()
   return bit32.band(0x01, LCDC()) ~= 0
 end
 
-Status = {}
+local Status = {}
+graphics.Status = Status
 Status.Coincidence_InterruptEnabled = function()
   return bit32.band(0x20, STAT()) ~= 0
 end
@@ -79,19 +82,19 @@ Status.Mode = function()
   return bit32.band(memory[0xFF41], 0x3)
 end
 
-vblank_count = 0
+graphics.vblank_count = 0
 
 Status.SetMode = function(mode)
   memory[0xFF41] = bit32.band(STAT(), 0xF8) + bit32.band(mode, 0x3)
   if mode == 0 then
     -- HBlank
-    draw_scanline(scanline())
+    graphics.draw_scanline(graphics.scanline())
   end
   if mode == 1 then
     if LCD_Control.DisplayEnabled() then
       -- VBlank
       --draw_screen()
-      vblank_count = vblank_count + 1
+      graphics.vblank_count = graphics.vblank_count + 1
     else
       --clear_screen()
     end
@@ -114,35 +117,35 @@ local WX = function()
   return memory[0xFF4B]
 end
 
-scanline = function()
+graphics.scanline = function()
   return memory[0xFF44]
 end
 
-local set_scanline = function(value)
+graphics.set_scanline = function(value)
   memory[0xFF44] = value
 end
 
-local scanline_compare = function()
+graphics.scanline_compare = function()
   return memory[0xFF45]
 end
 
 local last_edge = 0
-local handle_mode = {}
 
-time_at_this_mode = function()
+local time_at_this_mode = function()
   return clock - last_edge
 end
 
 -- HBlank: Period between scanlines
+local handle_mode = {}
 handle_mode[0] = function()
   if clock - last_edge > 204 then
     last_edge = last_edge + 204
-    set_scanline(scanline() + 1)
+    graphics.set_scanline(graphics.scanline() + 1)
     -- If enabled, fire an HBlank interrupt
     if bit32.band(STAT(), 0x08) ~= 0 then
       request_interrupt(Interrupt.LCDStat)
     end
-    if scanline() == scanline_compare() then
+    if graphics.scanline() == graphics.scanline_compare() then
       -- set the LY compare bit
       setSTAT(bit32.bor(STAT(), 0x4))
       if bit32.band(STAT(), 0x40) ~= 0 then
@@ -152,7 +155,7 @@ handle_mode[0] = function()
       -- clear the LY compare bit
       setSTAT(bit32.band(STAT(), 0xFB))
     end
-    if scanline() >= 144 then
+    if graphics.scanline() >= 144 then
       Status.SetMode(1)
       request_interrupt(Interrupt.VBlank)
       if bit32.band(STAT(), 0x10) ~= 0 then
@@ -173,16 +176,16 @@ end
 handle_mode[1] = function()
   if clock - last_edge > 456 then
     last_edge = last_edge + 456
-    set_scanline(scanline() + 1)
+    graphics.set_scanline(graphics.scanline() + 1)
   end
-  if scanline() >= 154 then
-    set_scanline(0)
+  if graphics.scanline() >= 154 then
+    graphics.set_scanline(0)
     Status.SetMode(2)
     if bit32.band(STAT(), 0x20) ~= 0 then
       request_interrupt(Interrupt.LCDStat)
     end
   end
-  if scanline() == scanline_compare() then
+  if graphics.scanline() == graphics.scanline_compare() then
     -- TODO: fire LCD STAT interrupt, and set appropriate flag
   end
 end
@@ -204,11 +207,11 @@ handle_mode[3] = function()
   end
 end
 
-function initialize_graphics()
+graphics.initialize = function()
   Status.SetMode(2)
 end
 
-function update_graphics()
+graphics.update = function()
   if LCD_Control.DisplayEnabled() then
     handle_mode[Status.Mode()]()
   else
@@ -218,33 +221,34 @@ function update_graphics()
   end
 end
 
-colors = {}
+-- TODO: Handle proper color palettes?
+local colors = {}
 colors[0] = {255, 255, 255}
 colors[1] = {192, 192, 192}
 colors[2] = {128, 128, 128}
 colors[3] = {0, 0, 0}
 
-game_screen = {}
+graphics.game_screen = {}
 for y = 0, 143 do
-  game_screen[y] = {}
+  graphics.game_screen[y] = {}
   for x = 0, 159 do
-    game_screen[y][x] = {255, 255, 255}
+    graphics.game_screen[y][x] = {255, 255, 255}
   end
 end
 
-function plot_pixel(buffer, x, y, r, g, b)
+local function plot_pixel(buffer, x, y, r, g, b)
   buffer[y][x][1] = r
   buffer[y][x][2] = g
   buffer[y][x][3] = b
 end
 
-function debug_draw_screen()
+local function debug_draw_screen()
   for i = 0, 143 do
-    draw_scanline(i)
+    graphics.draw_scanline(i)
   end
 end
 
-function getColorFromTile(tile_address, subpixel_x, subpixel_y, palette)
+graphics.getColorFromTile = function(tile_address, subpixel_x, subpixel_y, palette)
   palette = palette or 0xE4
   -- move to the row we need this pixel from
   while subpixel_y > 0 do
@@ -269,7 +273,7 @@ function getColorFromTile(tile_address, subpixel_x, subpixel_y, palette)
   return colors[bit32.band(palette, 0x3)]
 end
 
-function getColorFromTilemap(map_address, x, y)
+graphics.getColorFromTilemap = function(map_address, x, y)
   local tile_x = bit32.rshift(x, 3)
   local tile_y = bit32.rshift(y, 3)
   local tile_index = memory[map_address + (tile_y * 32) + (tile_x)]
@@ -278,17 +282,17 @@ function getColorFromTilemap(map_address, x, y)
       tile_index = tile_index - 256
     end
   end
-  tile_address = LCD_Control.TileData() + tile_index * 16
+  local tile_address = LCD_Control.TileData() + tile_index * 16
 
   local subpixel_x = x - (tile_x * 8)
   local subpixel_y = y - (tile_y * 8)
 
-  return getColorFromTile(tile_address, subpixel_x, subpixel_y, memory[0xFF47])
+  return graphics.getColorFromTile(tile_address, subpixel_x, subpixel_y, memory[0xFF47])
 end
 
 local oam = 0xFE00
 
-function draw_sprites_into_scanline(scanline)
+local function draw_sprites_into_scanline(scanline)
   local active_sprites = {}
   local sprite_size = 8
   if LCD_Control.LargeSprites() then
@@ -350,8 +354,8 @@ function draw_sprites_into_scanline(scanline)
     local end_x = math.min(159, sprite_x)
     local x = start_x
     while x < end_x do
-      local subpixel_color = getColorFromTile(0x8000 + sprite_tile * 16, x - sprite_x + 8, sub_y, sprite_palette)
-      plot_pixel(game_screen, x, scanline, unpack(subpixel_color))
+      local subpixel_color = graphics.getColorFromTile(0x8000 + sprite_tile * 16, x - sprite_x + 8, sub_y, sprite_palette)
+      plot_pixel(graphics.game_screen, x, scanline, unpack(subpixel_color))
       x = x + 1
     end
   end
@@ -359,7 +363,7 @@ function draw_sprites_into_scanline(scanline)
   end
 end
 
-function draw_scanline(scanline)
+graphics.draw_scanline = function(scanline)
   local bg_y = scanline + SCY()
   local bg_x = SCX()
   -- wrap the map in the Y direction
@@ -375,15 +379,15 @@ function draw_scanline(scanline)
 
   for x = 0, 159 do
     if LCD_Control.BackgroundEnabled() then
-      local bg_color = getColorFromTilemap(LCD_Control.BackgroundTilemap(), bg_x, bg_y)
-      plot_pixel(game_screen, x, scanline, unpack(bg_color))
+      local bg_color = graphics.getColorFromTilemap(LCD_Control.BackgroundTilemap(), bg_x, bg_y)
+      plot_pixel(graphics.game_screen, x, scanline, unpack(bg_color))
     end
     if LCD_Control.WindowEnabled() and window_visible then
       -- The window doesn't wrap, so make sure these coordinates are valid
       -- (ie, inside the window map) before attempting to plot a pixel
       if w_x > 0 and w_x < 256 and w_y > 0 and w_y < 256 then
-        local window_color = getColorFromTilemap(LCD_Control.WindowTilemap(), w_x, w_y)
-        plot_pixel(game_screen, x, scanline, unpack(window_color))
+        local window_color = graphics.getColorFromTilemap(LCD_Control.WindowTilemap(), w_x, w_y)
+        plot_pixel(graphics.game_screen, x, scanline, unpack(window_color))
       end
     end
     bg_x = bg_x + 1
@@ -396,7 +400,7 @@ function draw_scanline(scanline)
   draw_sprites_into_scanline(scanline)
 end
 
-function draw_half_scale(destination, source, dx, dy)
+local function draw_half_scale(destination, source, dx, dy)
   gpu.bindTexture(source)
   width, height = gpu.getSize()
   for x = 0, width, 2 do
@@ -410,7 +414,7 @@ function draw_half_scale(destination, source, dx, dy)
   end
 end
 
-function draw_tile(address, px, py)
+graphics.draw_tile = function(address, px, py)
   local x = 0
   local y = 0
   for y = 0, 7 do
@@ -432,7 +436,7 @@ function draw_tile(address, px, py)
   end
 end
 
-function draw_tiles()
+local function draw_tiles()
   gpu.bindTexture(0)
   gpu.startFrame()
   gpu.setColor(192,255,192)
@@ -441,7 +445,7 @@ function draw_tiles()
   local x = 0
   local y = 0
   while i < 384 do
-    draw_tile(0x8000 + (i * 16), x, y)
+    graphics.draw_tile(0x8000 + (i * 16), x, y)
     x = x + 8
     if x >= 256 then
       x = 0
@@ -452,7 +456,7 @@ function draw_tiles()
   gpu.endFrame()
 end
 
-function draw_background()
+local function draw_background()
   gpu.startFrame()
   gpu.bindTexture(background_texture)
   gpu.setColor(255,192,192)
@@ -469,7 +473,7 @@ function draw_background()
         end
       end
       --write(index .. ",")
-      draw_tile(LCD_Control.TileData() + (index * 16), x * 8, y * 8)
+      graphics.draw_tile(LCD_Control.TileData() + (index * 16), x * 8, y * 8)
     end
   end
   gpu.bindTexture(0)
@@ -477,7 +481,7 @@ function draw_background()
   gpu.endFrame()
 end
 
-function draw_window()
+local function draw_window()
   gpu.startFrame()
   gpu.bindTexture(background_texture)
   gpu.setColor(255,192,192)
@@ -494,7 +498,7 @@ function draw_window()
         end
       end
       --write(index .. ",")
-      draw_tile(LCD_Control.TileData() + (index * 16), x * 8, y * 8)
+      graphics.draw_tile(LCD_Control.TileData() + (index * 16), x * 8, y * 8)
     end
   end
   gpu.bindTexture(0)
@@ -503,7 +507,7 @@ function draw_window()
   gpu.endFrame()
 end
 
-function draw_sprites()
+local function draw_sprites()
   gpu.startFrame()
   gpu.bindTexture(0)
   gpu.setColor(255,255,192)
@@ -516,10 +520,12 @@ function draw_sprites()
     if y > -16 and y < 144 and x > -8 and x < 160 then
       -- sprite is onscreen!
       local sprite_tile = memory[oam_entry + 2]
-      draw_tile(0x8000 + (sprite_tile * 16), x, y)
+      graphics.draw_tile(0x8000 + (sprite_tile * 16), x, y)
       count = count + 1
     end
   end
   print("Displayed " .. count .. " sprites")
   gpu.endFrame()
 end
+
+return graphics
