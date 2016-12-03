@@ -13,7 +13,7 @@ local debug_tile_canvas
 function love.load(args)
   love.window.setMode(1280,800)
   love.graphics.setDefaultFilter("nearest", "nearest")
-  love.graphics.setPointStyle("rough")
+  --love.graphics.setPointStyle("rough")
   ubuntu_font = love.graphics.newFont("UbuntuMono-R.ttf", 24)
   love.graphics.setFont(ubuntu_font)
   game_screen_canvas = love.graphics.newCanvas(256, 256)
@@ -188,7 +188,7 @@ function draw_game_screen(dx, dy, scale)
   for y = 0, 143 do
     for x = 0, 159 do
       love.graphics.setColor(game_screen[y][x][1], game_screen[y][x][2], game_screen[y][x][3], 255)
-      love.graphics.point(0.5 + x, 0.5 + y)
+      love.graphics.points(0.5 + x, 0.5 + y)
     end
   end
   love.graphics.setColor(255, 255, 255)
@@ -206,7 +206,7 @@ function draw_tile(address, sx, sy)
     for x = 0, 7 do
       color = getColorFromTile(address, x, y)
       love.graphics.setColor(color[1], color[2], color[3])
-      love.graphics.point(0.5 + sx + x, 0.5 + sy + y)
+      love.graphics.points(0.5 + sx + x, 0.5 + sy + y)
     end
   end
 end
@@ -241,7 +241,7 @@ function draw_tilemap(dx, dy, address, scale)
     for x = 0, 255 do
       local color = getColorFromTilemap(address, x, y)
       love.graphics.setColor(color[1], color[2], color[3])
-      love.graphics.point(0.5 + x, 0.5 + y)
+      love.graphics.points(0.5 + x, 0.5 + y)
     end
   end
   love.graphics.setCanvas() -- reset to main FB
