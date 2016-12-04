@@ -1,93 +1,65 @@
 local memory = {}
 
-memory.write_mask = {}
-memory.write_mask[0xFF00] = 0x30
-memory.write_mask[0xFF41] = 0x78
-memory.write_mask[0xFF44] = 0x00
+local blocks = {}
 
-memory.read_logic = {}
-memory.read_logic[0xFF04] = function()
-  --print("Read from DIV")
-  return memory[0xFF04]
+memory.map_block = function(starting_address, ending_address, block)
+  local new_block = {}
+  new_block.starting_address = starting_address
+  new_block.ending_address = ending_address
+  new_block.data = block
+  blocks[#blocks + 1] = new_block
 end
 
-memory.read_logic[0xFF05] = function()
-  --print("Read from TIMA")
-  return memory[0xFF05]
-end
-
-memory.write_logic = {}
-memory.write_logic[0xFF04] = function(byte)
-  -- Timer DIV register; any write resets this value to 0
-  memory[0xFF04] = 0
-end
-
-memory.write_logic[0xFF44] = function(byte)
-  -- LY, writes reset the counter
-  memory[0xFF44] = 0
-end
-
-memory.write_logic[0xFF46] = function(byte)
-  -- DMA Transfer. Copies data from 0x0000 + 0x100 * byte, into OAM data
-  local source = 0x0000 + 0x100 * byte
-  local destination = 0xFE00
-  while destination <= 0xFE9F do
-    memory[destination] = memory[source]
-    destination = destination + 1
-    source = source + 1
+memory.generate_block = function(size)
+  local block = {}
+  for i = 0, size - 1 do
+    block[i] = 0
   end
-  -- TODO: Implement memory access cooldown; real hardware requires
-  -- programs to call DMA transfer from High RAM and then wait there
-  -- for several clocks while it finishes.
+  return block
 end
+
+-- Main Memory
+local work_ram_0 = memory.generate_block(4 * 1024)
+local work_ram_1 = memory.generate_block(4 * 1024)
+memory.map_block(0xC000, 0xCFFF, work_ram_0)
+memory.map_block(0xD000, 0xDFFF, work_ram_1)
+
+local work_ram_echo = {}
+work_ram_echo.mt = {}
+work_ram_echo.__index = function(table, key)
+  memory.read_byte(key - 0x2000)
+end
+work_ram_echo.__newindex = function(table, key, value)
+  memory.write_byte(key - 0x2000, value)
+end
+setmetatable(work_ram_echo, work_ram_echo.mt)
+memory.map_block(0xE000, 0xFDFF, work_ram_echo)
+
+-- High RAM (and Interrupt Enable Register)
+local high_ram = memory.generate_block(0x80)
+memory.map_block(0xFF80, 0xFFFF, high_ram)
 
 memory.read_byte = function(address)
-  if memory.read_logic[address] then
-    return memory.read_logic[address]()
+  for b = 1, #blocks do
+    if blocks[b].starting_address <= address and blocks[b].ending_address >= address then
+      return blocks[b].data[bit32.band(address - blocks[b].starting_address, 0xFFFF)]
+    end
   end
-  -- todo: make this respect memory regions
-  -- and VRAM / OAM access limits.
-  -- Also, cart bank switching would be cool.
-  return memory[bit32.band(address, 0xFFFF)]
-end
-
---TODO: After implementing proper mapping blocks, remove this / handle this
---logic as part of the graphics / VRAM subsystem instead.
-graphics = {}
-graphics.Status = {}
-graphics.Status.Mode = function()
-  return bit32.band(memory[0xFF41], 0x3)
+  -- No mapped block for this memory exists! Return something sane-ish.
+  -- TODO: Research what real hardware does on unmapped memory regions and
+  -- do that here instead.
+  return 0x00
 end
 
 memory.write_byte = function(address, byte)
-  if memory.write_mask[address] then
-    byte = bit32.band(byte, memory.write_mask[address]) + bit32.band(memory[address], bit32.bnot(memory.write_mask[address]))
+  --print("Writing: " .. address)
+  for b = 1, #blocks do
+    if blocks[b].starting_address <= address and blocks[b].ending_address >= address then
+      blocks[b].data[bit32.band(address - blocks[b].starting_address, 0xFFFF)] = bit32.band(byte, 0xFF)
+      return
+    end
   end
-  if memory.write_logic[address] then
-    -- Some addresses (mostly IO ports) have fancy logic or do strange things on
-    -- writes, so we handle those here.
-    memory.write_logic[address](byte)
-    return
-  end
-  if address <= 0x7FFF then
-    -- ROM area; we should not actually write data here, but should
-    -- handle some special case addresses
-    -- TODO: Handle bank switching logic here.
-  elseif address >= 0x8000 and address <= 0x9FFF and graphics.Status.Mode() == 3 then
-    -- silently discard this write; the GPU has exclusive access to VRAM
-    -- during this time
-
-    --debug: or not
-    memory[bit32.band(address, 0xFFFF)] = bit32.band(byte, 0xFF)
-  elseif address >= 0xFE00 and address <= 0xFE9F and graphics.Status.Mode() >= 2 and graphics.Status.Mode() <= 3 then
-    -- silently discard this write; the GPU has exclusive access to OAM memory
-
-    --debug: or not
-    memory[bit32.band(address, 0xFFFF)] = bit32.band(byte, 0xFF)
-  else
-    -- default case: simple write please.
-    memory[bit32.band(address, 0xFFFF)] = bit32.band(byte, 0xFF)
-  end
+  -- Note: If no memory is mapped to handle this write, DO NOTHING. (This is fine.)
 end
 
 memory.initialize = function()
@@ -102,6 +74,23 @@ memory.initialize = function()
   memory[0xFF47] = 0xFC
   memory[0xFF48] = 0xFF
   memory[0xFF49] = 0xFF
+
+  -- spit out the mappings please
+  print("Mapped blocks: ")
+  for b = 1, #blocks do
+    print(string.format("%x - %x", blocks[b].starting_address, blocks[b].ending_address))
+  end
 end
+
+-- Fancy: make access to ourselves act as an array, reading / writing memory using the above
+-- logic. This should cause memory[address] to behave just as it would on hardware.
+memory.mt = {}
+memory.mt.__index = function(table, key)
+  return memory.read_byte(key)
+end
+memory.mt.__newindex = function(table, key, value)
+  memory.write_byte(key, value)
+end
+setmetatable(memory, memory.mt)
 
 return memory

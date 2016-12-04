@@ -2,6 +2,14 @@ local memory = require("gameboy/memory")
 
 local graphics = {}
 
+-- Initialize VRAM blocks in main memory
+-- TODO: Implement access restrictions here based
+-- on the Status register
+local vram = memory.generate_block(8 * 1024)
+memory.map_block(0x8000, 0x9FFF, vram)
+local oam = memory.generate_block(0xA0)
+memory.map_block(0xFE00, 0xFE9F, oam)
+
 -- Various functions for manipulating IO in memory
 local LCDC = function()
   return memory[0xFF40]
@@ -12,10 +20,11 @@ local STAT = function()
 end
 
 local setSTAT = function(value)
-  memory[0xFF41] = value
+  io.ram[0x41] = value
 end
 
 local LCD_Control = {}
+graphics.LCD_Control = LCD_Control
 LCD_Control.DisplayEnabled = function()
   return bit32.band(0x80, LCDC()) ~= 0
 end
@@ -85,7 +94,7 @@ end
 graphics.vblank_count = 0
 
 Status.SetMode = function(mode)
-  memory[0xFF41] = bit32.band(STAT(), 0xF8) + bit32.band(mode, 0x3)
+  io.ram[0x41] = bit32.band(STAT(), 0xF8) + bit32.band(mode, 0x3)
   if mode == 0 then
     -- HBlank
     graphics.draw_scanline(graphics.scanline())
@@ -122,7 +131,7 @@ graphics.scanline = function()
 end
 
 graphics.set_scanline = function(value)
-  memory[0xFF44] = value
+  io.ram[0x44] = value
 end
 
 graphics.scanline_compare = function()

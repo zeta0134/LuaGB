@@ -5,6 +5,7 @@ require("gameboy/z80")
 local graphics = require("gameboy/graphics")
 require("gameboy/rom_header")
 local input = require("gameboy/input")
+local cartridge = require("gameboy/cartridge")
 
 local ubuntu_font
 
@@ -301,6 +302,16 @@ function love.textinput(char)
   if char == " " then
     run_one_opcode()
   end
+  if char == "k" then
+    for i = 1, 100 do
+      run_one_opcode()
+    end
+  end
+  if char == "l" then
+    for i = 1, 1000 do
+      run_one_opcode()
+    end
+  end
   if char == "r" then
     emulator_running = true
   end
@@ -389,13 +400,17 @@ function draw_window()
 end
 
 function love.update()
+  local instructions = 0
   if emulator_running then
-    -- Run until a vblank happens
-    while graphics.scanline() == 144 do
+    -- Run until a vblank happens, OR we run too many instructions in one go
+    while graphics.scanline() == 144 and instructions < 100000 do
       run_one_opcode()
+      instructions = instructions + 1
     end
-    while graphics.scanline() ~= 144 do
+    instructions = 0
+    while graphics.scanline() ~= 144 and instructions < 100000 do
       run_one_opcode()
+      instructions = instructions + 1
     end
   end
 end

@@ -1449,7 +1449,7 @@ end
 
 function update_timing_registers()
   if clock > div_offset + 256 then
-    memory[0xFF04] = band(memory[0xFF04] + 1, 0xFF)
+    io.ram[0x04] = band(io.ram[0x04] + 1, 0xFF)
     div_offset = div_offset + 256
   end
 end

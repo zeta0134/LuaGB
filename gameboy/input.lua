@@ -1,4 +1,5 @@
 local memory = require("gameboy/memory")
+local io = require("gameboy/io")
 
 local input = {}
 
@@ -31,12 +32,12 @@ input.update = function()
   end
   active_bits = bit32.bnot(active_bits)
 
-  memory[0xFF00] = bit32.bor(memory[0xFF00], bit32.band(active_bits, 0x0F))
+  io.ram[0x00] = bit32.bor(memory[0xFF00], bit32.band(active_bits, 0x0F))
 end
 
 -- Register hooks for input-related registers
-memory.write_logic[0xFF00] = function(byte)
-  memory[0xFF00] = bit32.band(byte, 0xF0)
+io.write_logic[0x00] = function(byte)
+  io.ram[0x00] = bit32.band(byte, 0x30)
   input.update()
 end
 
