@@ -21,6 +21,12 @@ function love.load(args)
   game_screen_canvas = love.graphics.newCanvas(256, 256)
   debug_tile_canvas = love.graphics.newCanvas(256, 256)
 
+  if #args < 2 then
+    print("Usage: love love [path to game.gb]")
+    love.event.quit()
+    return
+  end
+
   local game_name = "games/" .. args[2]
 
   file_data, size = love.filesystem.read(game_name)
@@ -34,6 +40,7 @@ function love.load(args)
     print_cartridge_header(cart_data)
   else
     print("Couldn't open ", game_name, " bailing.")
+    love.event.quit()
     return
   end
 
