@@ -1,11 +1,5 @@
 bit32 = require("bit")
-
-local memory = require("gameboy/memory")
-require("gameboy/z80")
-local graphics = require("gameboy/graphics")
-require("gameboy/rom_header")
-local input = require("gameboy/input")
-local cartridge = require("gameboy/cartridge")
+gameboy = require("gameboy")
 
 local ubuntu_font
 
@@ -29,35 +23,16 @@ function love.load(args)
 
   local game_path = args[2]
 
+  gameboy.initialize()
+
   file_data, size = love.filesystem.read(game_path)
   if file_data then
-    print("Reading cartridge into memory...")
-    cart_data = {}
-    for i = 0, size - 1 do
-      cart_data[i] = file_data:byte(i + 1)
-    end
-    print("Read " .. math.ceil(#cart_data / 1024) .. " kB")
-    print_cartridge_header(cart_data)
+    gameboy.cartridge.load(file_data, size)
   else
     print("Couldn't open ", game_path, " bailing.")
     love.event.quit()
     return
   end
-
-  print("Initializing main memory...")
-  memory.initialize()
-  print("Done!")
-
-  print("Initializing graphics...")
-  graphics.initialize()
-  print("Done!")
-
-  -- TODO: Not this please.
-  print("Copying cart data into lower 0x7FFF of main memory...")
-  for i = 0, 0x7FFF do
-    memory[i] = cart_data[i]
-  end
-  print("Done!")
 end
 
 function print_register_values()
@@ -102,7 +77,7 @@ function print_register_values()
     local name, accessor = register[4], register[5]
     local x, y = register[6], register[7]
     local value = reg[accessor]()
-    local indirect_value = memory.read_byte(value)
+    local indirect_value = gameboy.memory.read_byte(value)
 
     love.graphics.setColor(r, g, b)
     love.graphics.print(string.format("%s: %04X (%s): %02X", name, value, name, indirect_value), grid.x[x], grid.y[y])
@@ -120,17 +95,17 @@ function print_register_values()
 
     love.graphics.setColor(r, g, b)
     love.graphics.print(string.format("%s: %04X (%s): %02X %02X %02X %02X", name, value, name,
-                                      memory.read_byte(value),
-                                      memory.read_byte(value + 1),
-                                      memory.read_byte(value + 2),
-                                      memory.read_byte(value + 3)), grid.x[x], grid.y[y])
+                                      gameboy.memory.read_byte(value),
+                                      gameboy.memory.read_byte(value + 1),
+                                      gameboy.memory.read_byte(value + 2),
+                                      gameboy.memory.read_byte(value + 3)), grid.x[x], grid.y[y])
   end
 
   local status = {
     {"Clock", function() return clock end, 4, 1},
-    {"GPU Mode", graphics.Status.Mode, 4, 2},
-    {"Scanline", graphics.scanline, 4, 3},
-    {"Frame", function() return graphics.vblank_count end, 4, 4}
+    {"GPU Mode", gameboy.graphics.Status.Mode, 4, 2},
+    {"Scanline", gameboy.graphics.scanline, 4, 3},
+    {"Frame", function() return gameboy.graphics.vblank_count end, 4, 4}
   }
   love.graphics.setColor(255, 255, 255)
   for _, state in ipairs(status) do
@@ -140,7 +115,7 @@ function print_register_values()
     love.graphics.print(string.format("%s: %d", name, accessor()), grid.x[x], grid.y[y])
   end
 
-  love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X", halted, interrupts_enabled, memory.read_byte(0xFFFF), memory.read_byte(0xFF0F)), grid.x[1], grid.y[7])
+  love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X", halted, interrupts_enabled, gameboy.memory.read_byte(0xFFFF), gameboy.memory.read_byte(0xFF0F)), grid.x[1], grid.y[7])
 end
 
 function print_instructions()
@@ -154,7 +129,7 @@ function print_instructions()
 end
 
 function print_io_value(name, address, x, y)
-  love.graphics.print(string.format("%04X [%- 4s] %02X", address, name, memory[address]), x, y)
+  love.graphics.print(string.format("%04X [%- 4s] %02X", address, name, gameboy.memory[address]), x, y)
 end
 
 local io_values = {
@@ -232,7 +207,7 @@ function draw_game_screen(dx, dy, scale)
   love.graphics.clear()
   for y = 0, 143 do
     for x = 0, 159 do
-      love.graphics.setColor(graphics.game_screen[y][x][1], graphics.game_screen[y][x][2], graphics.game_screen[y][x][3], 255)
+      love.graphics.setColor(gameboy.graphics.game_screen[y][x][1], gameboy.graphics.game_screen[y][x][2], gameboy.graphics.game_screen[y][x][3], 255)
       love.graphics.points(0.5 + x, 0.5 + y)
     end
   end
@@ -249,7 +224,7 @@ function draw_tile(address, sx, sy)
   local y = 0
   for y = 0, 7 do
     for x = 0, 7 do
-      local color = graphics.getColorFromTile(address, x, y)
+      local color = gameboy.graphics.getColorFromTile(address, x, y)
       love.graphics.setColor(color[1], color[2], color[3])
       love.graphics.points(0.5 + sx + x, 0.5 + sy + y)
     end
@@ -284,7 +259,7 @@ function draw_tilemap(dx, dy, address, scale)
   love.graphics.clear()
   for y = 0, 255 do
     for x = 0, 255 do
-      local color = graphics.getColorFromTilemap(address, x, y)
+      local color = gameboy.graphics.getColorFromTilemap(address, x, y)
       love.graphics.setColor(color[1], color[2], color[3])
       love.graphics.points(0.5 + x, 0.5 + y)
     end
@@ -298,8 +273,8 @@ function draw_tilemap(dx, dy, address, scale)
 end
 
 function run_one_opcode()
-  graphics.update()
-  input.update()
+  gameboy.graphics.update()
+  gameboy.input.update()
   return process_instruction()
 end
 
@@ -326,20 +301,20 @@ function love.textinput(char)
     emulator_running = false
   end
   if char == "h" then
-    old_scanline = graphics.scanline()
+    old_scanline = gameboy.graphics.scanline()
     local instructions = 0
-    while old_scanline == graphics.scanline() and instructions < 100000  do
+    while old_scanline == gameboy.graphics.scanline() and instructions < 100000  do
       run_one_opcode()
       instructions = instructions + 1
     end
   end
   if char == "v" then
     local instructions = 0
-    while graphics.scanline() == 144 and instructions < 100000 do
+    while gameboy.graphics.scanline() == 144 and instructions < 100000 do
       run_one_opcode()
       instructions = instructions + 1
     end
-    while graphics.scanline() ~= 144 and instructions < 100000  do
+    while gameboy.graphics.scanline() ~= 144 and instructions < 100000  do
       run_one_opcode()
       instructions = instructions + 1
     end
@@ -348,28 +323,28 @@ end
 
 function love.keypressed(key)
   if key == "up" then
-    input.keys.Up = 1
+    gameboy.input.keys.Up = 1
   end
   if key == "down" then
-    input.keys.Down = 1
+    gameboy.input.keys.Down = 1
   end
   if key == "left" then
-    input.keys.Left = 1
+    gameboy.input.keys.Left = 1
   end
   if key == "right" then
-    input.keys.Right = 1
+    gameboy.input.keys.Right = 1
   end
   if key == "x" then
-    input.keys.A = 1
+    gameboy.input.keys.A = 1
   end
   if key == "z" then
-    input.keys.B = 1
+    gameboy.input.keys.B = 1
   end
   if key == "return" then
-    input.keys.Start = 1
+    gameboy.input.keys.Start = 1
   end
   if key == "rshift" then
-    input.keys.Select = 1
+    gameboy.input.keys.Select = 1
   end
   if key == "escape" then
     love.event.quit()
@@ -378,28 +353,28 @@ end
 
 function love.keyreleased(key)
   if key == "up" then
-    input.keys.Up = 0
+    gameboy.input.keys.Up = 0
   end
   if key == "down" then
-    input.keys.Down = 0
+    gameboy.input.keys.Down = 0
   end
   if key == "left" then
-    input.keys.Left = 0
+    gameboy.input.keys.Left = 0
   end
   if key == "right" then
-    input.keys.Right = 0
+    gameboy.input.keys.Right = 0
   end
   if key == "x" then
-    input.keys.A = 0
+    gameboy.input.keys.A = 0
   end
   if key == "z" then
-    input.keys.B = 0
+    gameboy.input.keys.B = 0
   end
   if key == "return" then
-    input.keys.Start = 0
+    gameboy.input.keys.Start = 0
   end
   if key == "rshift" then
-    input.keys.Select = 0
+    gameboy.input.keys.Select = 0
   end
 end
 
@@ -415,12 +390,12 @@ function love.update()
   local instructions = 0
   if emulator_running then
     -- Run until a vblank happens, OR we run too many instructions in one go
-    while graphics.scanline() == 144 and instructions < 100000 do
+    while gameboy.graphics.scanline() == 144 and instructions < 100000 do
       run_one_opcode()
       instructions = instructions + 1
     end
     instructions = 0
-    while graphics.scanline() ~= 144 and instructions < 100000 do
+    while gameboy.graphics.scanline() ~= 144 and instructions < 100000 do
       run_one_opcode()
       instructions = instructions + 1
     end
