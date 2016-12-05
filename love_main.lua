@@ -327,16 +327,21 @@ function love.textinput(char)
   end
   if char == "h" then
     old_scanline = graphics.scanline()
-    while old_scanline == graphics.scanline() do
+    local instructions = 0
+    while old_scanline == graphics.scanline() and instructions < 100000  do
       run_one_opcode()
+      instructions = instructions + 1
     end
   end
   if char == "v" then
-    while graphics.scanline() == 144 do
+    local instructions = 0
+    while graphics.scanline() == 144 and instructions < 100000 do
       run_one_opcode()
+      instructions = instructions + 1
     end
-    while graphics.scanline() ~= 144 do
+    while graphics.scanline() ~= 144 and instructions < 100000  do
       run_one_opcode()
+      instructions = instructions + 1
     end
   end
 end
