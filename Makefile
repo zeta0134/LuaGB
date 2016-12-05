@@ -1,8 +1,9 @@
 love:
 	@mkdir -p love
-	cp love_main.lua love/main.lua
-	cp -R gameboy love
-	cp -R games love
-	cp UbuntuMono-R.ttf love
+	@mkdir -p games
+
+	cp love/main.lua main.lua
+	zip -9 -r LuaGB.love main.lua gameboy games UbuntuMono-R.ttf LICENSE.txt UBUNTU_FONT_LICENSE.txt
+	rm main.lua
 
 .PHONY : love

@@ -272,26 +272,20 @@ function draw_tilemap(dx, dy, address, scale)
   love.graphics.pop()
 end
 
-function run_one_opcode()
-  gameboy.graphics.update()
-  gameboy.input.update()
-  return process_instruction()
-end
-
 local emulator_running = false
 
 function love.textinput(char)
   if char == " " then
-    run_one_opcode()
+    gameboy.step()
   end
   if char == "k" then
     for i = 1, 100 do
-      run_one_opcode()
+      gameboy.step()
     end
   end
   if char == "l" then
     for i = 1, 1000 do
-      run_one_opcode()
+      gameboy.step()
     end
   end
   if char == "r" then
@@ -301,23 +295,10 @@ function love.textinput(char)
     emulator_running = false
   end
   if char == "h" then
-    old_scanline = gameboy.graphics.scanline()
-    local instructions = 0
-    while old_scanline == gameboy.graphics.scanline() and instructions < 100000  do
-      run_one_opcode()
-      instructions = instructions + 1
-    end
+    gameboy.run_until_hblank()
   end
   if char == "v" then
-    local instructions = 0
-    while gameboy.graphics.scanline() == 144 and instructions < 100000 do
-      run_one_opcode()
-      instructions = instructions + 1
-    end
-    while gameboy.graphics.scanline() ~= 144 and instructions < 100000  do
-      run_one_opcode()
-      instructions = instructions + 1
-    end
+    gameboy.run_until_vblank()
   end
 end
 
@@ -387,18 +368,8 @@ function draw_window()
 end
 
 function love.update()
-  local instructions = 0
   if emulator_running then
-    -- Run until a vblank happens, OR we run too many instructions in one go
-    while gameboy.graphics.scanline() == 144 and instructions < 100000 do
-      run_one_opcode()
-      instructions = instructions + 1
-    end
-    instructions = 0
-    while gameboy.graphics.scanline() ~= 144 and instructions < 100000 do
-      run_one_opcode()
-      instructions = instructions + 1
-    end
+    gameboy.run_until_vblank()
   end
 end
 
