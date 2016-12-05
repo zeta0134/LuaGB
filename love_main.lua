@@ -27,9 +27,9 @@ function love.load(args)
     return
   end
 
-  local game_name = "games/" .. args[2]
+  local game_path = args[2]
 
-  file_data, size = love.filesystem.read(game_name)
+  file_data, size = love.filesystem.read(game_path)
   if file_data then
     print("Reading cartridge into memory...")
     cart_data = {}
@@ -39,7 +39,7 @@ function love.load(args)
     print("Read " .. math.ceil(#cart_data / 1024) .. " kB")
     print_cartridge_header(cart_data)
   else
-    print("Couldn't open ", game_name, " bailing.")
+    print("Couldn't open ", game_path, " bailing.")
     love.event.quit()
     return
   end
