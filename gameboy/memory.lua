@@ -26,10 +26,10 @@ memory.map_block(0xD000, 0xDFFF, work_ram_1)
 
 local work_ram_echo = {}
 work_ram_echo.mt = {}
-work_ram_echo.__index = function(table, key)
-  memory.read_byte(key - 0x2000)
+work_ram_echo.mt.__index = function(table, key)
+  return memory.read_byte(key - 0x2000)
 end
-work_ram_echo.__newindex = function(table, key, value)
+work_ram_echo.mt.__newindex = function(table, key, value)
   memory.write_byte(key - 0x2000, value)
 end
 setmetatable(work_ram_echo, work_ram_echo.mt)
