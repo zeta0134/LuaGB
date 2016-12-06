@@ -109,7 +109,7 @@ rom_header.print_cartridge_header = function(header)
   if rom_header.mbc_names[header.mbc_type] then
     print("MBC Type: " .. rom_header.mbc_names[header.mbc_type])
   else
-    print("MBC Type: UNKNOWN!!")
+    print("MBC Type: UNKNOWN: ", string.format("0x%02X", header.mbc_type))
   end
 
   print("ROM Size: ", header.rom_size)
