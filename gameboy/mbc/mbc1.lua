@@ -1,7 +1,7 @@
 local mbc1 = {}
 mbc1.raw_data = {}
 mbc1.external_ram = {}
-mbc1.rom_bank = 0
+mbc1.rom_bank = 1
 mbc1.ram_bank = 0
 mbc1.mode = 0 --0 = ROM bank mode, 1 = RAM bank mode
 mbc1.ram_enable = false
@@ -9,7 +9,7 @@ mbc1.mt = {}
 mbc1.mt.__index = function(table, address)
   -- Lower 16k: return the first bank, always
   if address <= 0x3FFF then
-    return cartridge.raw_data[address]
+    return mbc1.raw_data[address]
   end
   -- Upper 16k: return the currently selected bank
   if address >= 0x4000 and address <= 0x7FFF then
