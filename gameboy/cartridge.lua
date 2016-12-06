@@ -1,4 +1,5 @@
-memory = require("gameboy/memory")
+local memory = require("gameboy/memory")
+local rom_header = require("gameboy/rom_header")
 
 local cartridge = {}
 
@@ -20,7 +21,8 @@ cartridge.load = function(file_data, size)
     cartridge.raw_data[i] = file_data:byte(i + 1)
   end
   print("Read " .. math.ceil(#cartridge.raw_data / 1024) .. " kB")
-  print_cartridge_header(cartridge.raw_data)
+  cartridge.header = rom_header.parse_cartridge_header(cartridge.raw_data)
+  rom_header.print_cartridge_header(cartridge.header)
 
   -- TODO: Not this please.
   print("Copying cart data into lower 0x7FFF of main memory...")
