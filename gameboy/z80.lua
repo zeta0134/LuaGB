@@ -97,6 +97,7 @@ reg.set_hl = function(value)
 end
 
 opcodes = {}
+opcode_names = {}
 
 function read_at_hl()
   clock = clock + 4
@@ -1119,7 +1120,8 @@ end
 -- ====== GMB CPU-Controlcommands ======
 -- ccf
 opcodes[0x3F] = function()
-  reg.flags.c = bnot(reg.flags.c)
+  --reg.flags.c = bnot(reg.flags.c)
+  reg.flags.c = band(0x1, bnot(reg.flags.c))
   reg.flags.n = 0
   reg.flags.h = 0
 end
