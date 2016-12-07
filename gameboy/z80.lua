@@ -308,7 +308,7 @@ end
 opcodes[0x31] = function()
   lower = read_nn()
   upper = lshift(read_nn(), 8)
-  reg.sp = upper + lower
+  reg.sp = band(0xFFFF, upper + lower)
 end
 
 -- ld SP, HL
@@ -319,36 +319,36 @@ end
 
 -- push BC
 opcodes[0xC5] = function()
-  reg.sp = reg.sp - 1
+  reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, reg.b)
-  reg.sp = reg.sp - 1
+  reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, reg.c)
   clock = clock + 12
 end
 
 -- push DE
 opcodes[0xD5] = function()
-  reg.sp = reg.sp - 1
+  reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, reg.d)
-  reg.sp = reg.sp - 1
+  reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, reg.e)
   clock = clock + 12
 end
 
 -- push HL
 opcodes[0xE5] = function()
-  reg.sp = reg.sp - 1
+  reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, reg.h)
-  reg.sp = reg.sp - 1
+  reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, reg.l)
   clock = clock + 12
 end
 
 -- push AF
 opcodes[0xF5] = function()
-  reg.sp = reg.sp - 1
+  reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, reg.a)
-  reg.sp = reg.sp - 1
+  reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, reg.f())
   clock = clock + 12
 end
@@ -356,36 +356,36 @@ end
 -- pop BC
 opcodes[0xC1] = function()
   reg.c = read_byte(reg.sp)
-  reg.sp = reg.sp + 1
+  reg.sp = band(0xFFFF, reg.sp + 1)
   reg.b = read_byte(reg.sp)
-  reg.sp = reg.sp + 1
+  reg.sp = band(0xFFFF, reg.sp + 1)
   clock = clock + 8
 end
 
 -- pop DE
 opcodes[0xD1] = function()
   reg.e = read_byte(reg.sp)
-  reg.sp = reg.sp + 1
+  reg.sp = band(0xFFFF, reg.sp + 1)
   reg.d = read_byte(reg.sp)
-  reg.sp = reg.sp + 1
+  reg.sp = band(0xFFFF, reg.sp + 1)
   clock = clock + 8
 end
 
 -- pop HL
 opcodes[0xE1] = function()
   reg.l = read_byte(reg.sp)
-  reg.sp = reg.sp + 1
+  reg.sp = band(0xFFFF, reg.sp + 1)
   reg.h = read_byte(reg.sp)
-  reg.sp = reg.sp + 1
+  reg.sp = band(0xFFFF, reg.sp + 1)
   clock = clock + 8
 end
 
 -- pop AF
 opcodes[0xF1] = function()
   reg.set_f(read_byte(reg.sp))
-  reg.sp = reg.sp + 1
+  reg.sp = band(0xFFFF, reg.sp + 1)
   reg.a = read_byte(reg.sp)
-  reg.sp = reg.sp + 1
+  reg.sp = band(0xFFFF, reg.sp + 1)
   clock = clock + 8
 end
 
@@ -676,17 +676,44 @@ end
 opcodes[0x3D] = function() reg.a = band(reg.a - 1, 0xFF); set_dec_flags(reg.a) end
 
 -- daa
+-- BCD adjustment, correct implementation details located here:
+-- http://www.z80.info/z80syntx.htm#DAA
 opcodes[0x27] = function()
-  if band(0x0F, reg.a) > 0x09 or reg.flags.h == 1 then
-    reg.a = reg.a + 0x06
-  end
-  if band(0xF0, reg.a) > 0x90 or reg.flags.c == 1 then
-    reg.a = reg.a + 0x60
-    reg.flags.c = 1
+  if reg.flags.n == 1 then
+    -- Addition Mode, adjust BCD for previous addition-like instruction
+    if band(0x0F, reg.a) > 0x09 or reg.flags.h == 1 then
+      reg.a = reg.a + 0x06
+    end
+    if band(0xF0, reg.a) > 0x90 or reg.flags.c == 1 then
+      reg.a = reg.a + 0x60
+      reg.flags.c = 1
+    else
+      reg.flags.c = 0
+    end
   else
-    reg.flags.c = 0
+    -- Subtraction mode! Adjust BCD for previous subtraction-like instruction
+    if reg.flags.h == 1 then
+      reg.a = 0xFF, reg.a - 0x06
+    end
+    if reg.flags.c == 1 then
+      reg.a = 0xFF, reg.a - 0x60
+    end
   end
+  -- Always reset H
   reg.flags.h = 0
+  -- If a is greater than 0xFF, set the carry flag
+  if band(reg.a, 0x100) then
+    reg.c = 1
+  else
+    reg.c = 0
+  end
+  reg.a = band(reg.a, 0xFF)
+  -- Update zero flag based on A's contents
+  if reg.a == 0 then
+    reg.flags.z = 1
+  else
+    reg.flags.z = 0
+  end
 end
 
 -- cpl
@@ -1147,8 +1174,8 @@ end
 opcodes[0x10] = function()
   value = read_nn()
   if value == 0x00 then
-    print("Unimplemented STOP instruction, treating like HALT")
-    halted = 1
+    print("Unimplemented STOP instruction, ignoring!")
+    --halted = 1
   else
     print("Unimplemented WEIRDNESS after 0x10")
   end
@@ -1280,9 +1307,9 @@ call_nnnn = function()
   upper = lshift(read_nn(), 8)
   -- at this point, reg.pc points at the next instruction after the call,
   -- so store the current PC to the stack
-  reg.sp = reg.sp - 1
+  reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, rshift(band(reg.pc, 0xFF00), 8))
-  reg.sp = reg.sp - 1
+  reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, band(reg.pc, 0xFF))
 
   reg.pc = upper + lower
@@ -1340,9 +1367,9 @@ end
 
 local ret = function()
   lower = read_byte(reg.sp)
-  reg.sp = reg.sp + 1
+  reg.sp = band(0xFFFF, reg.sp + 1)
   upper = lshift(read_byte(reg.sp), 8)
-  reg.sp = reg.sp + 1
+  reg.sp = band(0xFFFF, reg.sp + 1)
   reg.pc = upper + lower
   clock = clock + 12
 end
@@ -1400,9 +1427,9 @@ end
 function call_address(address)
   -- reg.pc points at the next instruction after the call,
   -- so store the current PC to the stack
-  reg.sp = reg.sp - 1
+  reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, rshift(band(reg.pc, 0xFF00), 8))
-  reg.sp = reg.sp - 1
+  reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, band(reg.pc, 0xFF))
 
   reg.pc = address
