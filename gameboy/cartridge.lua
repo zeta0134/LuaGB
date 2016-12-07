@@ -41,6 +41,14 @@ cartridge.load = function(file_data, size)
     memory.map_block(0x0000, 0x7FFF, mbc_mappings[0x00])
   end
 
+  -- Add a guard to cartridge.raw_data, such that any out-of-bounds reads return 0x00
+  cartridge.raw_data.mt = {}
+  cartridge.raw_data.mt.__index = function(table, address)
+    -- Data doesn't exist? Tough luck; return 0x00
+    return 0x00
+  end
+  setmetatable(cartridge.raw_data, cartridge.raw_data.mt)
+
 end
 
 return cartridge
