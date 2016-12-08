@@ -64,7 +64,7 @@ mbc1.mt.__newindex = function(table, address, value)
     if mbc1.mode == 1 then
       ram_bank = mbc1.ram_bank
     end
-    mbc1.external_ram[(address - 0xA000) + (ram_bank * 16 * 1024)] = value
+    mbc1.external_ram[(address - 0xA000) + (ram_bank * 8 * 1024)] = value
     return
   end
 end

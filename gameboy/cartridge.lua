@@ -36,13 +36,13 @@ cartridge.load = function(file_data, size)
     -- Cart ROM
     memory.map_block(0x00, 0x7F, mbc_mappings[cartridge.header.mbc_type])
     -- External RAM
-    memory.map_block(0xA0, 0xBF, mbc_mappings[cartridge.header.mbc_type])
+    memory.map_block(0xA0, 0xBF, mbc_mappings[cartridge.header.mbc_type], 0x0000)
   else
     print("Unsupported MBC type! Defaulting to ROM ONLY, game will probably not boot.")
     mbc_mappings[0x00].raw_data = cartridge.raw_data
     mbc_mappings[0x00].external_ram = external_ram
     memory.map_block(0x00, 0x7F, mbc_mappings[0x00])
-    memory.map_block(0xA0, 0xBF, mbc_mappings[0x00])
+    memory.map_block(0xA0, 0xBF, mbc_mappings[0x00], 0x0000)
   end
 
   -- Add a guard to cartridge.raw_data, such that any out-of-bounds reads return 0x00

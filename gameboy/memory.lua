@@ -12,13 +12,13 @@ memory.print_block_map = function()
   end
 end
 
-memory.map_block = function(starting_high_byte, ending_high_byte, mapped_block)
+memory.map_block = function(starting_high_byte, ending_high_byte, mapped_block, starting_address)
   if starting_high_byte > 0xFF or ending_high_byte > 0xFF then
     print("Bad block, bailing", starting_high_byte, ending_high_byte)
     return
   end
 
-  local starting_address = bit32.lshift(starting_high_byte, 8)
+  starting_address = starting_address or bit32.lshift(starting_high_byte, 8)
   for i = starting_high_byte, ending_high_byte do
     block_map[bit32.lshift(i, 8)] = {start=starting_address, block=mapped_block}
   end
