@@ -398,15 +398,42 @@ add_to_a = function(value)
     reg.flags.h = 0
   end
 
-  reg.a = reg.a + value
+  sum = reg.a + value
 
   -- carry (and overflow correction)
-  if reg.a > 0xFF or reg.a < 0x00 then
-    reg.a = band(reg.a, 0xFF)
+  if sum > 0xFF then
     reg.flags.c = 1
   else
     reg.flags.c = 0
   end
+  reg.a = band(sum, 0xFF)
+
+  if reg.a == 0 then
+    reg.flags.z = 1
+  else
+    reg.flags.z = 0
+  end
+
+  reg.flags.n = 0
+end
+
+adc_to_a = function(value)
+  -- half-carry
+  if band(reg.a, 0xF) + band(value, 0xF) + reg.flags.c > 0xF then
+    reg.flags.h = 1
+  else
+    reg.flags.h = 0
+  end
+
+  sum = reg.a + value + reg.flags.c
+
+  -- carry (and overflow correction)
+  if sum > 0xFF then
+    reg.flags.c = 1
+  else
+    reg.flags.c = 0
+  end
+  reg.a = band(sum, 0xFF)
 
   if reg.a == 0 then
     reg.flags.z = 1
@@ -431,17 +458,17 @@ opcodes[0x87] = function() add_to_a(reg.a) end
 opcodes[0xC6] = function() add_to_a(read_nn()) end
 
 -- adc A, r
-opcodes[0x88] = function() add_to_a(reg.b + reg.flags.c) end
-opcodes[0x89] = function() add_to_a(reg.c + reg.flags.c) end
-opcodes[0x8A] = function() add_to_a(reg.d + reg.flags.c) end
-opcodes[0x8B] = function() add_to_a(reg.e + reg.flags.c) end
-opcodes[0x8C] = function() add_to_a(reg.h + reg.flags.c) end
-opcodes[0x8D] = function() add_to_a(reg.l + reg.flags.c) end
-opcodes[0x8E] = function() add_to_a(read_at_hl() + reg.flags.c) end
-opcodes[0x8F] = function() add_to_a(reg.a + reg.flags.c) end
+opcodes[0x88] = function() adc_to_a(reg.b) end
+opcodes[0x89] = function() adc_to_a(reg.c) end
+opcodes[0x8A] = function() adc_to_a(reg.d) end
+opcodes[0x8B] = function() adc_to_a(reg.e) end
+opcodes[0x8C] = function() adc_to_a(reg.h) end
+opcodes[0x8D] = function() adc_to_a(reg.l) end
+opcodes[0x8E] = function() adc_to_a(read_at_hl()) end
+opcodes[0x8F] = function() adc_to_a(reg.a) end
 
 -- adc A, nn
-opcodes[0xCE] = function() add_to_a(read_nn() + reg.flags.c) end
+opcodes[0xCE] = function() adc_to_a(read_nn()) end
 
 sub_from_a = function(value)
   -- half-carry
@@ -470,6 +497,33 @@ sub_from_a = function(value)
   reg.flags.n = 1
 end
 
+sbc_from_a = function(value)
+  -- half-carry
+  if band(reg.a, 0xF) - band(value, 0xF) - reg.flags.c < 0 then
+    reg.flags.h = 1
+  else
+    reg.flags.h = 0
+  end
+
+  difference = reg.a - value - reg.flags.c
+
+  -- carry (and overflow correction)
+  if difference < 0 or difference > 0xFF then
+    reg.flags.c = 1
+  else
+    reg.flags.c = 0
+  end
+  reg.a = band(difference, 0xFF)
+
+  if reg.a == 0 then
+    reg.flags.z = 1
+  else
+    reg.flags.z = 0
+  end
+
+  reg.flags.n = 1
+end
+
 -- sub A, r
 opcodes[0x90] = function() sub_from_a(reg.b) end
 opcodes[0x91] = function() sub_from_a(reg.c) end
@@ -484,17 +538,17 @@ opcodes[0x97] = function() sub_from_a(reg.a) end
 opcodes[0xD6] = function() sub_from_a(read_nn()) end
 
 -- sbc A, r
-opcodes[0x98] = function() sub_from_a(reg.b + reg.flags.c) end
-opcodes[0x99] = function() sub_from_a(reg.c + reg.flags.c) end
-opcodes[0x9A] = function() sub_from_a(reg.d + reg.flags.c) end
-opcodes[0x9B] = function() sub_from_a(reg.e + reg.flags.c) end
-opcodes[0x9C] = function() sub_from_a(reg.h + reg.flags.c) end
-opcodes[0x9D] = function() sub_from_a(reg.l + reg.flags.c) end
-opcodes[0x9E] = function() sub_from_a(read_at_hl() + reg.flags.c) end
-opcodes[0x9F] = function() sub_from_a(reg.a + reg.flags.c) end
+opcodes[0x98] = function() sbc_from_a(reg.b) end
+opcodes[0x99] = function() sbc_from_a(reg.c) end
+opcodes[0x9A] = function() sbc_from_a(reg.d) end
+opcodes[0x9B] = function() sbc_from_a(reg.e) end
+opcodes[0x9C] = function() sbc_from_a(reg.h) end
+opcodes[0x9D] = function() sbc_from_a(reg.l) end
+opcodes[0x9E] = function() sbc_from_a(read_at_hl()) end
+opcodes[0x9F] = function() sbc_from_a(reg.a) end
 
 -- sbc A, nn
-opcodes[0xDE] = function() sub_from_a(read_nn() + reg.flags.c) end
+opcodes[0xDE] = function() sbc_from_a(read_nn()) end
 
 and_a_with = function(value)
   reg.a = band(reg.a, value)
@@ -626,7 +680,7 @@ set_inc_flags = function(value)
     reg.flags.h = 0
   end
 
-  reg.flags.n = 1
+  reg.flags.n = 0
 end
 
 set_dec_flags = function(value)
@@ -644,7 +698,7 @@ set_dec_flags = function(value)
     reg.flags.h = 0
   end
 
-  reg.flags.n = 0
+  reg.flags.n = 1
 end
 
 -- inc r
@@ -980,7 +1034,7 @@ cb[0x1F] = function() reg.a = reg_rr(reg.a); clock = clock + 4 end
 
 reg_sla = function(value)
   -- copy bit 7 into carry
-  if band(value, 0x80) == 1 then
+  if band(value, 0x80) == 0x80 then
     reg.flags.c = 1
   else
     reg.flags.c = 0
