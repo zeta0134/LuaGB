@@ -733,35 +733,33 @@ opcodes[0x3D] = function() reg.a = band(reg.a - 1, 0xFF); set_dec_flags(reg.a) e
 -- BCD adjustment, correct implementation details located here:
 -- http://www.z80.info/z80syntx.htm#DAA
 opcodes[0x27] = function()
+  local a = reg.a
   if reg.flags.n == 0 then
     -- Addition Mode, adjust BCD for previous addition-like instruction
-    if band(0x0F, reg.a) > 0x09 or reg.flags.h == 1 then
-      reg.a = reg.a + 0x06
+    if band(0xF, a) > 0x9 or reg.flags.h == 1 then
+      a = a + 0x6
     end
-    if band(0xF0, reg.a) > 0x90 or reg.flags.c == 1 then
-      reg.a = reg.a + 0x60
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
+    if a > 0x9F or reg.flags.c == 1 then
+      a = a + 0x60
     end
   else
     -- Subtraction mode! Adjust BCD for previous subtraction-like instruction
     if reg.flags.h == 1 then
-      reg.a = 0xFF, reg.a - 0x06
+      a = band(a - 0x6, 0xFF)
     end
     if reg.flags.c == 1 then
-      reg.a = 0xFF, reg.a - 0x60
+      a = a - 0x60
     end
   end
   -- Always reset H
   reg.flags.h = 0
   -- If a is greater than 0xFF, set the carry flag
-  if band(reg.a, 0x100) then
-    reg.c = 1
+  if band(0x100, a) == 0x100 then
+    reg.flags.c = 1
   else
-    reg.c = 0
+    reg.flags.c = 0
   end
-  reg.a = band(reg.a, 0xFF)
+  reg.a = band(a, 0xFF)
   -- Update zero flag based on A's contents
   if reg.a == 0 then
     reg.flags.z = 1
