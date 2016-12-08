@@ -8,13 +8,13 @@ local graphics = {}
 local vram = memory.generate_block(8 * 1024)
 memory.map_block(0x80, 0x9F, vram)
 local oam = memory.generate_block(0xA0)
-io.oam = {}
-io.oam.mt = {}
-io.oam.mt.__index = function(table, address)
+oam = {}
+oam.mt = {}
+oam.mt.__index = function(table, address)
   -- out of range? So sorry, return nothing
   return 0x00
 end
-io.oam.mt.__newindex = function(table, address, byte)
+oam.mt.__newindex = function(table, address, byte)
   -- out of range? So sorry, discard the write
   return
 end
