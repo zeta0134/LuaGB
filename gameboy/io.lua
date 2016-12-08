@@ -2,7 +2,7 @@ memory = require("gameboy/memory")
 
 io = {}
 
-io.ram = memory.generate_block(0x80)
+io.ram = memory.generate_block(0x100)
 io.block = {}
 io.block.mt = {}
 io.block.mt.__index = function(table, key)
@@ -53,6 +53,6 @@ io.block.mt.__newindex = function(table, address, value)
 end
 
 setmetatable(io.block, io.block.mt)
-memory.map_block(0xFF00, 0xFF7F, io.block)
+memory.map_block(0xFF, 0xFF, io.block)
 
 return io

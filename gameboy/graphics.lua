@@ -6,9 +6,20 @@ local graphics = {}
 -- TODO: Implement access restrictions here based
 -- on the Status register
 local vram = memory.generate_block(8 * 1024)
-memory.map_block(0x8000, 0x9FFF, vram)
+memory.map_block(0x80, 0x9F, vram)
 local oam = memory.generate_block(0xA0)
-memory.map_block(0xFE00, 0xFE9F, oam)
+io.oam = {}
+io.oam.mt = {}
+io.oam.mt.__index = function(table, address)
+  -- out of range? So sorry, return nothing
+  return 0x00
+end
+io.oam.mt.__newindex = function(table, address, byte)
+  -- out of range? So sorry, discard the write
+  return
+end
+setmetatable(oam, oam.mt)
+memory.map_block(0xFE, 0xFE, oam)
 
 -- Various functions for manipulating IO in memory
 local LCDC = function()
