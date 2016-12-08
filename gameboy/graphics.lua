@@ -8,7 +8,6 @@ local graphics = {}
 local vram = memory.generate_block(8 * 1024)
 memory.map_block(0x80, 0x9F, vram)
 local oam = memory.generate_block(0xA0)
-oam = {}
 oam.mt = {}
 oam.mt.__index = function(table, address)
   -- out of range? So sorry, return nothing
