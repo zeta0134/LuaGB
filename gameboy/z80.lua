@@ -1,4 +1,5 @@
 local memory = require("gameboy/memory")
+local timers = require("gameboy/timers")
 
 -- local references, for shorter code
 local read_byte = memory.read_byte
@@ -29,7 +30,6 @@ reg.sp = 0xFFFE
 interrupts_enabled = 1
 halted = 0
 clock = 0
-div_offset = 0
 
 reg.f = function()
   value = lshift(reg.flags.z, 7) +
@@ -1228,9 +1228,12 @@ opcodes[0x00] = function() end
 
 -- halt
 opcodes[0x76] = function()
-  if interrupts_enabled == 1 then
+  --if interrupts_enabled == 1 then
+    print("Halting!")
     halted = 1
-  end
+  --else
+    --print("Interrupts not enabled! Not actually halting...")
+  --end
 end
 
 -- stop
@@ -1245,9 +1248,15 @@ opcodes[0x10] = function()
 end
 
 -- di
-opcodes[0xF3] = function() interrupts_enabled = 0 end
+opcodes[0xF3] = function()
+  interrupts_enabled = 0
+  print("Disabled interrupts with DI")
+end
 -- ei
-opcodes[0xFB] = function() interrupts_enabled = 1 end
+opcodes[0xFB] = function()
+  interrupts_enabled = 1
+  print("Enabled interrupts with EI")
+end
 
 -- ====== GMB Jumpcommands ======
 jump_to_nnnn = function()
@@ -1539,15 +1548,8 @@ function process_interrupts()
   return false
 end
 
-function update_timing_registers()
-  if clock > div_offset + 256 then
-    io.ram[0x04] = band(io.ram[0x04] + 1, 0xFF)
-    div_offset = div_offset + 256
-  end
-end
-
 function process_instruction()
-  update_timing_registers()
+  timers.update()
 
   -- BGB, another gameboy emulator, disagrees with the interrupt timing.
   -- It allows one extra instruction to be processed after an EI instruction
