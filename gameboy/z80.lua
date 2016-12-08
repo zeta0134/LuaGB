@@ -264,25 +264,25 @@ end
 -- ldi (HL), a
 opcodes[0x22] = function()
   set_at_hl(reg.a)
-  reg.set_hl(reg.hl() + 1)
+  reg.set_hl(band(reg.hl() + 1, 0xFFFF))
 end
 
 -- ldi a, (HL)
 opcodes[0x2A] = function()
   reg.a = read_at_hl()
-  reg.set_hl(reg.hl() + 1)
+  reg.set_hl(band(reg.hl() + 1, 0xFFFF))
 end
 
 -- ldd (HL), a
 opcodes[0x32] = function()
   set_at_hl(reg.a)
-  reg.set_hl(reg.hl() - 1)
+  reg.set_hl(band(reg.hl() - 1, 0xFFFF))
 end
 
 -- ldd a, (HL)
 opcodes[0x3A] = function()
   reg.a = read_at_hl()
-  reg.set_hl(reg.hl() - 1)
+  reg.set_hl(band(reg.hl() - 1, 0xFFFF))
 end
 
 -- ====== GMB 16-bit load commands ======
@@ -679,7 +679,7 @@ opcodes[0x3D] = function() reg.a = band(reg.a - 1, 0xFF); set_dec_flags(reg.a) e
 -- BCD adjustment, correct implementation details located here:
 -- http://www.z80.info/z80syntx.htm#DAA
 opcodes[0x27] = function()
-  if reg.flags.n == 1 then
+  if reg.flags.n == 0 then
     -- Addition Mode, adjust BCD for previous addition-like instruction
     if band(0x0F, reg.a) > 0x09 or reg.flags.h == 1 then
       reg.a = reg.a + 0x06
@@ -731,15 +731,15 @@ add_to_hl = function(value)
     reg.flags.h = 0
   end
 
-  reg.set_hl(reg.hl() + value)
+  local sum = reg.hl() + value
 
   -- carry
-  if reg.hl() > 0xFFFF or reg.hl() < 0x0000 then
-    reg.set_hl(band(reg.hl, 0xFFFF))
+  if sum > 0xFFFF or sum < 0x0000 then
     reg.flags.c = 1
   else
     reg.flags.c = 0
   end
+  reg.set_hl(band(sum, 0xFFFF))
   reg.flags.n = 0
   clock = clock + 4
 end
@@ -1079,6 +1079,17 @@ cb[0x3C] = function() reg.h = reg_srl(reg.h) end
 cb[0x3D] = function() reg.l = reg_srl(reg.l) end
 cb[0x3E] = function() write_byte(reg.hl(), reg_srl(read_byte(reg.hl()))); clock = clock + 12 end
 cb[0x3F] = function() reg.a = reg_srl(reg.a) end
+
+-- ====== GMB Special Purpose / Relocated Commands ======
+-- ld (nnnn), SP
+opcodes[0x08] = function()
+  local lower = read_nn()
+  local upper = lshift(read_nn(), 8)
+  local address = upper + lower
+  write_byte(address, band(reg.sp, 0xFF))
+  write_byte(band(address + 1, 0xFFFF), rshift(band(reg.sp, 0xF0), 8))
+  clock = clock + 4
+end
 
 -- ====== GMB Singlebit Operation Commands ======
 reg_bit = function(value, bit)
