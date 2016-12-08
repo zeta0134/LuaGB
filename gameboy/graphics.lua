@@ -12,11 +12,11 @@ memory.map_block(0xFE00, 0xFE9F, oam)
 
 -- Various functions for manipulating IO in memory
 local LCDC = function()
-  return memory[0xFF40]
+  return io.ram[0x40]
 end
 
 local STAT = function()
-  return memory[0xFF41]
+  return io.ram[0x41]
 end
 
 local setSTAT = function(value)
@@ -88,7 +88,7 @@ Status.HBlank_InterruptEnabled = function()
 end
 
 Status.Mode = function()
-  return bit32.band(memory[0xFF41], 0x3)
+  return bit32.band(io.ram[0x41], 0x3)
 end
 
 graphics.vblank_count = 0
@@ -111,23 +111,23 @@ Status.SetMode = function(mode)
 end
 
 local SCY = function()
-  return memory[0xFF42]
+  return io.ram[0x42]
 end
 
 local SCX = function()
-  return memory[0xFF43]
+  return io.ram[0x43]
 end
 
 local WY = function()
-  return memory[0xFF4A]
+  return io.ram[0x4A]
 end
 
 local WX = function()
-  return memory[0xFF4B]
+  return io.ram[0x4B]
 end
 
 graphics.scanline = function()
-  return memory[0xFF44]
+  return io.ram[0x44]
 end
 
 graphics.set_scanline = function(value)
@@ -135,7 +135,7 @@ graphics.set_scanline = function(value)
 end
 
 graphics.scanline_compare = function()
-  return memory[0xFF45]
+  return io.ram[0x45]
 end
 
 local last_edge = 0
@@ -266,11 +266,11 @@ graphics.getColorFromTile = function(tile_address, subpixel_x, subpixel_y, palet
   end
   -- grab the pixel color we need, and translate it into a palette index
   local palette_index = 0
-  if bit32.band(memory[tile_address], bit32.lshift(0x1, 7 - subpixel_x)) ~= 0 then
+  if bit32.band(vram[tile_address - 0x8000], bit32.lshift(0x1, 7 - subpixel_x)) ~= 0 then
     palette_index = palette_index + 1
   end
   tile_address = tile_address + 1
-  if bit32.band(memory[tile_address], bit32.lshift(0x1, 7 - subpixel_x)) ~= 0 then
+  if bit32.band(vram[tile_address - 0x8000], bit32.lshift(0x1, 7 - subpixel_x)) ~= 0 then
     palette_index = palette_index + 2
   end
   -- finally, return the color from the table, based on this index
@@ -285,7 +285,13 @@ end
 graphics.getColorFromTilemap = function(map_address, x, y)
   local tile_x = bit32.rshift(x, 3)
   local tile_y = bit32.rshift(y, 3)
-  local tile_index = memory[map_address + (tile_y * 32) + (tile_x)]
+  local tile_index = vram[(map_address + (tile_y * 32) + (tile_x)) - 0x8000]
+  if tile_index == nil then
+    print(tile_x)
+    print(tile_y)
+    print(map_address)
+    print((map_address + (tile_y * 32) + (tile_x)) - 0x8000)
+  end
   if LCD_Control.TileData() == 0x9000 then
     if tile_index > 127 then
       tile_index = tile_index - 256
@@ -296,10 +302,10 @@ graphics.getColorFromTilemap = function(map_address, x, y)
   local subpixel_x = x - (tile_x * 8)
   local subpixel_y = y - (tile_y * 8)
 
-  return graphics.getColorFromTile(tile_address, subpixel_x, subpixel_y, memory[0xFF47])
+  return graphics.getColorFromTile(tile_address, subpixel_x, subpixel_y, io.ram[0x47])
 end
 
-local oam = 0xFE00
+-- local oam = 0xFE00
 
 local function draw_sprites_into_scanline(scanline)
   local active_sprites = {}
@@ -314,7 +320,7 @@ local function draw_sprites_into_scanline(scanline)
   local i = 0
   while i < 40 do
     -- is this sprite being displayed on this scanline? (respect to Y coordinate)
-    local sprite_y = memory[oam + i * 4]
+    local sprite_y = oam[i * 4]
     local sprite_lower = sprite_y - 16
     local sprite_upper = sprite_y - 16 + sprite_size
     if scanline >= sprite_lower and scanline < sprite_upper then
@@ -326,8 +332,8 @@ local function draw_sprites_into_scanline(scanline)
         local lowest_priority = i
         local lowest_priotity_index = nil
         for j = 1, #active_sprites do
-          local lowest_x = memory[oam + lowest_priority * 4 + 1]
-          local candidate_x = memory[oam + active_sprites[j] * 4 + 1]
+          local lowest_x = oam[lowest_priority * 4 + 1]
+          local candidate_x = oam[active_sprites[j] * 4 + 1]
           if candidate_x > lowest_x then
             lowest_priority = active_sprites[j]
             lowest_priority_index = j
@@ -343,20 +349,20 @@ local function draw_sprites_into_scanline(scanline)
 
   -- now, for every sprite in the list, display it on the current scanline
   for i = #active_sprites, 1, -1 do
-    local sprite_address = oam + active_sprites[i] * 4
-    local sprite_y = memory[sprite_address]
-    local sprite_x = memory[sprite_address + 1]
-    local sprite_tile = memory[sprite_address + 2]
+    local sprite_address = active_sprites[i] * 4
+    local sprite_y = oam[sprite_address]
+    local sprite_x = oam[sprite_address + 1]
+    local sprite_tile = oam[sprite_address + 2]
     if sprite_size == 16 then
       sprite_tile = bit32.band(sprite_tile, 0xFE)
     end
-    local sprite_flags = memory[sprite_address + 3]
+    local sprite_flags = oam[sprite_address + 3]
 
     local sub_y = 16 - (sprite_y - scanline)
 
-    local sprite_palette = memory[0xFF48]
+    local sprite_palette = io.ram[0x48]
     if bit32.band(sprite_flags, 0x10) ~= 0 then
-      sprite_palette = memory[0xFF49]
+      sprite_palette = io.ram[0x49]
     end
 
     local start_x = math.max(0, sprite_x - 8)
@@ -376,7 +382,7 @@ graphics.draw_scanline = function(scanline)
   local bg_y = scanline + SCY()
   local bg_x = SCX()
   -- wrap the map in the Y direction
-  if bg_y > 256 then
+  if bg_y >= 256 then
     bg_y = bg_y - 256
   end
   local w_y = scanline + WY()
@@ -394,7 +400,7 @@ graphics.draw_scanline = function(scanline)
     if LCD_Control.WindowEnabled() and window_visible then
       -- The window doesn't wrap, so make sure these coordinates are valid
       -- (ie, inside the window map) before attempting to plot a pixel
-      if w_x > 0 and w_x < 256 and w_y > 0 and w_y < 256 then
+      if w_x >= 0 and w_x < 256 and w_y >= 0 and w_y < 256 then
         local window_color = graphics.getColorFromTilemap(LCD_Control.WindowTilemap(), w_x, w_y)
         plot_pixel(graphics.game_screen, x, scanline, unpack(window_color))
       end

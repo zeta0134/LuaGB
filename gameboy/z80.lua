@@ -1229,7 +1229,7 @@ opcodes[0x00] = function() end
 -- halt
 opcodes[0x76] = function()
   --if interrupts_enabled == 1 then
-    print("Halting!")
+    --print("Halting!")
     halted = 1
   --else
     --print("Interrupts not enabled! Not actually halting...")
@@ -1250,12 +1250,12 @@ end
 -- di
 opcodes[0xF3] = function()
   interrupts_enabled = 0
-  print("Disabled interrupts with DI")
+  --print("Disabled interrupts with DI")
 end
 -- ei
 opcodes[0xFB] = function()
   interrupts_enabled = 1
-  print("Enabled interrupts with EI")
+  --print("Enabled interrupts with EI")
 end
 
 -- ====== GMB Jumpcommands ======
