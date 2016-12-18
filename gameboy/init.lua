@@ -7,6 +7,7 @@ require("gameboy/rom_header")
 gameboy.input = require("gameboy/input")
 gameboy.cartridge = require("gameboy/cartridge")
 gameboy.timers = require("gameboy/timers")
+gameboy.interrupts = require("gameboy/interrupts")
 
 gameboy.initialize = function()
   gameboy.memory.initialize()

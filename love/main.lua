@@ -115,7 +115,7 @@ function print_register_values()
     love.graphics.print(string.format("%s: %d", name, accessor()), grid.x[x], grid.y[y])
   end
 
-  love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X", gameboy.z80.halted, gameboy.z80.interrupts_enabled, gameboy.memory.read_byte(0xFFFF), gameboy.memory.read_byte(0xFF0F)), grid.x[1], grid.y[7])
+  love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X", gameboy.z80.halted, gameboy.interrupts.enabled, gameboy.memory.read_byte(0xFFFF), gameboy.memory.read_byte(0xFF0F)), grid.x[1], grid.y[7])
 end
 
 function print_instructions()

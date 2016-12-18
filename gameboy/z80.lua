@@ -1,5 +1,6 @@
 local z80 = {}
 
+local interrupts = require("gameboy/interrupts")
 local memory = require("gameboy/memory")
 local timers = require("gameboy/timers")
 
@@ -21,7 +22,8 @@ local bnot = bit32.bnot
 -- Intentionally bad naming convention: I am NOT typing "registers"
 -- a bazillion times. The exported symbol uses the full name as a
 -- reasonable compromise.
-local reg = {}
+z80.registers = {}
+local reg = z80.registers
 reg.a = 0x01
 reg.b = 0x00
 reg.c = 0x13
@@ -33,9 +35,6 @@ reg.l = 0x4D
 reg.pc = 0x100 --entrypoint for GB games
 reg.sp = 0xFFFE
 
-z80.registers = reg
-
-z80.interrupts_enabled = 1
 z80.halted = 0
 
 local add_cycles = function(cycles)
@@ -1265,12 +1264,12 @@ end
 
 -- di
 opcodes[0xF3] = function()
-  z80.interrupts_enabled = 0
+  interrupts.disable()
   --print("Disabled interrupts with DI")
 end
 -- ei
 opcodes[0xFB] = function()
-  z80.interrupts_enabled = 1
+  interrupts.enable()
   --print("Enabled interrupts with EI")
 end
 
@@ -1508,7 +1507,7 @@ end
 -- reti
 opcodes[0xD9] = function()
   ret()
-  z80.interrupts_enabled = 1
+  interrupts.enable()
 end
 
 -- note: used only for the RST instructions below
@@ -1535,13 +1534,13 @@ opcodes[0xF7] = function() call_address(0x30) end
 opcodes[0xFF] = function() call_address(0x38) end
 
 function process_interrupts()
-  if z80.interrupts_enabled ~= 0 then
+  if interrupts.enabled ~= 0 then
     local fired = band(memory[0xFFFF], memory[0xFF0F])
     if fired ~= 0 then
       -- an interrupt happened that we care about! How thoughtful
 
       -- First, disable interrupts so we don't have to pay royalties to Christopher Nolan
-      z80.interrupts_enabled = 0
+      interrupts.disable()
 
       -- If the processor is halted / stopped, re-start it
       z80.halted = 0
