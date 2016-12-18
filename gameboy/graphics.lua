@@ -1,8 +1,12 @@
 local interrupts = require("gameboy/interrupts")
+local io = require("gameboy/io")
 local memory = require("gameboy/memory")
 local timers = require("gameboy/timers")
 
 local graphics = {}
+
+--just for shortening access
+local ports = io.ports
 
 -- Initialize VRAM blocks in main memory
 -- TODO: Implement access restrictions here based
@@ -22,27 +26,14 @@ end
 setmetatable(oam, oam.mt)
 memory.map_block(0xFE, 0xFE, oam)
 
--- Various functions for manipulating IO in memory
-local LCDC = function()
-  return io.ram[0x40]
-end
-
-local STAT = function()
-  return io.ram[0x41]
-end
-
-local setSTAT = function(value)
-  io.ram[0x41] = value
-end
-
 local LCD_Control = {}
 graphics.LCD_Control = LCD_Control
 LCD_Control.DisplayEnabled = function()
-  return bit32.band(0x80, LCDC()) ~= 0
+  return bit32.band(0x80, io.ram[ports.LCDC]) ~= 0
 end
 
 LCD_Control.WindowTilemap = function()
-  if bit32.band(0x40, LCDC()) ~= 0 then
+  if bit32.band(0x40, io.ram[ports.LCDC]) ~= 0 then
     return 0x9C00
   else
     return 0x9800
@@ -50,11 +41,11 @@ LCD_Control.WindowTilemap = function()
 end
 
 LCD_Control.WindowEnabled = function()
-  return bit32.band(0x20, LCDC()) ~= 0
+  return bit32.band(0x20, io.ram[ports.LCDC]) ~= 0
 end
 
 LCD_Control.TileData = function()
-  if bit32.band(0x10, LCDC()) ~= 0 then
+  if bit32.band(0x10, io.ram[ports.LCDC]) ~= 0 then
     return 0x8000
   else
     return 0x9000
@@ -62,7 +53,7 @@ LCD_Control.TileData = function()
 end
 
 LCD_Control.BackgroundTilemap = function()
-  if bit32.band(0x08, LCDC()) ~= 0 then
+  if bit32.band(0x08, io.ram[ports.LCDC]) ~= 0 then
     return 0x9C00
   else
     return 0x9800
@@ -70,43 +61,43 @@ LCD_Control.BackgroundTilemap = function()
 end
 
 LCD_Control.LargeSprites = function()
-  return bit32.band(0x04, LCDC()) ~= 0
+  return bit32.band(0x04, io.ram[ports.LCDC]) ~= 0
 end
 
 LCD_Control.SpritesEnabled = function()
-  return bit32.band(0x02, LCDC()) ~= 0
+  return bit32.band(0x02, io.ram[ports.LCDC]) ~= 0
 end
 
 LCD_Control.BackgroundEnabled = function()
-  return bit32.band(0x01, LCDC()) ~= 0
+  return bit32.band(0x01, io.ram[ports.LCDC]) ~= 0
 end
 
 local Status = {}
 graphics.Status = Status
 Status.Coincidence_InterruptEnabled = function()
-  return bit32.band(0x20, STAT()) ~= 0
+  return bit32.band(0x20, io.ram[ports.STAT]) ~= 0
 end
 
 Status.OAM_InterruptEnabled = function()
-  return bit32.band(0x10, STAT()) ~= 0
+  return bit32.band(0x10, io.ram[ports.STAT]) ~= 0
 end
 
 Status.VBlank_InterruptEnabled = function()
-  return bit32.band(0x08, STAT()) ~= 0
+  return bit32.band(0x08, io.ram[ports.STAT]) ~= 0
 end
 
 Status.HBlank_InterruptEnabled = function()
-  return bit32.band(0x06, STAT()) ~= 0
+  return bit32.band(0x06, io.ram[ports.STAT]) ~= 0
 end
 
 Status.Mode = function()
-  return bit32.band(io.ram[0x41], 0x3)
+  return bit32.band(0x03, io.ram[ports.STAT])
 end
 
 graphics.vblank_count = 0
 
 Status.SetMode = function(mode)
-  io.ram[0x41] = bit32.band(STAT(), 0xF8) + bit32.band(mode, 0x3)
+  io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xF8) + bit32.band(mode, 0x3)
   if mode == 0 then
     -- HBlank
     graphics.draw_scanline(graphics.scanline())
@@ -123,31 +114,31 @@ Status.SetMode = function(mode)
 end
 
 local SCY = function()
-  return io.ram[0x42]
+  return io.ram[ports.SCY]
 end
 
 local SCX = function()
-  return io.ram[0x43]
+  return io.ram[ports.SCX]
 end
 
 local WY = function()
-  return io.ram[0x4A]
+  return io.ram[ports.WY]
 end
 
 local WX = function()
-  return io.ram[0x4B]
+  return io.ram[ports.WX]
 end
 
 graphics.scanline = function()
-  return io.ram[0x44]
+  return io.ram[ports.LY]
 end
 
 graphics.set_scanline = function(value)
-  io.ram[0x44] = value
+  io.ram[ports.LY] = value
 end
 
 graphics.scanline_compare = function()
-  return io.ram[0x45]
+  return io.ram[ports.LYC]
 end
 
 local last_edge = 0
@@ -163,30 +154,30 @@ handle_mode[0] = function()
     last_edge = last_edge + 204
     graphics.set_scanline(graphics.scanline() + 1)
     -- If enabled, fire an HBlank interrupt
-    if bit32.band(STAT(), 0x08) ~= 0 then
+    if bit32.band(io.ram[ports.STAT], 0x08) ~= 0 then
       request_interrupt(interrupts.LCDStat)
     end
     if graphics.scanline() == graphics.scanline_compare() then
       -- set the LY compare bit
-      setSTAT(bit32.bor(STAT(), 0x4))
-      if bit32.band(STAT(), 0x40) ~= 0 then
+      io.ram[ports.STAT] = bit32.bor(io.ram[ports.STAT], 0x4)
+      if bit32.band(io.ram[ports.STAT], 0x40) ~= 0 then
         request_interrupt(interrupts.LCDStat)
       end
     else
       -- clear the LY compare bit
-      setSTAT(bit32.band(STAT(), 0xFB))
+      io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xFB)
     end
     if graphics.scanline() >= 144 then
       Status.SetMode(1)
       request_interrupt(interrupts.VBlank)
-      if bit32.band(STAT(), 0x10) ~= 0 then
+      if bit32.band(io.ram[ports.STAT], 0x10) ~= 0 then
         -- This is weird; LCDStat mirrors VBlank?
         request_interrupt(interrupts.LCDStat)
       end
       -- TODO: Draw the real screen here?
     else
       Status.SetMode(2)
-      if bit32.band(STAT(), 0x20) ~= 0 then
+      if bit32.band(io.ram[ports.STAT], 0x20) ~= 0 then
         request_interrupt(interrupts.LCDStat)
       end
     end
@@ -202,7 +193,7 @@ handle_mode[1] = function()
   if graphics.scanline() >= 154 then
     graphics.set_scanline(0)
     Status.SetMode(2)
-    if bit32.band(STAT(), 0x20) ~= 0 then
+    if bit32.band(io.ram[ports.STAT], 0x20) ~= 0 then
       request_interrupt(interrupts.LCDStat)
     end
   end
@@ -314,7 +305,7 @@ graphics.getColorFromTilemap = function(map_address, x, y)
   local subpixel_x = x - (tile_x * 8)
   local subpixel_y = y - (tile_y * 8)
 
-  return graphics.getColorFromTile(tile_address, subpixel_x, subpixel_y, io.ram[0x47])
+  return graphics.getColorFromTile(tile_address, subpixel_x, subpixel_y, io.ram[ports.BGP])
 end
 
 -- local oam = 0xFE00
@@ -372,9 +363,9 @@ local function draw_sprites_into_scanline(scanline)
 
     local sub_y = 16 - (sprite_y - scanline)
 
-    local sprite_palette = io.ram[0x48]
+    local sprite_palette = io.ram[ports.OBP0]
     if bit32.band(sprite_flags, 0x10) ~= 0 then
-      sprite_palette = io.ram[0x49]
+      sprite_palette = io.ram[ports.OBP1]
     end
 
     local start_x = math.max(0, sprite_x - 8)
