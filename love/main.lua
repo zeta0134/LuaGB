@@ -42,11 +42,11 @@ function print_register_values()
   }
 
   local function get_register(name)
-    return function() return reg[name] end
+    return function() return gameboy.z80.registers[name] end
   end
   local registers = {
     {255, 255, 64, "A", get_register("a"), 1, 1},
-    {64, 128, 64, "F", reg.f, 2, 1},
+    {64, 128, 64, "F", gameboy.z80.registers.f, 2, 1},
     {108, 108, 255, "B", get_register("b"), 1, 2},
     {152, 80, 32, "C", get_register("c"), 2, 2},
     {192, 128, 64, "D", get_register("d"), 1, 3},
@@ -63,7 +63,7 @@ function print_register_values()
     love.graphics.print(string.format("%s: %02X", name, accessor()), grid.x[x], grid.y[y])
   end
 
-  local function flag_string(flag) return reg.flags[flag] == 1 and flag or "" end
+  local function flag_string(flag) return gameboy.z80.registers.flags[flag] == 1 and flag or "" end
   love.graphics.setColor(192, 192, 192)
   love.graphics.print(string.format("Flags: [%1s %1s %1s %1s])", flag_string("c"), flag_string("n"), flag_string("h"), flag_string("z")), grid.x[3], grid.y[0])
 
@@ -76,7 +76,7 @@ function print_register_values()
     local r, g, b = register[1], register[2], register[3]
     local name, accessor = register[4], register[5]
     local x, y = register[6], register[7]
-    local value = reg[accessor]()
+    local value = gameboy.z80.registers[accessor]()
     local indirect_value = gameboy.memory.read_byte(value)
 
     love.graphics.setColor(r, g, b)
@@ -91,7 +91,7 @@ function print_register_values()
     local r, g, b = register[1], register[2], register[3]
     local name, accessor = register[4], register[5]
     local x, y = register[6], register[7]
-    local value = reg[accessor]
+    local value = gameboy.z80.registers[accessor]
 
     love.graphics.setColor(r, g, b)
     love.graphics.print(string.format("%s: %04X (%s): %02X %02X %02X %02X", name, value, name,
@@ -102,7 +102,7 @@ function print_register_values()
   end
 
   local status = {
-    {"Clock", function() return clock end, 4, 1},
+    {"Clock", function() return gameboy.timers.system_clock end, 4, 1},
     {"GPU Mode", gameboy.graphics.Status.Mode, 4, 2},
     {"Scanline", gameboy.graphics.scanline, 4, 3},
     {"Frame", function() return gameboy.graphics.vblank_count end, 4, 4}
@@ -115,7 +115,7 @@ function print_register_values()
     love.graphics.print(string.format("%s: %d", name, accessor()), grid.x[x], grid.y[y])
   end
 
-  love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X", halted, interrupts_enabled, gameboy.memory.read_byte(0xFFFF), gameboy.memory.read_byte(0xFF0F)), grid.x[1], grid.y[7])
+  love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X", gameboy.z80.halted, gameboy.z80.interrupts_enabled, gameboy.memory.read_byte(0xFFFF), gameboy.memory.read_byte(0xFF0F)), grid.x[1], grid.y[7])
 end
 
 function print_instructions()

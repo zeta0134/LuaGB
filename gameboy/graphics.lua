@@ -1,4 +1,6 @@
+local interrupts = require("gameboy/interrupts")
 local memory = require("gameboy/memory")
+local timers = require("gameboy/timers")
 
 local graphics = {}
 
@@ -151,24 +153,24 @@ end
 local last_edge = 0
 
 local time_at_this_mode = function()
-  return clock - last_edge
+  return timers.system_clock - last_edge
 end
 
 -- HBlank: Period between scanlines
 local handle_mode = {}
 handle_mode[0] = function()
-  if clock - last_edge > 204 then
+  if timers.system_clock - last_edge > 204 then
     last_edge = last_edge + 204
     graphics.set_scanline(graphics.scanline() + 1)
     -- If enabled, fire an HBlank interrupt
     if bit32.band(STAT(), 0x08) ~= 0 then
-      request_interrupt(Interrupt.LCDStat)
+      request_interrupt(interrupts.LCDStat)
     end
     if graphics.scanline() == graphics.scanline_compare() then
       -- set the LY compare bit
       setSTAT(bit32.bor(STAT(), 0x4))
       if bit32.band(STAT(), 0x40) ~= 0 then
-        request_interrupt(Interrupt.LCDStat)
+        request_interrupt(interrupts.LCDStat)
       end
     else
       -- clear the LY compare bit
@@ -176,16 +178,16 @@ handle_mode[0] = function()
     end
     if graphics.scanline() >= 144 then
       Status.SetMode(1)
-      request_interrupt(Interrupt.VBlank)
+      request_interrupt(interrupts.VBlank)
       if bit32.band(STAT(), 0x10) ~= 0 then
         -- This is weird; LCDStat mirrors VBlank?
-        request_interrupt(Interrupt.LCDStat)
+        request_interrupt(interrupts.LCDStat)
       end
       -- TODO: Draw the real screen here?
     else
       Status.SetMode(2)
       if bit32.band(STAT(), 0x20) ~= 0 then
-        request_interrupt(Interrupt.LCDStat)
+        request_interrupt(interrupts.LCDStat)
       end
     end
   end
@@ -193,7 +195,7 @@ end
 
 --VBlank: nothing to do except wait for the next frame
 handle_mode[1] = function()
-  if clock - last_edge > 456 then
+  if timers.system_clock - last_edge > 456 then
     last_edge = last_edge + 456
     graphics.set_scanline(graphics.scanline() + 1)
   end
@@ -201,7 +203,7 @@ handle_mode[1] = function()
     graphics.set_scanline(0)
     Status.SetMode(2)
     if bit32.band(STAT(), 0x20) ~= 0 then
-      request_interrupt(Interrupt.LCDStat)
+      request_interrupt(interrupts.LCDStat)
     end
   end
   if graphics.scanline() == graphics.scanline_compare() then
@@ -211,14 +213,14 @@ end
 
 -- OAM Read: OAM cannot be accessed
 handle_mode[2] = function()
-  if clock - last_edge > 80 then
+  if timers.system_clock - last_edge > 80 then
     last_edge = last_edge + 80
     Status.SetMode(3)
   end
 end
 -- VRAM Read: Neither VRAM, OAM, nor CGB palettes can be read
 handle_mode[3] = function()
-  if clock - last_edge > 172 then
+  if timers.system_clock - last_edge > 172 then
     last_edge = last_edge + 172
     Status.SetMode(0)
     -- TODO: Fire HBlank interrupt here!!
@@ -236,7 +238,7 @@ graphics.update = function()
   else
     -- erase our clock debt, so we don't do stupid timing things when the
     -- display is enabled again later
-    last_edge = clock
+    last_edge = timers.system_clock
   end
 end
 

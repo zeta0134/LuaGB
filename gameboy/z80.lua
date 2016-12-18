@@ -1,3 +1,5 @@
+local z80 = {}
+
 local memory = require("gameboy/memory")
 local timers = require("gameboy/timers")
 
@@ -15,7 +17,11 @@ local bnot = bit32.bnot
 -- Initialize registers to what the GB's
 -- iternal state would be after executing
 -- BIOS code
-reg = {}
+
+-- Intentionally bad naming convention: I am NOT typing "registers"
+-- a bazillion times. The exported symbol uses the full name as a
+-- reasonable compromise.
+local reg = {}
 reg.a = 0x01
 reg.b = 0x00
 reg.c = 0x13
@@ -27,12 +33,17 @@ reg.l = 0x4D
 reg.pc = 0x100 --entrypoint for GB games
 reg.sp = 0xFFFE
 
-interrupts_enabled = 1
-halted = 0
-clock = 0
+z80.registers = reg
+
+z80.interrupts_enabled = 1
+z80.halted = 0
+
+local add_cycles = function(cycles)
+  timers.system_clock = timers.system_clock + cycles
+end
 
 reg.f = function()
-  value = lshift(reg.flags.z, 7) +
+  local value = lshift(reg.flags.z, 7) +
           lshift(reg.flags.n, 6) +
           lshift(reg.flags.h, 5) +
           lshift(reg.flags.c, 4)
@@ -96,16 +107,16 @@ reg.set_hl = function(value)
   reg.l = band(value, 0xFF)
 end
 
-opcodes = {}
-opcode_names = {}
+local opcodes = {}
+local opcode_names = {}
 
 function read_at_hl()
-  clock = clock + 4
+  add_cycles(4)
   return read_byte(reg.hl())
 end
 
 function set_at_hl(value)
-  clock = clock + 4
+  add_cycles(4)
   write_byte(reg.hl(), value)
 end
 
@@ -185,9 +196,9 @@ opcodes[0x7E] = function() reg.a = read_at_hl() end
 opcodes[0x7F] = function() reg.a = reg.a end
 
 function read_nn()
-  nn = read_byte(reg.pc)
+  local nn = read_byte(reg.pc)
   reg.pc = reg.pc + 1
-  clock = clock + 4
+  add_cycles(4)
   return nn
 end
 
@@ -204,61 +215,61 @@ opcodes[0x3E] = function() reg.a = read_nn() end
 -- ld A, (xx)
 opcodes[0x0A] = function()
   reg.a = read_byte(reg.bc())
-  clock = clock + 4
+  add_cycles(4)
 end
 
 opcodes[0x1A] = function()
   reg.a = read_byte(reg.de())
-  clock = clock + 4
+  add_cycles(4)
 end
 
 opcodes[0xFA] = function()
-  lower = read_nn()
-  upper = lshift(read_nn(), 8)
+  local lower = read_nn()
+  local upper = lshift(read_nn(), 8)
   reg.a = read_byte(upper + lower)
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- ld (xx), A
 opcodes[0x02] = function()
   write_byte(reg.bc(), reg.a)
-  clock = clock + 4
+  add_cycles(4)
 end
 
 opcodes[0x12] = function()
   write_byte(reg.de(), reg.a)
-  clock = clock + 4
+  add_cycles(4)
 end
 
 opcodes[0xEA] = function()
-  lower = read_nn()
-  upper = lshift(read_nn(), 8)
+  local lower = read_nn()
+  local upper = lshift(read_nn(), 8)
   write_byte(upper + lower, reg.a)
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- ld a, (FF00 + nn)
 opcodes[0xF0] = function()
   reg.a = read_byte(0xFF00 + read_nn())
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- ld (FF00 + nn), a
 opcodes[0xE0] = function()
   write_byte(0xFF00 + read_nn(), reg.a)
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- ld a, (FF00 + C)
 opcodes[0xF2] = function()
   reg.a = read_byte(0xFF00 + reg.c)
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- ld (FF00 + C), a
 opcodes[0xE2] = function()
   write_byte(0xFF00 + reg.c, reg.a)
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- ldi (HL), a
@@ -306,15 +317,15 @@ end
 
 -- ld SP, nnnn
 opcodes[0x31] = function()
-  lower = read_nn()
-  upper = lshift(read_nn(), 8)
+  local lower = read_nn()
+  local upper = lshift(read_nn(), 8)
   reg.sp = band(0xFFFF, upper + lower)
 end
 
 -- ld SP, HL
 opcodes[0xF9] = function()
   reg.sp = reg.hl()
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- push BC
@@ -323,7 +334,7 @@ opcodes[0xC5] = function()
   write_byte(reg.sp, reg.b)
   reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, reg.c)
-  clock = clock + 12
+  add_cycles(12)
 end
 
 -- push DE
@@ -332,7 +343,7 @@ opcodes[0xD5] = function()
   write_byte(reg.sp, reg.d)
   reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, reg.e)
-  clock = clock + 12
+  add_cycles(12)
 end
 
 -- push HL
@@ -341,7 +352,7 @@ opcodes[0xE5] = function()
   write_byte(reg.sp, reg.h)
   reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, reg.l)
-  clock = clock + 12
+  add_cycles(12)
 end
 
 -- push AF
@@ -350,7 +361,7 @@ opcodes[0xF5] = function()
   write_byte(reg.sp, reg.a)
   reg.sp = band(0xFFFF, reg.sp - 1)
   write_byte(reg.sp, reg.f())
-  clock = clock + 12
+  add_cycles(12)
 end
 
 -- pop BC
@@ -359,7 +370,7 @@ opcodes[0xC1] = function()
   reg.sp = band(0xFFFF, reg.sp + 1)
   reg.b = read_byte(reg.sp)
   reg.sp = band(0xFFFF, reg.sp + 1)
-  clock = clock + 8
+  add_cycles(8)
 end
 
 -- pop DE
@@ -368,7 +379,7 @@ opcodes[0xD1] = function()
   reg.sp = band(0xFFFF, reg.sp + 1)
   reg.d = read_byte(reg.sp)
   reg.sp = band(0xFFFF, reg.sp + 1)
-  clock = clock + 8
+  add_cycles(8)
 end
 
 -- pop HL
@@ -377,7 +388,7 @@ opcodes[0xE1] = function()
   reg.sp = band(0xFFFF, reg.sp + 1)
   reg.h = read_byte(reg.sp)
   reg.sp = band(0xFFFF, reg.sp + 1)
-  clock = clock + 8
+  add_cycles(8)
 end
 
 -- pop AF
@@ -386,7 +397,7 @@ opcodes[0xF1] = function()
   reg.sp = band(0xFFFF, reg.sp + 1)
   reg.a = read_byte(reg.sp)
   reg.sp = band(0xFFFF, reg.sp + 1)
-  clock = clock + 8
+  add_cycles(8)
 end
 
 -- ====== GMB 8bit-Arithmetic/logical Commands ======
@@ -398,7 +409,7 @@ add_to_a = function(value)
     reg.flags.h = 0
   end
 
-  sum = reg.a + value
+  local sum = reg.a + value
 
   -- carry (and overflow correction)
   if sum > 0xFF then
@@ -425,7 +436,7 @@ adc_to_a = function(value)
     reg.flags.h = 0
   end
 
-  sum = reg.a + value + reg.flags.c
+  local sum = reg.a + value + reg.flags.c
 
   -- carry (and overflow correction)
   if sum > 0xFF then
@@ -505,7 +516,7 @@ sbc_from_a = function(value)
     reg.flags.h = 0
   end
 
-  difference = reg.a - value - reg.flags.c
+  local difference = reg.a - value - reg.flags.c
 
   -- carry (and overflow correction)
   if difference < 0 or difference > 0xFF then
@@ -633,7 +644,7 @@ cp_with_a = function(value)
     reg.flags.h = 0
   end
 
-  temp = reg.a - value
+  local temp = reg.a - value
 
   -- carry (and overflow correction)
   if temp < 0 or temp > 0xFF then
@@ -711,7 +722,7 @@ opcodes[0x2C] = function() reg.l = band(reg.l + 1, 0xFF); set_inc_flags(reg.l) e
 opcodes[0x34] = function()
   write_byte(reg.hl(), band(read_byte(reg.hl()) + 1, 0xFF))
   set_inc_flags(read_byte(reg.hl()))
-  clock = clock + 8
+  add_cycles(8)
 end
 opcodes[0x3C] = function() reg.a = band(reg.a + 1, 0xFF); set_inc_flags(reg.a) end
 
@@ -725,7 +736,7 @@ opcodes[0x2D] = function() reg.l = band(reg.l - 1, 0xFF); set_dec_flags(reg.l) e
 opcodes[0x35] = function()
   write_byte(reg.hl(), band(read_byte(reg.hl()) - 1, 0xFF))
   set_dec_flags(read_byte(reg.hl()))
-  clock = clock + 8
+  add_cycles(8)
 end
 opcodes[0x3D] = function() reg.a = band(reg.a - 1, 0xFF); set_dec_flags(reg.a) end
 
@@ -793,7 +804,7 @@ add_to_hl = function(value)
   end
   reg.set_hl(band(sum, 0xFFFF))
   reg.flags.n = 0
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- add HL, rr
@@ -805,42 +816,42 @@ opcodes[0x39] = function() add_to_hl(reg.sp) end
 -- inc rr
 opcodes[0x03] = function()
   reg.set_bc(band(reg.bc() + 1, 0xFFFF))
-  clock = clock + 4
+  add_cycles(4)
 end
 opcodes[0x13] = function()
   reg.set_de(band(reg.de() + 1, 0xFFFF))
-  clock = clock + 4
+  add_cycles(4)
 end
 opcodes[0x23] = function()
   reg.set_hl(band(reg.hl() + 1, 0xFFFF))
-  clock = clock + 4
+  add_cycles(4)
 end
 opcodes[0x33] = function()
   reg.sp = band(reg.sp + 1, 0xFFFF)
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- dec rr
 opcodes[0x0B] = function()
   reg.set_bc(band(reg.bc() - 1, 0xFFFF))
-  clock = clock + 4
+  add_cycles(4)
 end
 opcodes[0x1B] = function()
   reg.set_de(band(reg.de() - 1, 0xFFFF))
-  clock = clock + 4
+  add_cycles(4)
 end
 opcodes[0x2B] = function()
   reg.set_hl(band(reg.hl() - 1, 0xFFFF))
-  clock = clock + 4
+  add_cycles(4)
 end
 opcodes[0x3B] = function()
   reg.sp = band(reg.sp - 1, 0xFFFF)
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- add SP, dd
 opcodes[0xE8] = function()
-  offset = read_nn()
+  local offset = read_nn()
   -- offset comes in as unsigned 0-255, so convert it to signed -128 - 127
   if offset > 127 then
     offset = offset - 256
@@ -875,18 +886,18 @@ opcodes[0xE8] = function()
   reg.flags.z = 0
   reg.flags.n = 0
 
-  clock = clock + 12
+  add_cycles(12)
 end
 
 -- ld HL, SP + dd
 opcodes[0xF8] = function()
   -- cheat
-  old_sp = reg.sp
+  local old_sp = reg.sp
   opcodes[0xE8]()
   reg.set_hl(reg.sp)
   reg.sp = old_sp
   --op E8 is 16 clocks, this is 4 clocks less
-  clock = clock - 4
+  add_cycles(4)
 end
 
 -- ====== GMB Rotate and Shift Commands ======
@@ -991,44 +1002,44 @@ opcodes[0x1F] = function() reg.a = reg_rr(reg.a); reg.flags.z = 0 end
 cb = {}
 
 -- rlc r
-cb[0x00] = function() reg.b = reg_rlc(reg.b); clock = clock + 4 end
-cb[0x01] = function() reg.c = reg_rlc(reg.c); clock = clock + 4 end
-cb[0x02] = function() reg.d = reg_rlc(reg.d); clock = clock + 4 end
-cb[0x03] = function() reg.e = reg_rlc(reg.e); clock = clock + 4 end
-cb[0x04] = function() reg.h = reg_rlc(reg.h); clock = clock + 4 end
-cb[0x05] = function() reg.l = reg_rlc(reg.l); clock = clock + 4 end
-cb[0x06] = function() write_byte(reg.hl(), reg_rlc(read_byte(reg.hl()))); clock = clock + 8 end
-cb[0x07] = function() reg.a = reg_rlc(reg.a); clock = clock + 4 end
+cb[0x00] = function() reg.b = reg_rlc(reg.b); add_cycles(4) end
+cb[0x01] = function() reg.c = reg_rlc(reg.c); add_cycles(4) end
+cb[0x02] = function() reg.d = reg_rlc(reg.d); add_cycles(4) end
+cb[0x03] = function() reg.e = reg_rlc(reg.e); add_cycles(4) end
+cb[0x04] = function() reg.h = reg_rlc(reg.h); add_cycles(4) end
+cb[0x05] = function() reg.l = reg_rlc(reg.l); add_cycles(4) end
+cb[0x06] = function() write_byte(reg.hl(), reg_rlc(read_byte(reg.hl()))); add_cycles(8) end
+cb[0x07] = function() reg.a = reg_rlc(reg.a); add_cycles(4) end
 
 -- rl r
-cb[0x10] = function() reg.b = reg_rl(reg.b); clock = clock + 4 end
-cb[0x11] = function() reg.c = reg_rl(reg.c); clock = clock + 4 end
-cb[0x12] = function() reg.d = reg_rl(reg.d); clock = clock + 4 end
-cb[0x13] = function() reg.e = reg_rl(reg.e); clock = clock + 4 end
-cb[0x14] = function() reg.h = reg_rl(reg.h); clock = clock + 4 end
-cb[0x15] = function() reg.l = reg_rl(reg.l); clock = clock + 4 end
-cb[0x16] = function() write_byte(reg.hl(), reg_rl(read_byte(reg.hl()))); clock = clock + 8 end
-cb[0x17] = function() reg.a = reg_rl(reg.a); clock = clock + 4 end
+cb[0x10] = function() reg.b = reg_rl(reg.b); add_cycles(4) end
+cb[0x11] = function() reg.c = reg_rl(reg.c); add_cycles(4) end
+cb[0x12] = function() reg.d = reg_rl(reg.d); add_cycles(4) end
+cb[0x13] = function() reg.e = reg_rl(reg.e); add_cycles(4) end
+cb[0x14] = function() reg.h = reg_rl(reg.h); add_cycles(4) end
+cb[0x15] = function() reg.l = reg_rl(reg.l); add_cycles(4) end
+cb[0x16] = function() write_byte(reg.hl(), reg_rl(read_byte(reg.hl()))); add_cycles(8) end
+cb[0x17] = function() reg.a = reg_rl(reg.a); add_cycles(4) end
 
 -- rrc r
-cb[0x08] = function() reg.b = reg_rrc(reg.b); clock = clock + 4 end
-cb[0x09] = function() reg.c = reg_rrc(reg.c); clock = clock + 4 end
-cb[0x0A] = function() reg.d = reg_rrc(reg.d); clock = clock + 4 end
-cb[0x0B] = function() reg.e = reg_rrc(reg.e); clock = clock + 4 end
-cb[0x0C] = function() reg.h = reg_rrc(reg.h); clock = clock + 4 end
-cb[0x0D] = function() reg.l = reg_rrc(reg.l); clock = clock + 4 end
-cb[0x0E] = function() write_byte(reg.hl(), reg_rrc(read_byte(reg.hl()))); clock = clock + 8 end
-cb[0x0F] = function() reg.a = reg_rrc(reg.a); clock = clock + 4 end
+cb[0x08] = function() reg.b = reg_rrc(reg.b); add_cycles(4) end
+cb[0x09] = function() reg.c = reg_rrc(reg.c); add_cycles(4) end
+cb[0x0A] = function() reg.d = reg_rrc(reg.d); add_cycles(4) end
+cb[0x0B] = function() reg.e = reg_rrc(reg.e); add_cycles(4) end
+cb[0x0C] = function() reg.h = reg_rrc(reg.h); add_cycles(4) end
+cb[0x0D] = function() reg.l = reg_rrc(reg.l); add_cycles(4) end
+cb[0x0E] = function() write_byte(reg.hl(), reg_rrc(read_byte(reg.hl()))); add_cycles(8) end
+cb[0x0F] = function() reg.a = reg_rrc(reg.a); add_cycles(4) end
 
 -- rl r
-cb[0x18] = function() reg.b = reg_rr(reg.b); clock = clock + 4 end
-cb[0x19] = function() reg.c = reg_rr(reg.c); clock = clock + 4 end
-cb[0x1A] = function() reg.d = reg_rr(reg.d); clock = clock + 4 end
-cb[0x1B] = function() reg.e = reg_rr(reg.e); clock = clock + 4 end
-cb[0x1C] = function() reg.h = reg_rr(reg.h); clock = clock + 4 end
-cb[0x1D] = function() reg.l = reg_rr(reg.l); clock = clock + 4 end
-cb[0x1E] = function() write_byte(reg.hl(), reg_rr(read_byte(reg.hl()))); clock = clock + 8 end
-cb[0x1F] = function() reg.a = reg_rr(reg.a); clock = clock + 4 end
+cb[0x18] = function() reg.b = reg_rr(reg.b); add_cycles(4) end
+cb[0x19] = function() reg.c = reg_rr(reg.c); add_cycles(4) end
+cb[0x1A] = function() reg.d = reg_rr(reg.d); add_cycles(4) end
+cb[0x1B] = function() reg.e = reg_rr(reg.e); add_cycles(4) end
+cb[0x1C] = function() reg.h = reg_rr(reg.h); add_cycles(4) end
+cb[0x1D] = function() reg.l = reg_rr(reg.l); add_cycles(4) end
+cb[0x1E] = function() write_byte(reg.hl(), reg_rr(read_byte(reg.hl()))); add_cycles(8) end
+cb[0x1F] = function() reg.a = reg_rr(reg.a); add_cycles(4) end
 
 reg_sla = function(value)
   -- copy bit 7 into carry
@@ -1045,7 +1056,7 @@ reg_sla = function(value)
   end
   reg.flags.h = 0
   reg.flags.n = 0
-  clock = clock + 4
+  add_cycles(4)
   return value
 end
 
@@ -1064,7 +1075,7 @@ reg_srl = function(value)
   end
   reg.flags.h = 0
   reg.flags.n = 0
-  clock = clock + 4
+  add_cycles(4)
   return value
 end
 
@@ -1074,7 +1085,7 @@ reg_sra = function(value)
   if band(arith_value, 0x40) ~= 0 then
     arith_value = arith_value + 0x80
   end
-  clock = clock + 4
+  add_cycles(4)
   return arith_value
 end
 
@@ -1088,7 +1099,7 @@ reg_swap = function(value)
   reg.flags.n = 0
   reg.flags.h = 0
   reg.flags.c = 0
-  clock = clock + 4
+  add_cycles(4)
   return value
 end
 
@@ -1099,7 +1110,7 @@ cb[0x22] = function() reg.d = reg_sla(reg.d) end
 cb[0x23] = function() reg.e = reg_sla(reg.e) end
 cb[0x24] = function() reg.h = reg_sla(reg.h) end
 cb[0x25] = function() reg.l = reg_sla(reg.l) end
-cb[0x26] = function() write_byte(reg.hl(), reg_sla(read_byte(reg.hl()))); clock = clock + 12 end
+cb[0x26] = function() write_byte(reg.hl(), reg_sla(read_byte(reg.hl()))); add_cycles(12) end
 cb[0x27] = function() reg.a = reg_sla(reg.a) end
 
 -- swap r (high and low nybbles)
@@ -1109,7 +1120,7 @@ cb[0x32] = function() reg.d = reg_swap(reg.d) end
 cb[0x33] = function() reg.e = reg_swap(reg.e) end
 cb[0x34] = function() reg.h = reg_swap(reg.h) end
 cb[0x35] = function() reg.l = reg_swap(reg.l) end
-cb[0x36] = function() write_byte(reg.hl(), reg_swap(read_byte(reg.hl()))); clock = clock + 12 end
+cb[0x36] = function() write_byte(reg.hl(), reg_swap(read_byte(reg.hl()))); add_cycles(12) end
 cb[0x37] = function() reg.a = reg_swap(reg.a) end
 
 -- sra r
@@ -1119,7 +1130,7 @@ cb[0x2A] = function() reg.d = reg_sra(reg.d) end
 cb[0x2B] = function() reg.e = reg_sra(reg.e) end
 cb[0x2C] = function() reg.h = reg_sra(reg.h) end
 cb[0x2D] = function() reg.l = reg_sra(reg.l) end
-cb[0x2E] = function() write_byte(reg.hl(), reg_sra(read_byte(reg.hl()))); clock = clock + 12 end
+cb[0x2E] = function() write_byte(reg.hl(), reg_sra(read_byte(reg.hl()))); add_cycles(12) end
 cb[0x2F] = function() reg.a = reg_sra(reg.a) end
 
 -- srl r
@@ -1129,7 +1140,7 @@ cb[0x3A] = function() reg.d = reg_srl(reg.d) end
 cb[0x3B] = function() reg.e = reg_srl(reg.e) end
 cb[0x3C] = function() reg.h = reg_srl(reg.h) end
 cb[0x3D] = function() reg.l = reg_srl(reg.l) end
-cb[0x3E] = function() write_byte(reg.hl(), reg_srl(read_byte(reg.hl()))); clock = clock + 12 end
+cb[0x3E] = function() write_byte(reg.hl(), reg_srl(read_byte(reg.hl()))); add_cycles(12) end
 cb[0x3F] = function() reg.a = reg_srl(reg.a) end
 
 -- ====== GMB Special Purpose / Relocated Commands ======
@@ -1140,7 +1151,7 @@ opcodes[0x08] = function()
   local address = upper + lower
   write_byte(address, band(reg.sp, 0xFF))
   write_byte(band(address + 1, 0xFFFF), rshift(band(reg.sp, 0xF0), 8))
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- ====== GMB Singlebit Operation Commands ======
@@ -1156,16 +1167,16 @@ reg_bit = function(value, bit)
 end
 
 opcodes[0xCB] = function()
-  cb_op = read_nn()
+  local cb_op = read_nn()
   if cb[cb_op] ~= nil then
     --revert the timing; this is handled automatically by the various functions
-    clock = clock - 4
+    add_cycles(4)
     cb[cb_op]()
     return
   end
-  high_half_nybble = rshift(band(cb_op, 0xC0), 6)
-  reg_index = band(cb_op, 0x7)
-  bit = rshift(band(cb_op, 0x38), 3)
+  local high_half_nybble = rshift(band(cb_op, 0xC0), 6)
+  local reg_index = band(cb_op, 0x7)
+  local bit = rshift(band(cb_op, 0x38), 3)
   if high_half_nybble == 0x1 then
     -- bit n,r
     if reg_index == 0 then reg_bit(reg.b, bit) end
@@ -1174,9 +1185,9 @@ opcodes[0xCB] = function()
     if reg_index == 3 then reg_bit(reg.e, bit) end
     if reg_index == 4 then reg_bit(reg.h, bit) end
     if reg_index == 5 then reg_bit(reg.l, bit) end
-    if reg_index == 6 then reg_bit(read_byte(reg.hl()), bit); clock = clock + 4 end
+    if reg_index == 6 then reg_bit(read_byte(reg.hl()), bit); add_cycles(4) end
     if reg_index == 7 then reg_bit(reg.a, bit) end
-    clock = clock + 4
+    add_cycles(4)
   end
   if high_half_nybble == 0x2 then
     -- res n, r
@@ -1188,9 +1199,9 @@ opcodes[0xCB] = function()
     if reg_index == 3 then reg.e = band(reg.e, bxor(reg.e, lshift(0x1, bit))) end
     if reg_index == 4 then reg.h = band(reg.h, bxor(reg.h, lshift(0x1, bit))) end
     if reg_index == 5 then reg.l = band(reg.l, bxor(reg.l, lshift(0x1, bit))) end
-    if reg_index == 6 then write_byte(reg.hl(), band(read_byte(reg.hl()), bxor(read_byte(reg.hl()), lshift(0x1, bit)))); clock = clock + 8 end
+    if reg_index == 6 then write_byte(reg.hl(), band(read_byte(reg.hl()), bxor(read_byte(reg.hl()), lshift(0x1, bit)))); add_cycles(8) end
     if reg_index == 7 then reg.a = band(reg.a, bxor(reg.a, lshift(0x1, bit))) end
-    clock = clock + 4
+    add_cycles(4)
   end
 
   if high_half_nybble == 0x3 then
@@ -1201,9 +1212,9 @@ opcodes[0xCB] = function()
     if reg_index == 3 then reg.e = bor(lshift(0x1, bit), reg.e) end
     if reg_index == 4 then reg.h = bor(lshift(0x1, bit), reg.h) end
     if reg_index == 5 then reg.l = bor(lshift(0x1, bit), reg.l) end
-    if reg_index == 6 then write_byte(reg.hl(), bor(lshift(0x1, bit), read_byte(reg.hl()))); clock = clock + 8 end
+    if reg_index == 6 then write_byte(reg.hl(), bor(lshift(0x1, bit), read_byte(reg.hl()))); add_cycles(8) end
     if reg_index == 7 then reg.a = bor(lshift(0x1, bit), reg.a) end
-    clock = clock + 4
+    add_cycles(4)
   end
 end
 
@@ -1230,7 +1241,7 @@ opcodes[0x00] = function() end
 opcodes[0x76] = function()
   --if interrupts_enabled == 1 then
     --print("Halting!")
-    halted = 1
+    z80.halted = 1
   --else
     --print("Interrupts not enabled! Not actually halting...")
   --end
@@ -1238,8 +1249,13 @@ end
 
 -- stop
 opcodes[0x10] = function()
-  value = read_nn()
-  if value == 0x00 then
+  -- The stop opcode should always, for unknown reasons, be followed
+  -- by an 0x00 data byte. If it isn't, this may be a sign that the
+  -- emulator has run off the deep end, and this isn't a real STOP
+  -- instruction.
+  -- TODO: Research real hardware's behavior in these cases
+  local stop_value = read_nn()
+  if stop_value == 0x00 then
     print("Unimplemented STOP instruction, ignoring!")
     --halted = 1
   else
@@ -1249,26 +1265,26 @@ end
 
 -- di
 opcodes[0xF3] = function()
-  interrupts_enabled = 0
+  z80.interrupts_enabled = 0
   --print("Disabled interrupts with DI")
 end
 -- ei
 opcodes[0xFB] = function()
-  interrupts_enabled = 1
+  z80.interrupts_enabled = 1
   --print("Enabled interrupts with EI")
 end
 
 -- ====== GMB Jumpcommands ======
 jump_to_nnnn = function()
-  lower = read_nn()
-  upper = lshift(read_nn(), 8)
+  local lower = read_nn()
+  local upper = lshift(read_nn(), 8)
   reg.pc = upper + lower
 end
 
 -- jp nnnn
 opcodes[0xC3] = function()
   jump_to_nnnn()
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- jp HL
@@ -1280,10 +1296,10 @@ end
 opcodes[0xC2] = function()
   if reg.flags.z == 0 then
     jump_to_nnnn()
-    clock = clock + 4
+    add_cycles(4)
   else
     reg.pc = reg.pc + 2
-    clock = clock + 8
+    add_cycles(8)
   end
 end
 
@@ -1291,10 +1307,10 @@ end
 opcodes[0xD2] = function()
   if reg.flags.c == 0 then
     jump_to_nnnn()
-    clock = clock + 4
+    add_cycles(4)
   else
     reg.pc = reg.pc + 2
-    clock = clock + 8
+    add_cycles(8)
   end
 end
 
@@ -1302,10 +1318,10 @@ end
 opcodes[0xCA] = function()
   if reg.flags.z == 1 then
     jump_to_nnnn()
-    clock = clock + 4
+    add_cycles(4)
   else
     reg.pc = reg.pc + 2
-    clock = clock + 8
+    add_cycles(8)
   end
 end
 
@@ -1313,15 +1329,15 @@ end
 opcodes[0xDA] = function()
   if reg.flags.c == 1 then
     jump_to_nnnn()
-    clock = clock + 4
+    add_cycles(4)
   else
     reg.pc = reg.pc + 2
-    clock = clock + 8
+    add_cycles(8)
   end
 end
 
 function jump_relative_to_nn()
-  offset = read_nn()
+  local offset = read_nn()
   if offset > 127 then
     offset = offset - 256
   end
@@ -1331,7 +1347,7 @@ end
 -- jr nn
 opcodes[0x18] = function()
   jump_relative_to_nn()
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- jr nz, nn
@@ -1341,7 +1357,7 @@ opcodes[0x20] = function()
   else
     reg.pc = reg.pc + 1
   end
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- jr nc, nn
@@ -1351,7 +1367,7 @@ opcodes[0x30] = function()
   else
     reg.pc = reg.pc + 1
   end
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- jr z, nn
@@ -1361,7 +1377,7 @@ opcodes[0x28] = function()
   else
     reg.pc = reg.pc + 1
   end
-  clock = clock + 4
+  add_cycles(4)
 end
 
 -- jr c, nn
@@ -1371,12 +1387,12 @@ opcodes[0x38] = function()
   else
     reg.pc = reg.pc + 1
   end
-  clock = clock + 4
+  add_cycles(4)
 end
 
 call_nnnn = function()
-  lower = read_nn()
-  upper = lshift(read_nn(), 8)
+  local lower = read_nn()
+  local upper = lshift(read_nn(), 8)
   -- at this point, reg.pc points at the next instruction after the call,
   -- so store the current PC to the stack
   reg.sp = band(0xFFFF, reg.sp - 1)
@@ -1390,17 +1406,17 @@ end
 -- call nn
 opcodes[0xCD] = function()
   call_nnnn()
-  clock = clock + 12
+  add_cycles(12)
 end
 
 -- call nz, nnnn
 opcodes[0xC4] = function()
   if reg.flags.z == 0 then
     call_nnnn()
-    clock = clock + 12
+    add_cycles(12)
   else
     reg.pc = reg.pc + 2
-    clock = clock + 8
+    add_cycles(8)
   end
 end
 
@@ -1408,10 +1424,10 @@ end
 opcodes[0xD4] = function()
   if reg.flags.c == 0 then
     call_nnnn()
-    clock = clock + 12
+    add_cycles(12)
   else
     reg.pc = reg.pc + 2
-    clock = clock + 8
+    add_cycles(8)
   end
 end
 
@@ -1419,10 +1435,10 @@ end
 opcodes[0xCC] = function()
   if reg.flags.z == 1 then
     call_nnnn()
-    clock = clock + 12
+    add_cycles(12)
   else
     reg.pc = reg.pc + 2
-    clock = clock + 8
+    add_cycles(8)
   end
 end
 
@@ -1430,20 +1446,20 @@ end
 opcodes[0xDC] = function()
   if reg.flags.c == 1 then
     call_nnnn()
-    clock = clock + 12
+    add_cycles(12)
   else
     reg.pc = reg.pc + 2
-    clock = clock + 8
+    add_cycles(8)
   end
 end
 
 local ret = function()
-  lower = read_byte(reg.sp)
+  local lower = read_byte(reg.sp)
   reg.sp = band(0xFFFF, reg.sp + 1)
-  upper = lshift(read_byte(reg.sp), 8)
+  local upper = lshift(read_byte(reg.sp), 8)
   reg.sp = band(0xFFFF, reg.sp + 1)
   reg.pc = upper + lower
-  clock = clock + 12
+  add_cycles(12)
 end
 
 -- ret
@@ -1453,9 +1469,9 @@ opcodes[0xC9] = function() ret() end
 opcodes[0xC0] = function()
   if reg.flags.z == 0 then
     ret()
-    clock = clock + 16
+    add_cycles(16)
   else
-    clock = clock + 4
+    add_cycles(4)
   end
 end
 
@@ -1463,9 +1479,9 @@ end
 opcodes[0xD0] = function()
   if reg.flags.c == 0 then
     ret()
-    clock = clock + 16
+    add_cycles(16)
   else
-    clock = clock + 4
+    add_cycles(4)
   end
 end
 
@@ -1473,9 +1489,9 @@ end
 opcodes[0xC8] = function()
   if reg.flags.z == 1 then
     ret()
-    clock = clock + 16
+    add_cycles(6)
   else
-    clock = clock + 4
+    add_cycles(4)
   end
 end
 
@@ -1483,16 +1499,16 @@ end
 opcodes[0xD8] = function()
   if reg.flags.c == 1 then
     ret()
-    clock = clock + 16
+    add_cycles(16)
   else
-    clock = clock + 4
+    add_cycles(4)
   end
 end
 
 -- reti
 opcodes[0xD9] = function()
   ret()
-  interrupts_enabled = 1
+  z80.interrupts_enabled = 1
 end
 
 -- note: used only for the RST instructions below
@@ -1505,7 +1521,7 @@ function call_address(address)
   write_byte(reg.sp, band(reg.pc, 0xFF))
 
   reg.pc = address
-  clock = clock + 12
+  add_cycles(12)
 end
 
 -- rst N
@@ -1519,16 +1535,16 @@ opcodes[0xF7] = function() call_address(0x30) end
 opcodes[0xFF] = function() call_address(0x38) end
 
 function process_interrupts()
-  if interrupts_enabled ~= 0 then
+  if z80.interrupts_enabled ~= 0 then
     local fired = band(memory[0xFFFF], memory[0xFF0F])
     if fired ~= 0 then
       -- an interrupt happened that we care about! How thoughtful
 
       -- First, disable interrupts so we don't have to pay royalties to Christopher Nolan
-      interrupts_enabled = 0
+      z80.interrupts_enabled = 0
 
       -- If the processor is halted / stopped, re-start it
-      halted = 0
+      z80.halted = 0
 
       -- Now, figure out which interrupt this is, and call the corresponding
       -- interrupt vector
@@ -1561,17 +1577,17 @@ function process_instruction()
   end
 
   --  If the processor is currently halted, then do nothing.
-  if halted ~= 0 then
-    clock = clock + 4
+  if z80.halted ~= 0 then
+    add_cycles(4)
     return true
   else
-    opcode = read_byte(reg.pc)
+    local opcode = read_byte(reg.pc)
     reg.pc = band(reg.pc + 1, 0xFFFF)
     if opcodes[opcode] ~= nil then
       -- run this instruction!
       opcodes[opcode]()
       -- add a base clock of 4 to every instruction
-      clock = clock + 4
+      add_cycles(4)
     else
       print(string.format("Unhandled opcode: %x", opcode))
       return false
@@ -1580,16 +1596,11 @@ function process_instruction()
   end
 end
 
-Interrupt = {}
-Interrupt.VBlank = 0x1
-Interrupt.LCDStat = 0x2
-Interrupt.Timer = 0x4
-Interrupt.Serial = 0x8
-Interrupt.Joypad = 0x16
-
 function request_interrupt(bitmask)
   memory[0xFF0F] = band(bor(memory[0xFF0F], bitmask), 0x1F)
   if band(memory[0xFFFF], bitmask) ~= 0 then
-    halted = 0
+    z80.halted = 0
   end
 end
+
+return z80
