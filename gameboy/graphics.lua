@@ -11,20 +11,20 @@ local ports = io.ports
 -- Initialize VRAM blocks in main memory
 -- TODO: Implement access restrictions here based
 -- on the Status register
-local vram = memory.generate_block(8 * 1024)
-memory.map_block(0x80, 0x9F, vram)
-local oam = memory.generate_block(0xA0)
-oam.mt = {}
-oam.mt.__index = function(table, address)
+graphics.vram = memory.generate_block(8 * 1024)
+memory.map_block(0x80, 0x9F, graphics.vram)
+graphics.oam = memory.generate_block(0xA0)
+graphics.oam.mt = {}
+graphics.oam.mt.__index = function(table, address)
   -- out of range? So sorry, return nothing
   return 0x00
 end
-oam.mt.__newindex = function(table, address, byte)
+graphics.oam.mt.__newindex = function(table, address, byte)
   -- out of range? So sorry, discard the write
   return
 end
-setmetatable(oam, oam.mt)
-memory.map_block(0xFE, 0xFE, oam)
+setmetatable(graphics.oam, graphics.oam.mt)
+memory.map_block(0xFE, 0xFE, graphics.oam)
 
 local LCD_Control = {}
 graphics.LCD_Control = LCD_Control
@@ -141,17 +141,17 @@ graphics.scanline_compare = function()
   return io.ram[ports.LYC]
 end
 
-local last_edge = 0
+graphics.last_edge = 0
 
 local time_at_this_mode = function()
-  return timers.system_clock - last_edge
+  return timers.system_clock - graphics.last_edge
 end
 
 -- HBlank: Period between scanlines
 local handle_mode = {}
 handle_mode[0] = function()
-  if timers.system_clock - last_edge > 204 then
-    last_edge = last_edge + 204
+  if timers.system_clock - graphics.last_edge > 204 then
+    graphics.last_edge = graphics.last_edge + 204
     graphics.set_scanline(graphics.scanline() + 1)
     -- If enabled, fire an HBlank interrupt
     if bit32.band(io.ram[ports.STAT], 0x08) ~= 0 then
@@ -186,8 +186,8 @@ end
 
 --VBlank: nothing to do except wait for the next frame
 handle_mode[1] = function()
-  if timers.system_clock - last_edge > 456 then
-    last_edge = last_edge + 456
+  if timers.system_clock - graphics.last_edge > 456 then
+    graphics.last_edge = graphics.last_edge + 456
     graphics.set_scanline(graphics.scanline() + 1)
   end
   if graphics.scanline() >= 154 then
@@ -204,15 +204,15 @@ end
 
 -- OAM Read: OAM cannot be accessed
 handle_mode[2] = function()
-  if timers.system_clock - last_edge > 80 then
-    last_edge = last_edge + 80
+  if timers.system_clock - graphics.last_edge > 80 then
+    graphics.last_edge = graphics.last_edge + 80
     Status.SetMode(3)
   end
 end
 -- VRAM Read: Neither VRAM, OAM, nor CGB palettes can be read
 handle_mode[3] = function()
-  if timers.system_clock - last_edge > 172 then
-    last_edge = last_edge + 172
+  if timers.system_clock - graphics.last_edge > 172 then
+    graphics.last_edge = graphics.last_edge + 172
     Status.SetMode(0)
     -- TODO: Fire HBlank interrupt here!!
     -- TODO: Draw one scanline of graphics here!
@@ -229,7 +229,7 @@ graphics.update = function()
   else
     -- erase our clock debt, so we don't do stupid timing things when the
     -- display is enabled again later
-    last_edge = timers.system_clock
+    graphics.last_edge = timers.system_clock
   end
 end
 
@@ -269,11 +269,11 @@ graphics.getColorFromTile = function(tile_address, subpixel_x, subpixel_y, palet
   end
   -- grab the pixel color we need, and translate it into a palette index
   local palette_index = 0
-  if bit32.band(vram[tile_address - 0x8000], bit32.lshift(0x1, 7 - subpixel_x)) ~= 0 then
+  if bit32.band(graphics.vram[tile_address - 0x8000], bit32.lshift(0x1, 7 - subpixel_x)) ~= 0 then
     palette_index = palette_index + 1
   end
   tile_address = tile_address + 1
-  if bit32.band(vram[tile_address - 0x8000], bit32.lshift(0x1, 7 - subpixel_x)) ~= 0 then
+  if bit32.band(graphics.vram[tile_address - 0x8000], bit32.lshift(0x1, 7 - subpixel_x)) ~= 0 then
     palette_index = palette_index + 2
   end
   -- finally, return the color from the table, based on this index
@@ -288,7 +288,7 @@ end
 graphics.getColorFromTilemap = function(map_address, x, y)
   local tile_x = bit32.rshift(x, 3)
   local tile_y = bit32.rshift(y, 3)
-  local tile_index = vram[(map_address + (tile_y * 32) + (tile_x)) - 0x8000]
+  local tile_index = graphics.vram[(map_address + (tile_y * 32) + (tile_x)) - 0x8000]
   if tile_index == nil then
     print(tile_x)
     print(tile_y)
@@ -323,7 +323,7 @@ local function draw_sprites_into_scanline(scanline)
   local i = 0
   while i < 40 do
     -- is this sprite being displayed on this scanline? (respect to Y coordinate)
-    local sprite_y = oam[i * 4]
+    local sprite_y = graphics.oam[i * 4]
     local sprite_lower = sprite_y - 16
     local sprite_upper = sprite_y - 16 + sprite_size
     if scanline >= sprite_lower and scanline < sprite_upper then
@@ -335,8 +335,8 @@ local function draw_sprites_into_scanline(scanline)
         local lowest_priority = i
         local lowest_priotity_index = nil
         for j = 1, #active_sprites do
-          local lowest_x = oam[lowest_priority * 4 + 1]
-          local candidate_x = oam[active_sprites[j] * 4 + 1]
+          local lowest_x = graphics.oam[lowest_priority * 4 + 1]
+          local candidate_x = graphics.oam[active_sprites[j] * 4 + 1]
           if candidate_x > lowest_x then
             lowest_priority = active_sprites[j]
             lowest_priority_index = j
@@ -353,13 +353,13 @@ local function draw_sprites_into_scanline(scanline)
   -- now, for every sprite in the list, display it on the current scanline
   for i = #active_sprites, 1, -1 do
     local sprite_address = active_sprites[i] * 4
-    local sprite_y = oam[sprite_address]
-    local sprite_x = oam[sprite_address + 1]
-    local sprite_tile = oam[sprite_address + 2]
+    local sprite_y = graphics.oam[sprite_address]
+    local sprite_x = graphics.oam[sprite_address + 1]
+    local sprite_tile = graphics.oam[sprite_address + 2]
     if sprite_size == 16 then
       sprite_tile = bit32.band(sprite_tile, 0xFE)
     end
-    local sprite_flags = oam[sprite_address + 3]
+    local sprite_flags = graphics.oam[sprite_address + 3]
 
     local sub_y = 16 - (sprite_y - scanline)
 

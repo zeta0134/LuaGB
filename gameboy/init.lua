@@ -3,7 +3,6 @@ local gameboy = {}
 gameboy.memory = require("gameboy/memory")
 gameboy.z80 = require("gameboy/z80")
 gameboy.graphics = require("gameboy/graphics")
-require("gameboy/rom_header")
 gameboy.input = require("gameboy/input")
 gameboy.cartridge = require("gameboy/cartridge")
 gameboy.timers = require("gameboy/timers")
@@ -33,7 +32,7 @@ gameboy.run_until_vblank = function()
 end
 
 gameboy.run_until_hblank = function()
-  old_scanline = gameboy.graphics.scanline()
+  local old_scanline = gameboy.graphics.scanline()
   local instructions = 0
   while old_scanline == gameboy.graphics.scanline() and instructions < 100000  do
     gameboy.step()

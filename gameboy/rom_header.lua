@@ -3,9 +3,9 @@ local rom_header = {}
 -- print out the various header data for debugging
 
 local function read_file_into_byte_array(file)
-  byte_array = {}
-  byte = file:read()
-  i = 0
+  local byte_array = {}
+  local byte = file:read()
+  local i = 0
   while byte do
     byte_array[i] = byte
     byte = file:read()
@@ -15,7 +15,7 @@ local function read_file_into_byte_array(file)
 end
 
 local function extract_string(data, s, e)
-  str = ""
+  local str = ""
   for i = s, e do
     if data[i] ~= 0 then
       str = str .. string.char(data[i])
@@ -47,7 +47,7 @@ rom_header.parse_cartridge_header = function(data)
 
   header.licencee = extract_string(data, 0x144, 0x145)
 
-  sgb = data[0x146] == 0x3
+  local sgb = data[0x146] == 0x3
   if sgb then
     header.super_gameboy = true
   else

@@ -33,21 +33,21 @@ memory.generate_block = function(size)
 end
 
 -- Main Memory
-local work_ram_0 = memory.generate_block(4 * 1024)
-local work_ram_1 = memory.generate_block(4 * 1024)
-memory.map_block(0xC0, 0xCF, work_ram_0)
-memory.map_block(0xD0, 0xDF, work_ram_1)
+memory.work_ram_0 = memory.generate_block(4 * 1024)
+memory.work_ram_1 = memory.generate_block(4 * 1024)
+memory.map_block(0xC0, 0xCF, memory.work_ram_0)
+memory.map_block(0xD0, 0xDF, memory.work_ram_1)
 
-local work_ram_echo = {}
-work_ram_echo.mt = {}
-work_ram_echo.mt.__index = function(table, key)
+memory.work_ram_echo = {}
+memory.work_ram_echo.mt = {}
+memory.work_ram_echo.mt.__index = function(table, key)
   return memory.read_byte(key + 0xC000)
 end
-work_ram_echo.mt.__newindex = function(table, key, value)
+memory.work_ram_echo.mt.__newindex = function(table, key, value)
   memory.write_byte(key + 0xC000, value)
 end
-setmetatable(work_ram_echo, work_ram_echo.mt)
-memory.map_block(0xE0, 0xFD, work_ram_echo)
+setmetatable(memory.work_ram_echo, memory.work_ram_echo.mt)
+memory.map_block(0xE0, 0xFD, memory.work_ram_echo)
 
 memory.read_byte = function(address)
   local high_byte = bit32.band(address, 0xFF00)

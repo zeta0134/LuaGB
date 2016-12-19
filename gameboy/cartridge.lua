@@ -7,7 +7,7 @@ local mbc_none = require("gameboy/mbc/none")
 local mbc1 = require("gameboy/mbc/mbc1")
 local mbc3 = require("gameboy/mbc/mbc3")
 
-local external_ram = memory.generate_block(32 * 1024)
+cartridge.external_ram = memory.generate_block(32 * 1024)
 
 local mbc_mappings = {}
 mbc_mappings[0x00] = mbc_none
@@ -32,7 +32,7 @@ cartridge.load = function(file_data, size)
   if mbc_mappings[cartridge.header.mbc_type] then
     print("Using mapper: ", cartridge.header.mbc_name)
     mbc_mappings[cartridge.header.mbc_type].raw_data = cartridge.raw_data
-    mbc_mappings[cartridge.header.mbc_type].external_ram = external_ram
+    mbc_mappings[cartridge.header.mbc_type].external_ram = cartridge.external_ram
     -- Cart ROM
     memory.map_block(0x00, 0x7F, mbc_mappings[cartridge.header.mbc_type])
     -- External RAM
@@ -40,7 +40,7 @@ cartridge.load = function(file_data, size)
   else
     print("Unsupported MBC type! Defaulting to ROM ONLY, game will probably not boot.")
     mbc_mappings[0x00].raw_data = cartridge.raw_data
-    mbc_mappings[0x00].external_ram = external_ram
+    mbc_mappings[0x00].external_ram = cartridge.external_ram
     memory.map_block(0x00, 0x7F, mbc_mappings[0x00])
     memory.map_block(0xA0, 0xBF, mbc_mappings[0x00], 0x0000)
   end
