@@ -333,33 +333,19 @@ for i = 0, 9 do
   end
 end
 
+local input_mappings = {}
+input_mappings.up = "Up"
+input_mappings.down = "Down"
+input_mappings.left = "Left"
+input_mappings.right = "Right"
+input_mappings.x = "A"
+input_mappings.z = "B"
+input_mappings["return"] = "Start"
+input_mappings.rshift = "Select"
+
 function love.keypressed(key)
-  if key == "up" then
-    gameboy.input.keys.Up = 1
-  end
-  if key == "down" then
-    gameboy.input.keys.Down = 1
-  end
-  if key == "left" then
-    gameboy.input.keys.Left = 1
-  end
-  if key == "right" then
-    gameboy.input.keys.Right = 1
-  end
-  if key == "x" then
-    gameboy.input.keys.A = 1
-  end
-  if key == "z" then
-    gameboy.input.keys.B = 1
-  end
-  if key == "return" then
-    gameboy.input.keys.Start = 1
-  end
-  if key == "rshift" then
-    gameboy.input.keys.Select = 1
-  end
-  if key == "escape" then
-    love.event.quit()
+  if input_mappings[key] then
+    gameboy.input.keys[input_mappings[key]] = 1
   end
 end
 
@@ -368,29 +354,12 @@ function love.keyreleased(key)
     action_keys[key]()
   end
 
-  if key == "up" then
-    gameboy.input.keys.Up = 0
+  if input_mappings[key] then
+    gameboy.input.keys[input_mappings[key]] = 0
   end
-  if key == "down" then
-    gameboy.input.keys.Down = 0
-  end
-  if key == "left" then
-    gameboy.input.keys.Left = 0
-  end
-  if key == "right" then
-    gameboy.input.keys.Right = 0
-  end
-  if key == "x" then
-    gameboy.input.keys.A = 0
-  end
-  if key == "z" then
-    gameboy.input.keys.B = 0
-  end
-  if key == "return" then
-    gameboy.input.keys.Start = 0
-  end
-  if key == "rshift" then
-    gameboy.input.keys.Select = 0
+
+  if key == "escape" then
+    love.event.quit()
   end
 end
 
