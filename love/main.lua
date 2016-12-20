@@ -1,5 +1,6 @@
 bit32 = require("bit")
 gameboy = require("gameboy")
+binser = require("vendor/binser")
 
 local ubuntu_font
 
@@ -32,6 +33,36 @@ function love.load(args)
     print("Couldn't open ", game_path, " bailing.")
     love.event.quit()
     return
+  end
+end
+
+local function save_state(number)
+  local state_data = gameboy.save_state()
+  local filename = gameboy.cartridge.header.title .. ".s" .. number
+  local state_string = binser.serialize(state_data)
+  if love.filesystem.write(filename, state_string) then
+    print("Successfully wrote state: ", filename)
+  else
+    print("Failed to save state: ", filename)
+  end
+end
+
+local function load_state(number)
+  local filename = gameboy.cartridge.header.title .. ".s" .. number
+  local file_data, size = love.filesystem.read(filename)
+  if type(size) == "string" then
+    print(size)
+    print("Couldn't load state: ", filename)
+  else
+    if size > 0 then
+      local state_data, elements = binser.deserialize(file_data)
+      if elements > 0 then
+        gameboy.load_state(state_data[1])
+        print("Loaded state: ", filename)
+      else
+        print("Error parsing state data for ", filename)
+      end
+    end
   end
 end
 
@@ -274,31 +305,31 @@ end
 
 local emulator_running = false
 
-function love.textinput(char)
-  if char == " " then
+local function run_n_cycles(n)
+  for i = 1, n do
     gameboy.step()
   end
-  if char == "k" then
-    for i = 1, 100 do
-      gameboy.step()
-    end
+end
+
+local action_keys = {}
+action_keys[" "] = function() gameboy.step() end
+
+action_keys.k = function() run_n_cycles(100) end
+action_keys.l = function() run_n_cycles(1000) end
+action_keys.r = gameboy.reset
+action_keys.p = function() emulator_running = not emulator_running end
+action_keys.h = gameboy.run_until_hblank
+action_keys.v = gameboy.run_until_vblank
+
+for i = 0, 9 do
+  print(tostring(i))
+  action_keys[tostring(i)] = function()
+    load_state(i)
   end
-  if char == "l" then
-    for i = 1, 1000 do
-      gameboy.step()
-    end
-  end
-  if char == "r" then
-    gameboy.reset()
-  end
-  if char == "p" then
-    emulator_running = not emulator_running
-  end
-  if char == "h" then
-    gameboy.run_until_hblank()
-  end
-  if char == "v" then
-    gameboy.run_until_vblank()
+
+  print("f" .. tostring(i))
+  action_keys["f" .. tostring(i)] = function()
+    save_state(i)
   end
 end
 
@@ -333,6 +364,10 @@ function love.keypressed(key)
 end
 
 function love.keyreleased(key)
+  if action_keys[key] then
+    action_keys[key]()
+  end
+
   if key == "up" then
     gameboy.input.keys.Up = 0
   end

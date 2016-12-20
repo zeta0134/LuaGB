@@ -63,6 +63,37 @@ graphics.reset = function()
   graphics.Status.SetMode(2)
 end
 
+graphics.save_state = function()
+  local state = {}
+
+  state.vram = {}
+  for i = 0, #graphics.vram - 1 do
+    state.vram[i] = graphics.vram[i]
+  end
+
+  state.oam = {}
+  for i = 0, #graphics.oam - 1 do
+    state.oam[i] = graphics.oam[i]
+  end
+
+  state.vblank_count = graphics.vblank_count
+  state.last_edge = graphics.last_edge
+
+  -- TODO: Do we bother to save the screen?
+  return state
+end
+
+graphics.load_state = function(state)
+  for i = 0, #graphics.vram - 1 do
+    graphics.vram[i] = state.vram[i]
+  end
+  for i = 0, #graphics.oam - 1 do
+    graphics.oam[i] = state.oam[i]
+  end
+  graphics.vblank_count = state.vblank_count
+  graphics.last_edge = state.last_edge
+end
+
 local LCD_Control = {}
 graphics.LCD_Control = LCD_Control
 LCD_Control.DisplayEnabled = function()

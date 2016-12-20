@@ -47,4 +47,14 @@ timers.reset = function()
   timers.timer_offset = 0
 end
 
+timers.save_state = function()
+  return {system_clock = timers.system_clock, div_offset = timers.div_offset, timer_offset = timers.timer_offset}
+end
+
+timers.load_state = function(state)
+  timers.system_clock = state.system_clock
+  timers.div_offset = state.div_offset
+  timers.timer_offset = state.timer_offset
+end
+
 return timers

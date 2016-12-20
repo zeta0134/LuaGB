@@ -4,7 +4,6 @@ mbc_none.mt = {}
 mbc_none.raw_data = {}
 mbc_none.external_ram = {}
 mbc_none.mt.__index = function(table, address)
-  --print("Request read at: ", address)
   return mbc_none.raw_data[address]
 end
 mbc_none.mt.__newindex = function(table, address, value)
@@ -13,8 +12,18 @@ mbc_none.mt.__newindex = function(table, address, value)
 end
 
 mbc_none.reset = function(self)
-  -- Do nothing! Nothing to reset.
+  -- Do nothing! This MBC has no state.
 end
+
+mbc_none.save_state = function(self)
+  -- Return nothing! No state to save with this MBC.
+  return nil
+end
+
+mbc_none.reset = function(self, state)
+  -- Do nothing! This MBC has no state.
+end
+
 setmetatable(mbc_none, mbc_none.mt)
 
 return mbc_none

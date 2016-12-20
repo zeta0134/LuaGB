@@ -56,6 +56,34 @@ z80.reset = function()
   z80.halted = 0
 end
 
+z80.save_state = function()
+  local state = {}
+  state.registers = z80.registers
+  state.halted = z80.halted
+  return state
+end
+
+z80.load_state = function(state)
+  -- Note: doing this explicitly for safety, so as
+  -- not to replace the table with external, possibly old / wrong structure
+  reg.flags.z = state.registers.flags.z
+  reg.flags.n = state.registers.flags.n
+  reg.flags.h = state.registers.flags.h
+  reg.flags.c = state.registers.flags.c
+
+  z80.registers.a = state.registers.a
+  z80.registers.b = state.registers.b
+  z80.registers.c = state.registers.c
+  z80.registers.d = state.registers.d
+  z80.registers.e = state.registers.e
+  z80.registers.h = state.registers.h
+  z80.registers.l = state.registers.l
+  z80.registers.pc = state.registers.pc
+  z80.registers.sp = state.registers.sp
+
+  z80.halted = state.halted
+end
+
 local add_cycles = function(cycles)
   timers.system_clock = timers.system_clock + cycles
 end

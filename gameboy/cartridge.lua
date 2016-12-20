@@ -72,4 +72,24 @@ cartridge.reset = function()
   -- a BATTERY in their cartridge type
 end
 
+cartridge.save_state = function()
+  -- Note: for NOW, don't worry about the cartridge
+  -- header, and assume a cart swap has not happened
+  if mbc_mappings[cartridge.header.mbc_type] then
+    return mbc_mappings[cartridge.header.mbc_type]:save_state()
+  else
+    mbc_mappings[0x00]:save_state()
+  end
+end
+
+cartridge.load_state = function(state_data)
+  -- Note: for NOW, don't worry about the cartridge
+  -- header, and assume a cart swap has not happened
+  if mbc_mappings[cartridge.header.mbc_type] then
+    return mbc_mappings[cartridge.header.mbc_type]:load_state(state_data)
+  else
+    mbc_mappings[0x00]:load_state(state_data)
+  end
+end
+
 return cartridge

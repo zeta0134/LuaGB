@@ -125,6 +125,22 @@ io.reset = function()
   io.ram[ports.OBP1] = 0xFF
 end
 
+io.save_state = function()
+  local state = {}
+
+  for i = 0, #io.ram - 1 do
+    state[i] = io.ram[i]
+  end
+
+  return state
+end
+
+io.load_state = function(state)
+  for i = 0, #io.ram - 1 do
+    io.ram[i] = state[i]
+  end
+end
+
 setmetatable(io.block, io.block.mt)
 memory.map_block(0xFF, 0xFF, io.block)
 

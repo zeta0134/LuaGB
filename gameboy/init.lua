@@ -29,7 +29,32 @@ gameboy.reset = function()
   gameboy.z80.reset()
 
   gameboy.interrupts.enabled = 1
+end
 
+gameboy.save_state = function()
+  local state = {}
+  state.io = gameboy.io.save_state()
+  state.memory = gameboy.memory.save_state()
+  state.cartridge = gameboy.cartridge.save_state()
+  state.graphics = gameboy.graphics.save_state()
+  state.timers = gameboy.timers.save_state()
+  state.z80 = gameboy.z80.save_state()
+
+  -- Note: the underscore
+  state.interrupts_enabled = gameboy.interrupts.enabled
+  return state
+end
+
+gameboy.load_state = function(state)
+  gameboy.io.load_state(state.io)
+  gameboy.memory.load_state(state.memory)
+  gameboy.cartridge.load_state(state.cartridge)
+  gameboy.graphics.load_state(state.graphics)
+  gameboy.timers.load_state(state.timers)
+  gameboy.z80.load_state(state.z80)
+
+  -- Note: the underscore
+  gameboy.interrupts.enabled = state.interrupts_enabled
 end
 
 gameboy.step = function()

@@ -75,6 +75,19 @@ mbc3.reset = function(self)
   self.ram_enable = false
 end
 
+mbc3.save_state = function(self)
+  return {rom_bank = self.rom_bank, ram_bank = self.ram_bank, mode = self.mode, ram_enable = self.ram_enable}
+end
+
+mbc3.load_state = function(self, state_data)
+  self:reset()
+
+  self.rom_bank = state_data.rom_bank
+  self.ram_bank = state_data.ram_bank
+  self.mode = state_data.mode
+  self.ram_enable = state_data.ram_enable
+end
+
 setmetatable(mbc3, mbc3.mt)
 
 return mbc3
