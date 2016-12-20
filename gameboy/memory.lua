@@ -78,11 +78,11 @@ memory.reset = function()
   -- DIRECTLY controls, so initialization logic can be performed
   -- elsewhere as appropriate.
 
-  for i = 0, #memory.work_ram_0 - 1 do
+  for i = 0, #memory.work_ram_0 do
     memory.work_ram_0[i] = 0
   end
 
-  for i = 0, #memory.work_ram_1 - 1 do
+  for i = 0, #memory.work_ram_1 do
     memory.work_ram_1[i] = 0
   end
 end
@@ -91,12 +91,12 @@ memory.save_state = function()
   local state = {}
 
   state.work_ram_0 = {}
-  for i = 0, #memory.work_ram_0 - 1 do
+  for i = 0, #memory.work_ram_0 do
     state.work_ram_0[i] = memory.work_ram_0[i]
   end
 
   state.work_ram_1 = {}
-  for i = 0, #memory.work_ram_1 - 1 do
+  for i = 0, #memory.work_ram_1 do
     state.work_ram_1[i] = memory.work_ram_1[i]
   end
 
@@ -104,10 +104,10 @@ memory.save_state = function()
 end
 
 memory.load_state = function(state)
-  for i = 0, #memory.work_ram_0 - 1 do
+  for i = 0, #memory.work_ram_0 do
     memory.work_ram_0[i] = state.work_ram_0[i]
   end
-  for i = 0, #memory.work_ram_1 - 1 do
+  for i = 0, #memory.work_ram_1 do
     memory.work_ram_1[i] = state.work_ram_1[i]
   end
 end

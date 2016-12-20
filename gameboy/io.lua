@@ -128,7 +128,7 @@ end
 io.save_state = function()
   local state = {}
 
-  for i = 0, #io.ram - 1 do
+  for i = 0, #io.ram do
     state[i] = io.ram[i]
   end
 
@@ -136,7 +136,7 @@ io.save_state = function()
 end
 
 io.load_state = function(state)
-  for i = 0, #io.ram - 1 do
+  for i = 0, #io.ram do
     io.ram[i] = state[i]
   end
 end

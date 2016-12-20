@@ -48,11 +48,11 @@ end
 
 graphics.reset = function()
   -- zero out all of VRAM:
-  for i = 0, #graphics.vram - 1 do
+  for i = 0, #graphics.vram do
     graphics.vram[i] = 0
   end
 
-  for i = 0, #graphics.oam - 1 do
+  for i = 0, #graphics.oam do
     graphics.oam[i] = 0
   end
 
@@ -67,12 +67,12 @@ graphics.save_state = function()
   local state = {}
 
   state.vram = {}
-  for i = 0, #graphics.vram - 1 do
+  for i = 0, #graphics.vram do
     state.vram[i] = graphics.vram[i]
   end
 
   state.oam = {}
-  for i = 0, #graphics.oam - 1 do
+  for i = 0, #graphics.oam do
     state.oam[i] = graphics.oam[i]
   end
 
@@ -84,10 +84,10 @@ graphics.save_state = function()
 end
 
 graphics.load_state = function(state)
-  for i = 0, #graphics.vram - 1 do
+  for i = 0, #graphics.vram do
     graphics.vram[i] = state.vram[i]
   end
-  for i = 0, #graphics.oam - 1 do
+  for i = 0, #graphics.oam do
     graphics.oam[i] = state.oam[i]
   end
   graphics.vblank_count = state.vblank_count
