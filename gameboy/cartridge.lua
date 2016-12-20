@@ -52,7 +52,24 @@ cartridge.load = function(file_data, size)
     return 0x00
   end
   setmetatable(cartridge.raw_data, cartridge.raw_data.mt)
+end
 
+cartridge.reset = function()
+  if cartridge.header then
+    -- Simulates a power cycle, resetting selected banks and other variables
+    if mbc_mappings[cartridge.header.mbc_type] then
+      mbc_mappings[cartridge.header.mbc_type]:reset()
+    else
+      -- Calling this for logical completeness, but
+      -- mbc_mappings[0x00] is actually type none,
+      -- whose reset function is a no-op
+      mbc_mappings[0x00]:reset()
+    end
+  end
+
+  -- TODO: Figure out if we care enough to reset
+  -- External RAM here, for games which don't have
+  -- a BATTERY in their cartridge type
 end
 
 return cartridge

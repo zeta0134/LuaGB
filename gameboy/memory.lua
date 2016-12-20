@@ -72,14 +72,19 @@ memory.write_byte = function(address, byte)
   -- Note: If no memory is mapped to handle this write, DO NOTHING. (This is fine.)
 end
 
-memory.initialize = function()
-  -- write out default starting states for IO registers
-  -- skipping sound for now
-  memory[0xFF26] = 0xF1
-  memory[0xFF40] = 0x91
-  memory[0xFF47] = 0xFC
-  memory[0xFF48] = 0xFF
-  memory[0xFF49] = 0xFF
+memory.reset = function()
+  -- It's tempting to want to zero out all 0x0000-0xFFFF, but
+  -- instead here we'll reset only that memory which this module
+  -- DIRECTLY controls, so initialization logic can be performed
+  -- elsewhere as appropriate.
+
+  for i = 0, #memory.work_ram_0 - 1 do
+    memory.work_ram_0[i] = 0
+  end
+
+  for i = 0, #memory.work_ram_1 - 1 do
+    memory.work_ram_1[i] = 0
+  end
 end
 
 -- Fancy: make access to ourselves act as an array, reading / writing memory using the above

@@ -11,6 +11,10 @@ mbc_none.mt.__newindex = function(table, address, value)
   --do nothing!
   return
 end
+
+mbc_none.reset = function(self)
+  -- Do nothing! Nothing to reset.
+end
 setmetatable(mbc_none, mbc_none.mt)
 
 return mbc_none

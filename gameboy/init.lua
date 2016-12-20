@@ -1,16 +1,35 @@
 local gameboy = {}
 
-gameboy.memory = require("gameboy/memory")
-gameboy.z80 = require("gameboy/z80")
+gameboy.cartridge = require("gameboy/cartridge")
 gameboy.graphics = require("gameboy/graphics")
 gameboy.input = require("gameboy/input")
-gameboy.cartridge = require("gameboy/cartridge")
-gameboy.timers = require("gameboy/timers")
 gameboy.interrupts = require("gameboy/interrupts")
+gameboy.io = require("gameboy/io")
+gameboy.memory = require("gameboy/memory")
+gameboy.timers = require("gameboy/timers")
+gameboy.z80 = require("gameboy/z80")
 
 gameboy.initialize = function()
-  gameboy.memory.initialize()
   gameboy.graphics.initialize()
+
+  gameboy.reset()
+end
+
+gameboy.reset = function()
+  -- Resets the gameboy's internal state to just after the power-on and boot sequence
+  -- (Does NOT unload the cartridge)
+
+  -- Note: IO needs to come first here, as some subsequent modules
+  -- manipulate IO registers during reset / initialization
+  gameboy.io.reset()
+  gameboy.memory.reset()
+  gameboy.cartridge.reset()
+  gameboy.graphics.reset() -- Note to self: this needs to come AFTER resetting IO
+  gameboy.timers.reset()
+  gameboy.z80.reset()
+
+  gameboy.interrupts.enabled = 1
+
 end
 
 gameboy.step = function()

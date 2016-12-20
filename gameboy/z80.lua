@@ -24,18 +24,37 @@ local bnot = bit32.bnot
 -- reasonable compromise.
 z80.registers = {}
 local reg = z80.registers
-reg.a = 0x01
-reg.b = 0x00
-reg.c = 0x13
-reg.d = 0x00
-reg.e = 0xD8
-reg.flags = {z=1,n=0,h=1,c=1}
-reg.h = 0x01
-reg.l = 0x4D
-reg.pc = 0x100 --entrypoint for GB games
-reg.sp = 0xFFFE
+reg.a = 0
+reg.b = 0
+reg.c = 0
+reg.d = 0
+reg.e = 0
+reg.flags = {z=0,n=0,h=0,c=0}
+reg.h = 0
+reg.l = 0
+reg.pc = 0
+reg.sp = 0
 
 z80.halted = 0
+
+z80.reset = function()
+  reg.flags.z = 1
+  reg.flags.n = 0
+  reg.flags.h = 1
+  reg.flags.c = 1
+
+  reg.a = 0x01
+  reg.b = 0x00
+  reg.c = 0x13
+  reg.d = 0x00
+  reg.e = 0xD8
+  reg.h = 0x01
+  reg.l = 0x4D
+  reg.pc = 0x100 --entrypoint for GB games
+  reg.sp = 0xFFFE
+
+  z80.halted = 0
+end
 
 local add_cycles = function(cycles)
   timers.system_clock = timers.system_clock + cycles

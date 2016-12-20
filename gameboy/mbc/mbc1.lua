@@ -68,6 +68,14 @@ mbc1.mt.__newindex = function(table, address, value)
     return
   end
 end
+
+mbc1.reset = function(self)
+  self.rom_bank = 1
+  self.ram_bank = 0
+  self.mode = 0
+  self.ram_enable = false
+end
+
 setmetatable(mbc1, mbc1.mt)
 
 return mbc1

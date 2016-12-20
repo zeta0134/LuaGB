@@ -120,7 +120,7 @@ end
 
 function print_instructions()
   love.graphics.setColor(255, 255, 255)
-  love.graphics.print("[Space] = Step | [R] = Run | [P] = Pause | [H] = Run until HBlank | [V] = Run until VBlank", 0, 780)
+  love.graphics.print("[Space] = Step | [R] = Reset | [P] = Play/Pause | [H] = Run until HBlank | [V] = Run until VBlank", 0, 780)
   --print("[Space] = Step | [K] = Run 1000")
   --print("[R] = Run Until Error or Breakpoint")
   --print("[V] = Run Until VBlank")
@@ -289,10 +289,10 @@ function love.textinput(char)
     end
   end
   if char == "r" then
-    emulator_running = true
+    gameboy.reset()
   end
   if char == "p" then
-    emulator_running = false
+    emulator_running = not emulator_running
   end
   if char == "h" then
     gameboy.run_until_hblank()

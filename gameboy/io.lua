@@ -1,6 +1,6 @@
 memory = require("gameboy/memory")
 
-io = {}
+local io = {}
 
 local ports = {}
 -- Port names pulled from Pan Docs, starting here:
@@ -108,6 +108,21 @@ io.block.mt.__newindex = function(table, address, value)
     return
   end
   io.ram[address] = value
+end
+
+io.reset = function()
+  for i = 0, #io.ram do
+    io.ram[i] = 0
+  end
+
+  -- Set io registers to post power-on values
+  -- Sound Enable must be set to F1
+  io.ram[0x26] = 0xF1
+
+  io.ram[ports.LCDC] = 0x91
+  io.ram[ports.BGP ] = 0xFC
+  io.ram[ports.OBP0] = 0xFF
+  io.ram[ports.OBP1] = 0xFF
 end
 
 setmetatable(io.block, io.block.mt)

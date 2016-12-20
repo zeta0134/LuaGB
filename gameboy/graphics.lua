@@ -8,6 +8,21 @@ local graphics = {}
 --just for shortening access
 local ports = io.ports
 
+-- Internal Variables
+graphics.vblank_count = 0
+graphics.last_edge = 0
+
+graphics.game_screen = {}
+
+graphics.clear_screen = function()
+  for y = 0, 143 do
+    graphics.game_screen[y] = {}
+    for x = 0, 159 do
+      graphics.game_screen[y][x] = {255, 255, 255}
+    end
+  end
+end
+
 -- Initialize VRAM blocks in main memory
 -- TODO: Implement access restrictions here based
 -- on the Status register
@@ -25,6 +40,28 @@ graphics.oam.mt.__newindex = function(table, address, byte)
 end
 setmetatable(graphics.oam, graphics.oam.mt)
 memory.map_block(0xFE, 0xFE, graphics.oam)
+
+graphics.initialize = function()
+  graphics.Status.SetMode(2)
+  graphics.clear_screen()
+end
+
+graphics.reset = function()
+  -- zero out all of VRAM:
+  for i = 0, #graphics.vram - 1 do
+    graphics.vram[i] = 0
+  end
+
+  for i = 0, #graphics.oam - 1 do
+    graphics.oam[i] = 0
+  end
+
+  graphics.vblank_count = 0
+  graphics.last_edge = 0
+
+  graphics.clear_screen()
+  graphics.Status.SetMode(2)
+end
 
 local LCD_Control = {}
 graphics.LCD_Control = LCD_Control
@@ -94,8 +131,6 @@ Status.Mode = function()
   return bit32.band(0x03, io.ram[ports.STAT])
 end
 
-graphics.vblank_count = 0
-
 Status.SetMode = function(mode)
   io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xF8) + bit32.band(mode, 0x3)
   if mode == 0 then
@@ -140,8 +175,6 @@ end
 graphics.scanline_compare = function()
   return io.ram[ports.LYC]
 end
-
-graphics.last_edge = 0
 
 local time_at_this_mode = function()
   return timers.system_clock - graphics.last_edge
@@ -219,10 +252,6 @@ handle_mode[3] = function()
   end
 end
 
-graphics.initialize = function()
-  Status.SetMode(2)
-end
-
 graphics.update = function()
   if LCD_Control.DisplayEnabled() then
     handle_mode[Status.Mode()]()
@@ -239,14 +268,6 @@ colors[0] = {255, 255, 255}
 colors[1] = {192, 192, 192}
 colors[2] = {128, 128, 128}
 colors[3] = {0, 0, 0}
-
-graphics.game_screen = {}
-for y = 0, 143 do
-  graphics.game_screen[y] = {}
-  for x = 0, 159 do
-    graphics.game_screen[y][x] = {255, 255, 255}
-  end
-end
 
 local function plot_pixel(buffer, x, y, r, g, b)
   buffer[y][x][1] = r

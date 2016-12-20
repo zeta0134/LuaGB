@@ -40,7 +40,7 @@ mbc3.mt.__newindex = function(table, address, value)
     return
   end
   if address >= 0x2000 and address <= 0x3FFF then
-    -- Select the lower 5 bits of the ROM bank
+    -- Select the lower 7 bits of the ROM bank
     value = bit32.band(value, 0x7F)
     if value == 0 then
       value = 1
@@ -67,6 +67,14 @@ mbc3.mt.__newindex = function(table, address, value)
     return
   end
 end
+
+mbc3.reset = function(self)
+  self.rom_bank = 1
+  self.ram_bank = 0
+  self.mode = 0
+  self.ram_enable = false
+end
+
 setmetatable(mbc3, mbc3.mt)
 
 return mbc3
