@@ -2,10 +2,13 @@ bit32 = require("bit")
 gameboy = require("gameboy")
 binser = require("vendor/binser")
 
-panels = {}
+local panels = {}
+
 panels.registers = require("panels/registers")
 panels.io = require("panels/io")
 panels.vram = require("panels/vram")
+
+local active_panels = {}
 
 local ubuntu_font
 
@@ -15,8 +18,22 @@ local debug_tile_canvas
 local emulator_running = false
 local debug_mode = true
 
+local resize_window = function()
+  local width = 160 * 2 --width of gameboy screen
+  local height = 144 * 2 --height of gameboy screen
+  if debug_mode then
+    if #active_panels > 0 then
+      width = width + 10
+      for _, panel in ipairs(active_panels) do
+        width = width + panel.width + 10
+      end
+    end
+    height = 800
+  end
+  love.window.setMode(width, height)
+end
+
 function love.load(args)
-  love.window.setMode(1280,800)
   love.graphics.setDefaultFilter("nearest", "nearest")
   --love.graphics.setPointStyle("rough")
   ubuntu_font = love.graphics.newFont("UbuntuMono-R.ttf", 18)
@@ -44,9 +61,13 @@ function love.load(args)
 
   -- Initialize Debug Panels
   for _, panel in pairs(panels) do
-    panel.enabled = true
     panel.init(gameboy)
   end
+
+  table.insert(active_panels, panels.io)
+  table.insert(active_panels, panels.vram)
+
+  resize_window()
 end
 
 local function save_state(number)
@@ -96,7 +117,7 @@ function print_instructions()
     "[1-9]   = Load State"
   }
   for i = 1, #shortcuts do
-    love.graphics.print(shortcuts[i], 0, 300 + i * 24)
+    love.graphics.print(shortcuts[i], 0, 520 + i * 20)
   end
 end
 
@@ -135,11 +156,7 @@ action_keys.v = gameboy.run_until_vblank
 
 action_keys.d = function()
   debug_mode = not debug_mode
-  if debug_mode then
-    love.window.setMode(1280, 800)
-  else
-    love.window.setMode(160 * 2, 144 * 2)
-  end
+  resize_window()
 end
 
 for i = 1, 9 do
@@ -190,12 +207,13 @@ end
 
 function love.draw()
   if debug_mode then
+    panels.registers.draw(0, 300)
     print_instructions()
     draw_game_screen(0, 0, 2)
-    local panel_x = 160 * 2 --width of the gameboy canvas in debug mode
-    for _, panel in pairs(panels) do
+    local panel_x = 160 * 2 + 10 --width of the gameboy canvas in debug mode
+    for _, panel in pairs(active_panels) do
       panel.draw(panel_x, 0)
-      panel_x = panel_x + panel.width
+      panel_x = panel_x + panel.width + 10
     end
   else
     draw_game_screen(0, 0, 2)

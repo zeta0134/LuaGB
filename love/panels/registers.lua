@@ -2,7 +2,7 @@ local registers = {}
 
 registers.width = 256
 
-local vertical_spacing = 20
+local vertical_spacing = 18
 
 registers.init = function(gameboy)
   registers.canvas = love.graphics.newCanvas(512, 800)
@@ -127,7 +127,7 @@ registers.print_values = function(gameboy)
   registers.print_registers(gameboy, 0, 0)
   registers.print_wide_registers(gameboy, 0, vertical_spacing * 5)
   registers.print_flags(gameboy, 0, vertical_spacing * 9)
-  registers.print_pointer_registers(gameboy, 0, vertical_spacing * 11)
+  registers.print_pointer_registers(gameboy, 0, vertical_spacing * 10)
 end
 
 return registers

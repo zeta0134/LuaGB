@@ -10,6 +10,7 @@ end
 io.draw = function(x, y)
   love.graphics.setCanvas(io.canvas)
   love.graphics.clear()
+  love.graphics.print("IO Registers", 0, 0)
   io.print_values(io.gameboy)
   love.graphics.setCanvas() -- reset to main FB
   love.graphics.setColor(255, 255, 255)
@@ -84,7 +85,7 @@ function io.print_values(gameboy)
   for x, column in pairs(io_values) do
     for i, io_value in ipairs(column) do
       if #io_value == 2 then
-        io.print_value(gameboy, io_value[2], io_value[1], x, 18 * (i - 1))
+        io.print_value(gameboy, io_value[2], io_value[1], x, 18 * (i) + 10)
       end
     end
   end
