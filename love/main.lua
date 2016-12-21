@@ -62,6 +62,7 @@ function love.load(args)
   -- Initialize Debug Panels
   for _, panel in pairs(panels) do
     panel.init(gameboy)
+    panel.active = true
   end
 
   table.insert(active_panels, panels.io)
@@ -168,6 +169,24 @@ for i = 1, 9 do
     save_state(i)
   end
 end
+
+local toggle_panel = function(name)
+  if panels[name].active then
+    panels[name].active = false
+    for index, value in ipairs(active_panels) do
+      if value == panels[name] then
+        table.remove(active_panels, index)
+      end
+    end
+  else
+    panels[name].active = true
+    table.insert(active_panels, panels[name])
+  end
+  resize_window()
+end
+
+action_keys.kp1 = function() toggle_panel("io") end
+action_keys.kp2 = function() toggle_panel("vram") end
 
 local input_mappings = {}
 input_mappings.up = "Up"
