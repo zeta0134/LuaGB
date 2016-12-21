@@ -345,7 +345,7 @@ graphics.getColorFromTile = function(tile_address, subpixel_x, subpixel_y, palet
   return graphics.getColorFromIndex(graphics.getIndexFromTile(tile_address, subpixel_x, subpixel_y), palette)
 end
 
-graphics.getColorFromTilemap = function(map_address, x, y)
+graphics.getIndexFromTilemap = function(map_address, x, y)
   local tile_x = bit32.rshift(x, 3)
   local tile_y = bit32.rshift(y, 3)
   local tile_index = graphics.vram[(map_address + (tile_y * 32) + (tile_x)) - 0x8000]
@@ -365,12 +365,17 @@ graphics.getColorFromTilemap = function(map_address, x, y)
   local subpixel_x = x - (tile_x * 8)
   local subpixel_y = y - (tile_y * 8)
 
-  return graphics.getColorFromTile(tile_address, subpixel_x, subpixel_y, io.ram[ports.BGP])
+  return graphics.getIndexFromTile(tile_address, subpixel_x, subpixel_y)
+end
+
+graphics.getColorFromTilemap = function(map_address, x, y)
+  local index = graphics.getIndexFromTilemap(map_address, x, y)
+  return graphics.getColorFromIndex(index, io.ram[ports.BGP])
 end
 
 -- local oam = 0xFE00
 
-local function draw_sprites_into_scanline(scanline)
+local function draw_sprites_into_scanline(scanline, bg_index)
   local active_sprites = {}
   local sprite_size = 8
   if LCD_Control.LargeSprites() then
@@ -429,6 +434,8 @@ local function draw_sprites_into_scanline(scanline)
       sub_y = sprite_size - 1 - sub_y
     end
 
+    local sprite_bg_priotity = bit32.band(0x80, sprite_flags) == 0
+
     local sprite_palette = io.ram[ports.OBP0]
     if bit32.band(sprite_flags, 0x10) ~= 0 then
       sprite_palette = io.ram[ports.OBP1]
@@ -443,8 +450,10 @@ local function draw_sprites_into_scanline(scanline)
         end
         local subpixel_index = graphics.getIndexFromTile(0x8000 + sprite_tile * 16, sub_x, sub_y, sprite_palette)
         if subpixel_index > 0 then
-          local subpixel_color = graphics.getColorFromIndex(subpixel_index, sprite_palette)
-          plot_pixel(graphics.game_screen, display_x, scanline, unpack(subpixel_color))
+          --if sprite_bg_priority == true or bg_index[display_x] == 0 then
+            local subpixel_color = graphics.getColorFromIndex(subpixel_index, sprite_palette)
+            plot_pixel(graphics.game_screen, display_x, scanline, unpack(subpixel_color))
+          --end
         end
       end
     end
@@ -460,34 +469,32 @@ graphics.draw_scanline = function(scanline)
   if bg_y >= 256 then
     bg_y = bg_y - 256
   end
-  local w_y = scanline + WY()
-  local w_x = WX() + 7
-  local window_visible = false
-  if w_x <= 166 and w_y <= 143 then
-    window_visible = true
-  end
 
+  local scanline_bg_index = {}
+
+  local w_x = WX() + 7
   for x = 0, 159 do
-    if LCD_Control.BackgroundEnabled() then
-      local bg_color = graphics.getColorFromTilemap(LCD_Control.BackgroundTilemap(), bg_x, bg_y)
-      plot_pixel(graphics.game_screen, x, scanline, unpack(bg_color))
-    end
-    if LCD_Control.WindowEnabled() and window_visible then
-      -- The window doesn't wrap, so make sure these coordinates are valid
-      -- (ie, inside the window map) before attempting to plot a pixel
-      if w_x >= 0 and w_x < 256 and w_y >= 0 and w_y < 256 then
-        local window_color = graphics.getColorFromTilemap(LCD_Control.WindowTilemap(), w_x, w_y)
-        plot_pixel(graphics.game_screen, x, scanline, unpack(window_color))
+    scanline_bg_index[x] = 0
+    if w_x <= x and WY() <= scanline and LCD_Control.WindowEnabled() then
+      -- The Window is visible here, so draw that
+      local window_index = graphics.getIndexFromTilemap(LCD_Control.WindowTilemap(), x, scanline)
+      scanline_bg_index[x] = window_index
+      plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.getColorFromIndex(window_index, io.ram[ports.BGP])))
+    else
+      -- The background is visible
+      if LCD_Control.BackgroundEnabled() then
+        local bg_index = graphics.getIndexFromTilemap(LCD_Control.BackgroundTilemap(), bg_x, bg_y)
+        scanline_bg_index[x] = bg_index
+        plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.getColorFromIndex(bg_index, io.ram[ports.BGP])))
       end
     end
     bg_x = bg_x + 1
     if bg_x >= 256 then
       bg_x = bg_x - 256
     end
-    w_x = w_x + 1
   end
 
-  draw_sprites_into_scanline(scanline)
+  draw_sprites_into_scanline(scanline, scanline_bg_index)
 end
 
 return graphics
