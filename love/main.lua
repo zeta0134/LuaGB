@@ -69,6 +69,8 @@ function love.load(args)
   table.insert(active_panels, panels.vram)
 
   resize_window()
+
+  love.window.setTitle("LuaGB - " .. gameboy.cartridge.header.title)
 end
 
 local function save_state(number)
