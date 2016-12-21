@@ -1,4 +1,5 @@
 local io = require("gameboy/io")
+local interrupts = require("gameboy/interrupts")
 
 local timers = {}
 
@@ -35,7 +36,7 @@ timers.update = function()
         --overflow happened, first reset TIMA to TMA
         io.ram[io.ports.TIMA] = io.ram[io.ports.TMA]
         --then, fire off the timer interrupt
-        request_interrupt(Interrupt.Timer)
+        request_interrupt(interrupts.Timer)
       end
     end
   end
