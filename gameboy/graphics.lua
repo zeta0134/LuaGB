@@ -312,8 +312,16 @@ local function debug_draw_screen()
   end
 end
 
-graphics.getColorFromTile = function(tile_address, subpixel_x, subpixel_y, palette)
+graphics.getColorFromIndex = function(index, palette)
   palette = palette or 0xE4
+  while index > 0 do
+    palette = bit32.rshift(palette, 2)
+    index = index - 1
+  end
+  return colors[bit32.band(palette, 0x3)]
+end
+
+graphics.getIndexFromTile = function(tile_address, subpixel_x, subpixel_y)
   -- move to the row we need this pixel from
   while subpixel_y > 0 do
     tile_address = tile_address + 2
@@ -330,11 +338,11 @@ graphics.getColorFromTile = function(tile_address, subpixel_x, subpixel_y, palet
   end
   -- finally, return the color from the table, based on this index
   -- todo: allow specifying the palette?
-  while palette_index > 0 do
-    palette = bit32.rshift(palette, 2)
-    palette_index = palette_index - 1
-  end
-  return colors[bit32.band(palette, 0x3)]
+  return palette_index
+end
+
+graphics.getColorFromTile = function(tile_address, subpixel_x, subpixel_y, palette)
+  return graphics.getColorFromIndex(graphics.getIndexFromTile(tile_address, subpixel_x, subpixel_y), palette)
 end
 
 graphics.getColorFromTilemap = function(map_address, x, y)
@@ -433,8 +441,11 @@ local function draw_sprites_into_scanline(scanline)
         if x_flipped then
           sub_x = 7 - x
         end
-        local subpixel_color = graphics.getColorFromTile(0x8000 + sprite_tile * 16, sub_x, sub_y, sprite_palette)
-        plot_pixel(graphics.game_screen, display_x, scanline, unpack(subpixel_color))
+        local subpixel_index = graphics.getIndexFromTile(0x8000 + sprite_tile * 16, sub_x, sub_y, sprite_palette)
+        if subpixel_index > 0 then
+          local subpixel_color = graphics.getColorFromIndex(subpixel_index, sprite_palette)
+          plot_pixel(graphics.game_screen, display_x, scanline, unpack(subpixel_color))
+        end
       end
     end
   end
