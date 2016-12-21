@@ -2,19 +2,26 @@ bit32 = require("bit")
 gameboy = require("gameboy")
 binser = require("vendor/binser")
 
+panels = {}
+panels.registers = require("panels/registers")
+panels.io = require("panels/io")
+panels.vram = require("panels/vram")
+
 local ubuntu_font
 
 local game_screen_canvas
 local debug_tile_canvas
 
+local emulator_running = false
+local debug_mode = true
+
 function love.load(args)
   love.window.setMode(1280,800)
   love.graphics.setDefaultFilter("nearest", "nearest")
   --love.graphics.setPointStyle("rough")
-  ubuntu_font = love.graphics.newFont("UbuntuMono-R.ttf", 24)
+  ubuntu_font = love.graphics.newFont("UbuntuMono-R.ttf", 18)
   love.graphics.setFont(ubuntu_font)
   game_screen_canvas = love.graphics.newCanvas(256, 256)
-  debug_tile_canvas = love.graphics.newCanvas(256, 256)
 
   if #args < 2 then
     print("Usage: love love [path to game.gb]")
@@ -33,6 +40,12 @@ function love.load(args)
     print("Couldn't open ", game_path, " bailing.")
     love.event.quit()
     return
+  end
+
+  -- Initialize Debug Panels
+  for _, panel in pairs(panels) do
+    panel.enabled = true
+    panel.init(gameboy)
   end
 end
 
@@ -66,170 +79,24 @@ local function load_state(number)
   end
 end
 
-function print_register_values()
-  local grid = {
-    x = {0, 80, 160, 380},
-    y = {0, 24, 48, 72, 120, 144, 168}
-  }
-
-  local function get_register(name)
-    return function() return gameboy.z80.registers[name] end
-  end
-  local registers = {
-    {255, 255, 64, "A", get_register("a"), 1, 1},
-    {64, 128, 64, "F", gameboy.z80.registers.f, 2, 1},
-    {108, 108, 255, "B", get_register("b"), 1, 2},
-    {152, 80, 32, "C", get_register("c"), 2, 2},
-    {192, 128, 64, "D", get_register("d"), 1, 3},
-    {64, 255, 64, "E", get_register("e"), 2, 3},
-    {224, 196, 128, "H", get_register("h"), 1, 4},
-    {255, 255, 255, "L", get_register("l"), 2, 4}
-  }
-  for _, register in ipairs(registers) do
-    local r, g, b = register[1], register[2], register[3]
-    local name, accessor = register[4], register[5]
-    local x, y = register[6], register[7]
-
-    love.graphics.setColor(r, g, b)
-    love.graphics.print(string.format("%s: %02X", name, accessor()), grid.x[x], grid.y[y])
-  end
-
-  local function flag_string(flag) return gameboy.z80.registers.flags[flag] == 1 and flag or "" end
-  love.graphics.setColor(192, 192, 192)
-  love.graphics.print(string.format("Flags: [%1s %1s %1s %1s])", flag_string("c"), flag_string("n"), flag_string("h"), flag_string("z")), grid.x[3], grid.y[0])
-
-  local wide_registers = {
-    {108, 108, 255, "BC", "bc", 3, 2},
-    {192, 128, 64, "DE", "de", 3, 3},
-    {224, 196, 128, "HL", "hl", 3, 4}
-  }
-  for _, register in ipairs(wide_registers) do
-    local r, g, b = register[1], register[2], register[3]
-    local name, accessor = register[4], register[5]
-    local x, y = register[6], register[7]
-    local value = gameboy.z80.registers[accessor]()
-    local indirect_value = gameboy.memory.read_byte(value)
-
-    love.graphics.setColor(r, g, b)
-    love.graphics.print(string.format("%s: %04X (%s): %02X", name, value, name, indirect_value), grid.x[x], grid.y[y])
-  end
-
-  local pointer_registers = {
-    {192, 192, 255, "SP", "sp", 1, 5},
-    {255, 192, 192, "PC", "pc", 1, 6}
-  }
-  for _, register in ipairs(pointer_registers) do
-    local r, g, b = register[1], register[2], register[3]
-    local name, accessor = register[4], register[5]
-    local x, y = register[6], register[7]
-    local value = gameboy.z80.registers[accessor]
-
-    love.graphics.setColor(r, g, b)
-    love.graphics.print(string.format("%s: %04X (%s): %02X %02X %02X %02X", name, value, name,
-                                      gameboy.memory.read_byte(value),
-                                      gameboy.memory.read_byte(value + 1),
-                                      gameboy.memory.read_byte(value + 2),
-                                      gameboy.memory.read_byte(value + 3)), grid.x[x], grid.y[y])
-  end
-
-  local status = {
-    {"Clock", function() return gameboy.timers.system_clock end, 4, 1},
-    {"GPU Mode", gameboy.graphics.Status.Mode, 4, 2},
-    {"Scanline", gameboy.graphics.scanline, 4, 3},
-    {"Frame", function() return gameboy.graphics.vblank_count end, 4, 4}
-  }
-  love.graphics.setColor(255, 255, 255)
-  for _, state in ipairs(status) do
-    local name, accessor = state[1], state[2]
-    local x, y = state[3], state[4]
-
-    love.graphics.print(string.format("%s: %d", name, accessor()), grid.x[x], grid.y[y])
-  end
-
-  love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X", gameboy.z80.halted, gameboy.interrupts.enabled, gameboy.memory.read_byte(0xFFFF), gameboy.memory.read_byte(0xFF0F)), grid.x[1], grid.y[7])
-end
-
 function print_instructions()
   love.graphics.setColor(255, 255, 255)
-  love.graphics.print("[Space] = Step | [R] = Reset | [P] = Play/Pause | [H] = Run until HBlank | [V] = Run until VBlank", 0, 780)
-  --print("[Space] = Step | [K] = Run 1000")
-  --print("[R] = Run Until Error or Breakpoint")
-  --print("[V] = Run Until VBlank")
-  --print("[H] = Run until HBlank")
-  --print("Draw: [T] Tiles, [B] = BG, [W] = Window, [S] = Sprites, [D] = Entire Screen")
-end
-
-function print_io_value(name, address, x, y)
-  love.graphics.print(string.format("%04X [%- 4s] %02X", address, name, gameboy.memory[address]), x, y)
-end
-
-local io_values = {
-  [850] = {
-    -- joypad
-    {0xFF00, "JOY"},
-    -- serial transfer cable (unimplemented entirely)
-    {0xFF01, "SB"},
-    {0xFF02, "SC"},
-    -- timers
-    {0xFF04, "DIV"},
-    {0xFF05, "TIMA"},
-    {0xFF06, "TMA"},
-    {0xFF07, "TAC"},
-    -- interrupt flags (this holds currently requested interrupts)
-    {0xFF0F, "IF"},
-    -- graphics
-    {0xFF40, "LCDC"},
-    {0xFF41, "STAT"},
-    {0xFF42, "SCY"},
-    {0xFF43, "SCX"},
-    {0xFF44, "LY"},
-    {0xFF45, "LYC"},
-    {0xFF47, "BGP"},
-    {0xFF48, "OBP0"},
-    {0xFF49, "OBP1"},
-    {0xFF4A, "WY"},
-    {0xFF4B, "WX"},
-    -- Interrupt enable
-    {0xFFFF, "IE"}
-  },
-  [1100] = {
-    -- sound
-    {0xFF10, "NR10"},
-    {0xFF11, "NR11"},
-    {0xFF12, "NR12"},
-    {0xFF13, "NR13"},
-    {0xFF14, "NR14"},
-    {},
-    {0xFF16, "NR21"},
-    {0xFF17, "NR22"},
-    {0xFF18, "NR23"},
-    {0xFF19, "NR24"},
-    {},
-    {0xFF1A, "NR30"},
-    {0xFF1B, "NR31"},
-    {0xFF1C, "NR32"},
-    {0xFF1D, "NR33"},
-    {0xFF1E, "NR34"},
-    {},
-    {0xFF20, "NR41"},
-    {0xFF21, "NR42"},
-    {0xFF22, "NR43"},
-    {0xFF23, "NR44"},
-    {},
-    {0xFF24, "NR50"},
-    {0xFF25, "NR51"},
-    {0xFF26, "NR52"},
+  local shortcuts = {
+    "[P] = Play/Pause",
+    "[R] = Reset",
+    "[D] = Toggle Debug Mode",
+    "",
+    "[Space] = Single Step",
+    "[K]     = 100 Steps",
+    "[L]     = 1000 Steps",
+    "[H] = Run until HBlank",
+    "[V] = Run until VBlank",
+    "",
+    "[F1-F9] = Save State",
+    "[1-9]   = Load State"
   }
-}
-
-function print_io_values()
-  love.graphics.setColor(255, 255, 255)
-  for x, column in pairs(io_values) do
-    for i, io_value in ipairs(column) do
-      if #io_value == 2 then
-        print_io_value(io_value[2], io_value[1], x, 24 * (i - 1))
-      end
-    end
+  for i = 1, #shortcuts do
+    love.graphics.print(shortcuts[i], 0, 300 + i * 24)
   end
 end
 
@@ -250,61 +117,6 @@ function draw_game_screen(dx, dy, scale)
   love.graphics.pop()
 end
 
-function draw_tile(address, sx, sy)
-  local x = 0
-  local y = 0
-  for y = 0, 7 do
-    for x = 0, 7 do
-      local color = gameboy.graphics.getColorFromTile(address, x, y)
-      love.graphics.setColor(color[1], color[2], color[3])
-      love.graphics.points(0.5 + sx + x, 0.5 + sy + y)
-    end
-  end
-end
-
-function draw_tiles(dx, dy, tiles_across, scale)
-  love.graphics.setCanvas(debug_tile_canvas)
-  love.graphics.clear()
-  local tile_address = 0x8000
-  local x = 0
-  local y = 0
-  for i = 0, 384 - 1 do
-    draw_tile(tile_address, x, y)
-    x = x + 8
-    if x >= tiles_across * 8 then
-      x = 0
-      y = y + 8
-    end
-    tile_address = tile_address + 16
-  end
-  love.graphics.setColor(255, 255, 255)
-  love.graphics.setCanvas() -- reset to main FB
-  love.graphics.push()
-  love.graphics.scale(scale, scale)
-  love.graphics.draw(debug_tile_canvas, dx / scale, dy / scale)
-  love.graphics.pop()
-end
-
-function draw_tilemap(dx, dy, address, scale)
-  love.graphics.setCanvas(debug_tile_canvas)
-  love.graphics.clear()
-  for y = 0, 255 do
-    for x = 0, 255 do
-      local color = gameboy.graphics.getColorFromTilemap(address, x, y)
-      love.graphics.setColor(color[1], color[2], color[3])
-      love.graphics.points(0.5 + x, 0.5 + y)
-    end
-  end
-  love.graphics.setCanvas() -- reset to main FB
-  love.graphics.setColor(255, 255, 255)
-  love.graphics.push()
-  love.graphics.scale(scale, scale)
-  love.graphics.draw(debug_tile_canvas, dx / scale, dy / scale)
-  love.graphics.pop()
-end
-
-local emulator_running = false
-
 local function run_n_cycles(n)
   for i = 1, n do
     gameboy.step()
@@ -321,13 +133,20 @@ action_keys.p = function() emulator_running = not emulator_running end
 action_keys.h = gameboy.run_until_hblank
 action_keys.v = gameboy.run_until_vblank
 
-for i = 0, 9 do
-  print(tostring(i))
+action_keys.d = function()
+  debug_mode = not debug_mode
+  if debug_mode then
+    love.window.setMode(1280, 800)
+  else
+    love.window.setMode(160 * 2, 144 * 2)
+  end
+end
+
+for i = 1, 9 do
   action_keys[tostring(i)] = function()
     load_state(i)
   end
 
-  print("f" .. tostring(i))
   action_keys["f" .. tostring(i)] = function()
     save_state(i)
   end
@@ -363,14 +182,6 @@ function love.keyreleased(key)
   end
 end
 
-function draw_background()
-  draw_tilemap(0, 500, 0x9800, 1)
-end
-
-function draw_window()
-  draw_tilemap(512, 500, 0x9C00, 1)
-end
-
 function love.update()
   if emulator_running then
     gameboy.run_until_vblank()
@@ -378,15 +189,15 @@ function love.update()
 end
 
 function love.draw()
-  if emulator_running then
-    draw_game_screen(0, 200, 2)
-  else
-    print_register_values()
+  if debug_mode then
     print_instructions()
-    print_io_values()
-    draw_game_screen(0, 200, 2)
-    draw_tiles(320, 200, 32, 2)
-    draw_window()
-    draw_background()
+    draw_game_screen(0, 0, 2)
+    local panel_x = 160 * 2 --width of the gameboy canvas in debug mode
+    for _, panel in pairs(panels) do
+      panel.draw(panel_x, 0)
+      panel_x = panel_x + panel.width
+    end
+  else
+    draw_game_screen(0, 0, 2)
   end
 end
