@@ -312,7 +312,7 @@ local function run_n_cycles(n)
 end
 
 local action_keys = {}
-action_keys[" "] = function() gameboy.step() end
+action_keys.space = function() gameboy.step() end
 
 action_keys.k = function() run_n_cycles(100) end
 action_keys.l = function() run_n_cycles(1000) end
