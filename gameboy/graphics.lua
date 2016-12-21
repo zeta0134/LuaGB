@@ -413,20 +413,29 @@ local function draw_sprites_into_scanline(scanline)
     end
     local sprite_flags = graphics.oam[sprite_address + 3]
 
+    local y_flipped = bit32.band(0x40, sprite_flags) ~= 0
+    local x_flipped = bit32.band(0x20, sprite_flags) ~= 0
+
     local sub_y = 16 - (sprite_y - scanline)
+    if y_flipped then
+      sub_y = sprite_size - 1 - sub_y
+    end
 
     local sprite_palette = io.ram[ports.OBP0]
     if bit32.band(sprite_flags, 0x10) ~= 0 then
       sprite_palette = io.ram[ports.OBP1]
     end
 
-    local start_x = math.max(0, sprite_x - 8)
-    local end_x = math.min(159, sprite_x)
-    local x = start_x
-    while x < end_x do
-      local subpixel_color = graphics.getColorFromTile(0x8000 + sprite_tile * 16, x - sprite_x + 8, sub_y, sprite_palette)
-      plot_pixel(graphics.game_screen, x, scanline, unpack(subpixel_color))
-      x = x + 1
+    for x = 0, 7 do
+      local display_x = sprite_x - 8 + x
+      if display_x >= 0 and display_x < 160 then
+        local sub_x = x
+        if x_flipped then
+          sub_x = 7 - x
+        end
+        local subpixel_color = graphics.getColorFromTile(0x8000 + sprite_tile * 16, sub_x, sub_y, sprite_palette)
+        plot_pixel(graphics.game_screen, display_x, scanline, unpack(subpixel_color))
+      end
     end
   end
   if #active_sprites > 0 then
