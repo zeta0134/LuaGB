@@ -27,8 +27,6 @@ vram.draw = function(x, y)
 end
 
 vram.draw_tile = function(gameboy, address, sx, sy)
-  local x = 0
-  local y = 0
   for y = 0, 7 do
     for x = 0, 7 do
       local color = gameboy.graphics.getColorFromTile(address, x, y)

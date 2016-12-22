@@ -7,6 +7,7 @@ local panels = {}
 panels.registers = require("panels/registers")
 panels.io = require("panels/io")
 panels.vram = require("panels/vram")
+panels.oam = require("panels/oam")
 
 local active_panels = {}
 
@@ -67,6 +68,7 @@ function love.load(args)
 
   table.insert(active_panels, panels.io)
   table.insert(active_panels, panels.vram)
+  table.insert(active_panels, panels.oam)
 
   resize_window()
 
@@ -189,6 +191,7 @@ end
 
 action_keys.kp1 = function() toggle_panel("io") end
 action_keys.kp2 = function() toggle_panel("vram") end
+action_keys.kp3 = function() toggle_panel("oam") end
 
 local input_mappings = {}
 input_mappings.up = "Up"
