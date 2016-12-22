@@ -472,12 +472,12 @@ graphics.draw_scanline = function(scanline)
 
   local scanline_bg_index = {}
 
-  local w_x = WX() + 7
+  local w_x = WX() - 7
   for x = 0, 159 do
     scanline_bg_index[x] = 0
     if w_x <= x and WY() <= scanline and LCD_Control.WindowEnabled() then
       -- The Window is visible here, so draw that
-      local window_index = graphics.getIndexFromTilemap(LCD_Control.WindowTilemap(), x, scanline)
+      local window_index = graphics.getIndexFromTilemap(LCD_Control.WindowTilemap(), x - w_x, scanline - WY())
       scanline_bg_index[x] = window_index
       plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.getColorFromIndex(window_index, io.ram[ports.BGP])))
     else
