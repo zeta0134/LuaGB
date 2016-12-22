@@ -434,7 +434,7 @@ local function draw_sprites_into_scanline(scanline, bg_index)
       sub_y = sprite_size - 1 - sub_y
     end
 
-    local sprite_bg_priotity = bit32.band(0x80, sprite_flags) == 0
+    local sprite_bg_priority = (bit32.band(0x80, sprite_flags) == 0)
 
     local sprite_palette = io.ram[ports.OBP0]
     if bit32.band(sprite_flags, 0x10) ~= 0 then
@@ -450,10 +450,10 @@ local function draw_sprites_into_scanline(scanline, bg_index)
         end
         local subpixel_index = graphics.getIndexFromTile(0x8000 + sprite_tile * 16, sub_x, sub_y, sprite_palette)
         if subpixel_index > 0 then
-          --if sprite_bg_priority == true or bg_index[display_x] == 0 then
+          if sprite_bg_priority or bg_index[display_x] == 0 then
             local subpixel_color = graphics.getColorFromIndex(subpixel_index, sprite_palette)
             plot_pixel(graphics.game_screen, display_x, scanline, unpack(subpixel_color))
-          --end
+          end
         end
       end
     end
