@@ -1196,7 +1196,7 @@ opcodes[0x08] = function()
   local upper = lshift(read_nn(), 8)
   local address = upper + lower
   write_byte(address, band(reg.sp, 0xFF))
-  write_byte(band(address + 1, 0xFFFF), rshift(band(reg.sp, 0xF0), 8))
+  write_byte(band(address + 1, 0xFFFF), rshift(band(reg.sp, 0xFF00), 8))
   add_cycles(4)
 end
 
