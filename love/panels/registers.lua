@@ -98,8 +98,6 @@ end
 registers.print_status_block = function(gameboy, x, y)
   local status = {
     {"Clock", function() return gameboy.timers.system_clock end},
-    {"GPU Mode", gameboy.graphics.Status.Mode},
-    {"Scanline", gameboy.graphics.scanline},
     {"Frame", function() return gameboy.graphics.vblank_count end}
   }
   love.graphics.setColor(255, 255, 255)
@@ -125,9 +123,10 @@ registers.print_values = function(gameboy)
   }
 
   registers.print_registers(gameboy, 0, 0)
-  registers.print_wide_registers(gameboy, 0, vertical_spacing * 5)
-  registers.print_flags(gameboy, 0, vertical_spacing * 9)
-  registers.print_pointer_registers(gameboy, 0, vertical_spacing * 10)
+  registers.print_wide_registers(gameboy, 128, 0)
+  registers.print_flags(gameboy, 0, vertical_spacing * 5)
+  registers.print_pointer_registers(gameboy, 0, vertical_spacing * 6)
+  registers.print_status_block(gameboy, 0, vertical_spacing * 8)
 end
 
 return registers
