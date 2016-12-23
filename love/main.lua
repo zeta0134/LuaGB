@@ -8,6 +8,7 @@ panels.registers = require("panels/registers")
 panels.io = require("panels/io")
 panels.vram = require("panels/vram")
 panels.oam = require("panels/oam")
+panels.disassembler = require("panels/disassembler")
 
 local active_panels = {}
 
@@ -69,6 +70,7 @@ function love.load(args)
   table.insert(active_panels, panels.io)
   table.insert(active_panels, panels.vram)
   table.insert(active_panels, panels.oam)
+  table.insert(active_panels, panels.disassembler)
 
   resize_window()
 
@@ -119,10 +121,11 @@ function print_instructions()
     "[V] = Run until VBlank",
     "",
     "[F1-F9] = Save State",
-    "[1-9]   = Load State"
+    "[1-9]   = Load State",
+    "[Numpad] = Debug Panels"
   }
   for i = 1, #shortcuts do
-    love.graphics.print(shortcuts[i], 0, 520 + i * 20)
+    love.graphics.print(shortcuts[i], 0, 500 + i * 20)
   end
 end
 
@@ -192,6 +195,7 @@ end
 action_keys.kp1 = function() toggle_panel("io") end
 action_keys.kp2 = function() toggle_panel("vram") end
 action_keys.kp3 = function() toggle_panel("oam") end
+action_keys.kp4 = function() toggle_panel("disassembler") end
 
 local input_mappings = {}
 input_mappings.up = "Up"
