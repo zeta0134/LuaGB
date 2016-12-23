@@ -35,6 +35,8 @@ local resize_window = function()
   love.window.setMode(width, height)
 end
 
+local game_filename = ""
+
 function love.load(args)
   love.graphics.setDefaultFilter("nearest", "nearest")
   --love.graphics.setPointStyle("rough")
@@ -49,6 +51,10 @@ function love.load(args)
   end
 
   local game_path = args[2]
+  game_filename = game_path
+  while string.find(game_filename, "/") do
+    game_filename = string.sub(game_filename, string.find(game_filename, "/") + 1)
+  end
 
   gameboy.initialize()
 
@@ -79,7 +85,7 @@ end
 
 local function save_state(number)
   local state_data = gameboy.save_state()
-  local filename = gameboy.cartridge.header.title .. ".s" .. number
+  local filename = game_filename .. ".s" .. number
   local state_string = binser.serialize(state_data)
   if love.filesystem.write(filename, state_string) then
     print("Successfully wrote state: ", filename)
@@ -89,7 +95,7 @@ local function save_state(number)
 end
 
 local function load_state(number)
-  local filename = gameboy.cartridge.header.title .. ".s" .. number
+  local filename = game_filename .. ".s" .. number
   local file_data, size = love.filesystem.read(filename)
   if type(size) == "string" then
     print(size)
