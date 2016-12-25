@@ -899,35 +899,28 @@ end
 opcodes[0xE8] = function()
   local offset = read_nn()
   -- offset comes in as unsigned 0-255, so convert it to signed -128 - 127
-  if offset > 127 then
-    offset = offset - 256
+  if band(offset, 0x80) ~= 0 then
+    offset = offset + 0xFF00
   end
 
   -- half carry
-  if offset >= 0 then
-    if band(reg.sp, 0xFFF) + offset > 0xFFF then
-      reg.flags.h = 1
-    else
-      reg.flags.h = 0
-    end
+  --if band(reg.sp, 0xFFF) + offset > 0xFFF or band(reg.sp, 0xFFF) + offset < 0 then
+  if band(reg.sp, 0xFFF) + band(offset, 0xFFF) > 0xFFF then
+    reg.flags.h = 1
   else
-     -- (note: weird! not sure if this is right)
-    if band(band(reg.sp, 0xFFF) - offset, 0xF00) == 0xF00 then
-      reg.flags.h = 1
-    else
-      reg.flags.h = 0
-    end
+    reg.flags.h = 0
   end
 
   reg.sp = reg.sp + offset
 
   -- carry
-  if reg.sp > 0xFFFF or reg.sp < 0x0000 then
-    reg.sp = band(reg.sp, 0xFFFF)
+  -- if reg.sp > 0xFFFF or reg.sp < 0x0000 then
+  if reg.sp > 0xFFFF then
     reg.flags.c = 1
   else
     reg.flags.c = 0
   end
+  reg.sp = band(reg.sp, 0xFFFF)
 
   reg.flags.z = 0
   reg.flags.n = 0
