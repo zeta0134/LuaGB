@@ -14,9 +14,9 @@ mbc3.mt.__index = function(table, address)
   -- Upper 16k: return the currently selected bank
   if address >= 0x4000 and address <= 0x7FFF then
     local rom_bank = mbc3.rom_bank
-    if mbc3.mode == 0 then
-      rom_bank = rom_bank + bit32.lshift(mbc3.ram_bank, 5)
-    end
+    --if mbc3.mode == 0 then
+    --  rom_bank = rom_bank + bit32.lshift(mbc3.ram_bank, 5)
+    --end
     return mbc3.raw_data[(rom_bank * 16 * 1024) + (address - 0x4000)]
   end
 
