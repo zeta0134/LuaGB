@@ -43,6 +43,9 @@ end
 local game_filename = ""
 local window_title = ""
 
+-- GLOBAL ON PURPOSE
+profile_enabled = false
+
 function love.load(args)
   love.graphics.setDefaultFilter("nearest", "nearest")
   --love.graphics.setPointStyle("rough")
@@ -210,6 +213,8 @@ action_keys.kp2 = function() toggle_panel("vram") end
 action_keys.kp3 = function() toggle_panel("oam") end
 action_keys.kp4 = function() toggle_panel("disassembler") end
 
+action_keys.lshift = function() profile_enabled = not profile_enabled end
+
 local input_mappings = {}
 input_mappings.up = "Up"
 input_mappings.down = "Down"
@@ -221,7 +226,10 @@ input_mappings["return"] = "Start"
 input_mappings.rshift = "Select"
 
 function love.keypressed(key)
-  Pie:keypressed(key)
+  if profile_enabled then
+    Pie:keypressed(key)
+  end
+
   if input_mappings[key] then
     gameboy.input.keys[input_mappings[key]] = 1
     gameboy.input.update()
@@ -229,8 +237,10 @@ function love.keypressed(key)
 end
 
 function love.keyreleased(key)
-  if action_keys[key] then
-    action_keys[key]()
+  if not profile_enabled or key == "lshift" then
+    if action_keys[key] then
+      action_keys[key]()
+    end
   end
 
   if input_mappings[key] then
@@ -263,10 +273,12 @@ function love.draw()
     draw_game_screen(0, 0, 2)
   end
 
-  love.graphics.setColor(0, 0, 0, 128)
-  love.graphics.rectangle("fill", 0, 0, 1024, 1024)
-  love.graphics.setColor(255, 255, 255)
-  --Pie:draw()
+  if profile_enabled then
+    love.graphics.setColor(0, 0, 0, 128)
+    love.graphics.rectangle("fill", 0, 0, 1024, 1024)
+    love.graphics.setColor(255, 255, 255)
+    Pie:draw()
+  end
 
   love.window.setTitle("(FPS: " .. love.timer.getFPS() .. ") - " .. window_title)
 end

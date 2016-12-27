@@ -27,10 +27,9 @@ vram.draw = function(x, y)
 end
 
 vram.draw_tile = function(gameboy, address, sx, sy)
-  local tile_data = gameboy.graphics.LCD_Control.TileData()
   for y = 0, 7 do
     for x = 0, 7 do
-      local color = gameboy.graphics.getColorFromTile(address, tile_data, x, y)
+      local color = gameboy.graphics.getColorFromTile(address, x, y)
       love.graphics.setColor(color[1], color[2], color[3])
       love.graphics.points(0.5 + sx + x, 0.5 + sy + y)
     end

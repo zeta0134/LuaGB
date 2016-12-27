@@ -461,7 +461,9 @@ local function draw_sprites_into_scanline(scanline, bg_index)
 end
 
 graphics.draw_scanline = function(scanline)
-  --Pie:attach()
+  if profile_enabled then
+    Pie:attach()
+  end
   local bg_y = scanline + SCY()
   local bg_x = SCX()
   -- wrap the map in the Y direction
@@ -471,20 +473,27 @@ graphics.draw_scanline = function(scanline)
 
   local scanline_bg_index = {}
 
+  -- Grab this stuff just once, rather than every iteration
+  -- through the loop
   local tile_data = LCD_Control.TileData()
+  local window_tilemap = LCD_Control.WindowTilemap()
+  local background_tilemap = LCD_Control.BackgroundTilemap()
+  local window_enabled = LCD_Control.WindowEnabled()
+  local background_enabled = LCD_Control.BackgroundEnabled()
 
   local w_x = WX() - 7
+  local w_y = WY()
   for x = 0, 159 do
     scanline_bg_index[x] = 0
-    if w_x <= x and WY() <= scanline and LCD_Control.WindowEnabled() then
+    if window_enabled and w_x <= x and w_y <= scanline then
       -- The Window is visible here, so draw that
-      local window_index = graphics.getIndexFromTilemap(LCD_Control.WindowTilemap(), tile_data, x - w_x, scanline - WY())
+      local window_index = graphics.getIndexFromTilemap(window_tilemap, tile_data, x - w_x, scanline - w_y)
       scanline_bg_index[x] = window_index
       plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.getColorFromIndex(window_index, io.ram[ports.BGP])))
     else
       -- The background is visible
-      if LCD_Control.BackgroundEnabled() then
-        local bg_index = graphics.getIndexFromTilemap(LCD_Control.BackgroundTilemap(), tile_data, bg_x, bg_y)
+      if background_enabled then
+        local bg_index = graphics.getIndexFromTilemap(background_tilemap, tile_data, bg_x, bg_y)
         scanline_bg_index[x] = bg_index
         plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.getColorFromIndex(bg_index, io.ram[ports.BGP])))
       end
@@ -496,7 +505,9 @@ graphics.draw_scanline = function(scanline)
   end
 
   draw_sprites_into_scanline(scanline, scanline_bg_index)
-  --Pie:detach()
+  if profile_enabled then
+    Pie:detach()
+  end
 end
 
 return graphics
