@@ -1,3 +1,5 @@
+local bit32 = require("bit")
+
 local mbc1 = {}
 mbc1.raw_data = {}
 mbc1.external_ram = {}

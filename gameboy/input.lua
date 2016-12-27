@@ -1,3 +1,5 @@
+local bit32 = require("bit")
+
 local memory = require("gameboy/memory")
 local io = require("gameboy/io")
 
@@ -37,7 +39,7 @@ end
 
 -- Register hooks for input-related registers
 io.write_logic[io.ports.JOYP] = function(byte)
-  io.ram[io.ports.JOYP] = bit32.band(byte, 0x30)
+  io.ram[io.ports.JOYP] = bit32.band(byte, 0x30)  
   input.update()
 end
 

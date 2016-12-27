@@ -1,3 +1,5 @@
+local bit32 = require("bit")
+
 local opcode_names = require("gameboy/opcode_names")
 
 local disassembler = {}

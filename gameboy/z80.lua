@@ -1,3 +1,5 @@
+local bit32 = require("bit")
+
 local z80 = {}
 
 local interrupts = require("gameboy/interrupts")

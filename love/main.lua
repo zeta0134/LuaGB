@@ -1,6 +1,7 @@
-bit32 = require("bit")
-gameboy = require("gameboy")
-binser = require("vendor/binser")
+local bit32 = require("bit")
+local gameboy = require("gameboy")
+local binser = require("vendor/binser")
+local pie = require("vendor/piefiller")
 
 local panels = {}
 
@@ -20,6 +21,10 @@ local debug_tile_canvas
 local emulator_running = false
 local debug_mode = true
 
+Pie = pie:new()
+Pie:attach()
+Pie:detach()
+
 local resize_window = function()
   local width = 160 * 2 --width of gameboy screen
   local height = 144 * 2 --height of gameboy screen
@@ -36,6 +41,7 @@ local resize_window = function()
 end
 
 local game_filename = ""
+local window_title = ""
 
 function love.load(args)
   love.graphics.setDefaultFilter("nearest", "nearest")
@@ -80,7 +86,8 @@ function love.load(args)
 
   resize_window()
 
-  love.window.setTitle("LuaGB - " .. gameboy.cartridge.header.title)
+  window_title = "LuaGB - " .. gameboy.cartridge.header.title
+  love.window.setTitle(window_title)
 end
 
 local function save_state(number)
@@ -214,8 +221,10 @@ input_mappings["return"] = "Start"
 input_mappings.rshift = "Select"
 
 function love.keypressed(key)
+  Pie:keypressed(key)
   if input_mappings[key] then
     gameboy.input.keys[input_mappings[key]] = 1
+    gameboy.input.update()
   end
 end
 
@@ -226,6 +235,7 @@ function love.keyreleased(key)
 
   if input_mappings[key] then
     gameboy.input.keys[input_mappings[key]] = 0
+    gameboy.input.update()
   end
 
   if key == "escape" then
@@ -252,4 +262,11 @@ function love.draw()
   else
     draw_game_screen(0, 0, 2)
   end
+
+  love.graphics.setColor(0, 0, 0, 128)
+  love.graphics.rectangle("fill", 0, 0, 1024, 1024)
+  love.graphics.setColor(255, 255, 255)
+  --Pie:draw()
+
+  love.window.setTitle("(FPS: " .. love.timer.getFPS() .. ") - " .. window_title)
 end

@@ -1,3 +1,5 @@
+local bit32 = require("bit")
+
 local memory = {}
 
 local block_map = {}

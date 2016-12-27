@@ -1,3 +1,5 @@
+local bit32 = require("bit")
+
 local oam = {}
 
 oam.width = 320

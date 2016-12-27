@@ -59,7 +59,7 @@ end
 
 gameboy.step = function()
   gameboy.graphics.update()
-  gameboy.input.update()
+  --gameboy.input.update()
   return process_instruction()
 end
 

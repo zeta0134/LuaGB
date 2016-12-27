@@ -1,3 +1,5 @@
+local bit32 = require("bit")
+
 local io = require("gameboy/io")
 local interrupts = require("gameboy/interrupts")
 

@@ -97,23 +97,23 @@ end
 
 registers.print_status_block = function(gameboy, x, y)
   local status = {
-    {"Clock", function() return gameboy.timers.system_clock end},
-    {"Frame", function() return gameboy.graphics.vblank_count end}
+    {"Frame", function() return gameboy.graphics.vblank_count end},
+    {"Clock", function() return gameboy.timers.system_clock end}
   }
   love.graphics.setColor(255, 255, 255)
-  local ry = 0
+  local rx = 0
   for _, state in ipairs(status) do
     local name, accessor = state[1], state[2]
 
-    love.graphics.print(string.format("%s: %d", name, accessor()), x, y + ry)
-    ry = ry + vertical_spacing
+    love.graphics.print(string.format("%s: %d", name, accessor()), x + rx, y)
+    rx = rx + 128
   end
 
   love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X",
     gameboy.z80.halted,
     gameboy.interrupts.enabled,
     gameboy.memory.read_byte(0xFFFF),
-    gameboy.memory.read_byte(0xFF0F)), x, y + ry)
+    gameboy.memory.read_byte(0xFF0F)), x, y + vertical_spacing)
 end
 
 registers.print_values = function(gameboy)
@@ -124,9 +124,9 @@ registers.print_values = function(gameboy)
 
   registers.print_registers(gameboy, 0, 0)
   registers.print_wide_registers(gameboy, 128, 0)
-  registers.print_flags(gameboy, 0, vertical_spacing * 5)
-  registers.print_pointer_registers(gameboy, 0, vertical_spacing * 6)
-  registers.print_status_block(gameboy, 0, vertical_spacing * 8)
+  registers.print_flags(gameboy, 128, vertical_spacing * 3)
+  registers.print_pointer_registers(gameboy, 0, vertical_spacing * 5)
+  registers.print_status_block(gameboy, 0, vertical_spacing * 7)
 end
 
 return registers

@@ -1,3 +1,5 @@
+local bit32 = require("bit")
+
 memory = require("gameboy/memory")
 
 local io = {}
