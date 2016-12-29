@@ -75,10 +75,6 @@ io.write_mask[ports.STAT] = 0x78
 io.write_mask[ports.LY] = 0x00
 
 io.write_logic = {}
-io.write_logic[ports.DIV] = function(byte)
-  -- Timer DIV register; any write resets this value to 0
-  io.ram[ports.DIV] = 0
-end
 
 io.write_logic[ports.LY] = function(byte)
   -- LY, writes reset the counter

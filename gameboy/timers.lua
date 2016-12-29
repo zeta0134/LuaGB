@@ -18,8 +18,20 @@ timers.clock_rates[3] = math.floor(system_clocks_per_second / 16384)
 timers.div_offset = 0
 timers.timer_offset = 0
 
-local timer_enabled = function()
-  return bit32.band(io.ram[io.ports.TAC], 0x4) == 0x4
+timers.timer_enabled = false
+
+--local timer_enabled = function()
+  --return bit32.band(io.ram[io.ports.TAC], 0x4) == 0x4
+--end
+
+io.write_logic[io.ports.DIV] = function(byte)
+  -- Timer DIV register; any write resets this value to 0
+  io.ram[io.ports.DIV] = 0
+end
+
+io.write_logic[io.ports.TAC] = function(byte)
+  io.ram[io.ports.TAC] = byte
+  timers.timer_enabled = (bit32.band(io.ram[io.ports.TAC], 0x4) == 0x4)
 end
 
 timers.update = function()
@@ -29,7 +41,8 @@ timers.update = function()
     timers.div_offset = timers.div_offset + 256
   end
 
-  if timer_enabled() then
+  --if timer_enabled() then
+  if timers.timer_enabled then
     local rate_select = bit32.band(io.ram[io.ports.TAC], 0x3)
     if timers.system_clock > timers.timer_offset + timers.clock_rates[rate_select] then
       io.ram[io.ports.TIMA] = bit32.band(io.ram[io.ports.TIMA] + 1, 0xFF)
