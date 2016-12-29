@@ -68,18 +68,12 @@ memory.map_block(0xE0, 0xFD, memory.work_ram_echo, 0)
 
 memory.read_byte = function(address)
   local high_byte = bit32.band(address, 0xFF00)
-  --local adjusted_address = address - block_map[high_byte].start
-  --return block_map[high_byte].block[adjusted_address]
   return block_map[high_byte][address]
 end
 
 memory.write_byte = function(address, byte)
   local high_byte = bit32.band(address, 0xFF00)
-  --local adjusted_address = address - block_map[high_byte].start
-  --block_map[high_byte].block[adjusted_address] = byte
   block_map[high_byte][address] = byte
-
-  -- Note: If no memory is mapped to handle this write, DO NOTHING. (This is fine.)
 end
 
 memory.reset = function()
@@ -101,12 +95,12 @@ memory.save_state = function()
   local state = {}
 
   state.work_ram_0 = {}
-  for i = 0, #memory.work_ram_0 do
+  for i = 0xC000, 0xCFFF do
     state.work_ram_0[i] = memory.work_ram_0[i]
   end
 
   state.work_ram_1 = {}
-  for i = 0, #memory.work_ram_1 do
+  for i = 0xD000, 0xDFFF do
     state.work_ram_1[i] = memory.work_ram_1[i]
   end
 
@@ -114,10 +108,10 @@ memory.save_state = function()
 end
 
 memory.load_state = function(state)
-  for i = 0, #memory.work_ram_0 do
+  for i = 0xC000, 0xCFFF do
     memory.work_ram_0[i] = state.work_ram_0[i]
   end
-  for i = 0, #memory.work_ram_1 do
+  for i = 0xD000, 0xDFFF do
     memory.work_ram_1[i] = state.work_ram_1[i]
   end
 end
