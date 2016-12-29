@@ -461,9 +461,6 @@ local function draw_sprites_into_scanline(scanline, bg_index)
 end
 
 graphics.draw_scanline = function(scanline)
-  if profile_enabled then
-    Pie:attach()
-  end
   local bg_y = scanline + SCY()
   local bg_x = SCX()
   -- wrap the map in the Y direction
@@ -505,9 +502,6 @@ graphics.draw_scanline = function(scanline)
   end
 
   draw_sprites_into_scanline(scanline, scanline_bg_index)
-  if profile_enabled then
-    Pie:detach()
-  end
 end
 
 return graphics

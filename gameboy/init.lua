@@ -59,8 +59,8 @@ end
 
 gameboy.step = function()
   gameboy.graphics.update()
-  --gameboy.input.update()
-  return process_instruction()
+  process_instruction()
+  return
 end
 
 gameboy.run_until_vblank = function()

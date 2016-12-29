@@ -3,6 +3,7 @@ local bit32 = require("bit")
 local z80 = {}
 
 local interrupts = require("gameboy/interrupts")
+local io = require("gameboy/io")
 local memory = require("gameboy/memory")
 local timers = require("gameboy/timers")
 
@@ -1577,7 +1578,8 @@ opcodes[0xFF] = function() call_address(0x38) end
 
 function process_interrupts()
   if interrupts.enabled ~= 0 then
-    local fired = band(memory[0xFFFF], memory[0xFF0F])
+    --local fired = band(memory[0xFFFF], memory[0xFF0F])
+    local fired = band(io.ram[0xFF], io.ram[0x0F])
     if fired ~= 0 then
       -- an interrupt happened that we care about! How thoughtful
 
@@ -1597,7 +1599,7 @@ function process_interrupts()
         count = count + 1
       end
       -- we need to clear the corresponding bit first, to avoid infinite loops
-      memory[0xFF0F] = bxor(lshift(0x1, count), memory[0xFF0F])
+      io.ram[0x0F] = bxor(lshift(0x1, count), io.ram[0x0F])
       call_address(vector)
       return true
     end
@@ -1606,6 +1608,9 @@ function process_interrupts()
 end
 
 function process_instruction()
+  if profile_enabled then
+    Pie:attach()
+  end
   timers.update()
 
   -- BGB, another gameboy emulator, disagrees with the interrupt timing.
@@ -1614,12 +1619,18 @@ function process_instruction()
   -- correct hardware wise, and this doesn't seem like a broken implementation,
   -- so I want to leave it like it is for now.
   if process_interrupts() then
+    --if profile_enabled then
+      --Pie:detach()
+    --end
     return true --interrupt firing counts as one instruction, for debugging
   end
 
   --  If the processor is currently halted, then do nothing.
   if z80.halted ~= 0 then
     add_cycles(4)
+    --if profile_enabled then
+      --Pie:detach()
+    --end
     return true
   else
     local opcode = read_byte(reg.pc)
@@ -1631,15 +1642,21 @@ function process_instruction()
       add_cycles(4)
     else
       print(string.format("Unhandled opcode: %x", opcode))
+      --if profile_enabled then
+        --Pie:detach()
+      --end
       return false
     end
+    --if profile_enabled then
+      --Pie:detach()
+    --end
     return true
   end
 end
 
 function request_interrupt(bitmask)
-  memory[0xFF0F] = band(bor(memory[0xFF0F], bitmask), 0x1F)
-  if band(memory[0xFFFF], bitmask) ~= 0 then
+  io.ram[0x0F] = band(bor(io.ram[0x0F], bitmask), 0x1F)
+  if band(io.ram[0xFF], bitmask) ~= 0 then
     z80.halted = 0
   end
 end
