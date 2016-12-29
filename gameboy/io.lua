@@ -65,8 +65,8 @@ io.ports = ports
 io.ram = memory.generate_block(0x100)
 io.block = {}
 io.block.mt = {}
-io.block.mt.__index = function(table, key)
-  return io.ram[key]
+io.block.mt.__index = function(table, address)
+  return io.ram[address - 0xFF00]
 end
 
 io.write_mask = {}
@@ -100,6 +100,7 @@ io.write_logic[ports.DMA] = function(byte)
 end
 
 io.block.mt.__newindex = function(table, address, value)
+  address = address - 0xFF00
   if io.write_mask[address] then
     value = bit32.band(value, io.write_mask[address]) + bit32.band(memory[address], bit32.bnot(io.write_mask[address]))
   end
@@ -144,6 +145,6 @@ io.load_state = function(state)
 end
 
 setmetatable(io.block, io.block.mt)
-memory.map_block(0xFF, 0xFF, io.block)
+memory.map_block(0xFF, 0xFF, io.block, 0)
 
 return io

@@ -28,9 +28,9 @@ end
 -- Initialize VRAM blocks in main memory
 -- TODO: Implement access restrictions here based
 -- on the Status register
-graphics.vram = memory.generate_block(8 * 1024)
-memory.map_block(0x80, 0x9F, graphics.vram)
-graphics.oam = memory.generate_block(0xA0)
+graphics.vram = memory.generate_block(8 * 1024, 0x8000)
+memory.map_block(0x80, 0x9F, graphics.vram, 0)
+graphics.oam = memory.generate_block(0xA0, 0xFE00)
 graphics.oam.mt = {}
 graphics.oam.mt.__index = function(table, address)
   -- out of range? So sorry, return nothing
@@ -41,7 +41,7 @@ graphics.oam.mt.__newindex = function(table, address, byte)
   return
 end
 setmetatable(graphics.oam, graphics.oam.mt)
-memory.map_block(0xFE, 0xFE, graphics.oam)
+memory.map_block(0xFE, 0xFE, graphics.oam, 0)
 
 graphics.initialize = function()
   graphics.Status.SetMode(2)
@@ -50,11 +50,12 @@ end
 
 graphics.reset = function()
   -- zero out all of VRAM:
-  for i = 0, #graphics.vram do
+  for i = 0x8000, 0x9FFF do
     graphics.vram[i] = 0
   end
 
-  for i = 0, #graphics.oam do
+  -- zero out all of OAM
+  for i = 0xFE00, 0xFE9F do
     graphics.oam[i] = 0
   end
 
@@ -69,12 +70,12 @@ graphics.save_state = function()
   local state = {}
 
   state.vram = {}
-  for i = 0, #graphics.vram do
+  for i = 0x8000, 0x9FFF do
     state.vram[i] = graphics.vram[i]
   end
 
   state.oam = {}
-  for i = 0, #graphics.oam do
+  for i = 0xFE00, 0xFE9F do
     state.oam[i] = graphics.oam[i]
   end
 
@@ -86,10 +87,10 @@ graphics.save_state = function()
 end
 
 graphics.load_state = function(state)
-  for i = 0, #graphics.vram do
+  for i = 0x8000, 0x9FFF do
     graphics.vram[i] = state.vram[i]
   end
-  for i = 0, #graphics.oam do
+  for i = 0xFE00, 0xFE9F do
     graphics.oam[i] = state.oam[i]
   end
   graphics.vblank_count = state.vblank_count
@@ -334,7 +335,6 @@ graphics.getIndexFromTile = function(tile_address, subpixel_x, subpixel_y)
 
   -- grab the pixel color we need, and translate it into a palette index
   local palette_index = 0
-  tile_address = tile_address - 0x8000
   if bit32.band(graphics.vram[tile_address], bit32.lshift(0x1, 7 - subpixel_x)) ~= 0 then
     palette_index = palette_index + 1
   end
@@ -354,7 +354,7 @@ end
 graphics.getIndexFromTilemap = function(map_address, tile_data, x, y)
   local tile_x = bit32.rshift(x, 3)
   local tile_y = bit32.rshift(y, 3)
-  local tile_index = graphics.vram[(map_address + (tile_y * 32) + (tile_x)) - 0x8000]
+  local tile_index = graphics.vram[(map_address + (tile_y * 32) + (tile_x))]
   if tile_data == 0x9000 then
     if tile_index > 127 then
       tile_index = tile_index - 256
@@ -386,7 +386,7 @@ local function draw_sprites_into_scanline(scanline, bg_index)
   local i = 0
   while i < 40 do
     -- is this sprite being displayed on this scanline? (respect to Y coordinate)
-    local sprite_y = graphics.oam[i * 4]
+    local sprite_y = graphics.oam[0xFE00 + i * 4]
     local sprite_lower = sprite_y - 16
     local sprite_upper = sprite_y - 16 + sprite_size
     if scanline >= sprite_lower and scanline < sprite_upper then
@@ -398,8 +398,8 @@ local function draw_sprites_into_scanline(scanline, bg_index)
         local lowest_priority = i
         local lowest_priotity_index = nil
         for j = 1, #active_sprites do
-          local lowest_x = graphics.oam[lowest_priority * 4 + 1]
-          local candidate_x = graphics.oam[active_sprites[j] * 4 + 1]
+          local lowest_x = graphics.oam[0xFE00 + lowest_priority * 4 + 1]
+          local candidate_x = graphics.oam[0xFE00 + active_sprites[j] * 4 + 1]
           if candidate_x > lowest_x then
             lowest_priority = active_sprites[j]
             lowest_priority_index = j
@@ -415,7 +415,7 @@ local function draw_sprites_into_scanline(scanline, bg_index)
 
   -- now, for every sprite in the list, display it on the current scanline
   for i = #active_sprites, 1, -1 do
-    local sprite_address = active_sprites[i] * 4
+    local sprite_address = 0xFE00 + active_sprites[i] * 4
     local sprite_y = graphics.oam[sprite_address]
     local sprite_x = graphics.oam[sprite_address + 1]
     local sprite_tile = graphics.oam[sprite_address + 2]

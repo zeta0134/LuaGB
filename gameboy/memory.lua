@@ -9,7 +9,8 @@ memory.print_block_map = function()
   print("Block Map: ")
   for b = 0, 0xFF do
     if block_map[bit32.lshift(b, 8)] then
-      print(string.format("Block at: %02X starts at %04X", b, block_map[bit32.lshift(b, 8)].start))
+      --print(string.format("Block at: %02X starts at %04X", b, block_map[bit32.lshift(b, 8)].start))
+      print(block_map[bit32.lshift(b, 8)])
     end
   end
 end
@@ -20,16 +21,18 @@ memory.map_block = function(starting_high_byte, ending_high_byte, mapped_block, 
     return
   end
 
-  starting_address = starting_address or bit32.lshift(starting_high_byte, 8)
+  --starting_address = starting_address or bit32.lshift(starting_high_byte, 8)
   for i = starting_high_byte, ending_high_byte do
-    block_map[bit32.lshift(i, 8)] = {start=starting_address, block=mapped_block}
+    --block_map[bit32.lshift(i, 8)] = {start=starting_address, block=mapped_block}
+    block_map[bit32.lshift(i, 8)] = mapped_block
   end
 end
 
-memory.generate_block = function(size)
+memory.generate_block = function(size, starting_address)
+  starting_address = starting_address or 0
   local block = {}
   for i = 0, size - 1 do
-    block[i] = 0
+    block[starting_address + i] = 0
   end
   return block
 end
@@ -47,32 +50,34 @@ setmetatable(memory.unmapped, memory.unmapped.mt)
 memory.map_block(0, 0xFF, memory.unmapped)
 
 -- Main Memory
-memory.work_ram_0 = memory.generate_block(4 * 1024)
-memory.work_ram_1 = memory.generate_block(4 * 1024)
-memory.map_block(0xC0, 0xCF, memory.work_ram_0)
-memory.map_block(0xD0, 0xDF, memory.work_ram_1)
+memory.work_ram_0 = memory.generate_block(4 * 1024, 0xC0)
+memory.work_ram_1 = memory.generate_block(4 * 1024, 0xD0)
+memory.map_block(0xC0, 0xCF, memory.work_ram_0, 0)
+memory.map_block(0xD0, 0xDF, memory.work_ram_1, 0)
 
 memory.work_ram_echo = {}
 memory.work_ram_echo.mt = {}
 memory.work_ram_echo.mt.__index = function(table, key)
-  return memory.read_byte(key + 0xC000)
+  return memory.read_byte(key - 0xE000 + 0xC000)
 end
 memory.work_ram_echo.mt.__newindex = function(table, key, value)
-  memory.write_byte(key + 0xC000, value)
+  memory.write_byte(key - 0xE000 + 0xC000, value)
 end
 setmetatable(memory.work_ram_echo, memory.work_ram_echo.mt)
-memory.map_block(0xE0, 0xFD, memory.work_ram_echo)
+memory.map_block(0xE0, 0xFD, memory.work_ram_echo, 0)
 
 memory.read_byte = function(address)
   local high_byte = bit32.band(address, 0xFF00)
-  local adjusted_address = address - block_map[high_byte].start
-  return block_map[high_byte].block[adjusted_address]
+  --local adjusted_address = address - block_map[high_byte].start
+  --return block_map[high_byte].block[adjusted_address]
+  return block_map[high_byte][address]
 end
 
 memory.write_byte = function(address, byte)
   local high_byte = bit32.band(address, 0xFF00)
-  local adjusted_address = address - block_map[high_byte].start
-  block_map[high_byte].block[adjusted_address] = byte
+  --local adjusted_address = address - block_map[high_byte].start
+  --block_map[high_byte].block[adjusted_address] = byte
+  block_map[high_byte][address] = byte
 
   -- Note: If no memory is mapped to handle this write, DO NOTHING. (This is fine.)
 end
