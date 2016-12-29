@@ -8,8 +8,8 @@ memory.print_block_map = function()
   --debug
   print("Block Map: ")
   for b = 0, 0xFF do
-    if block_map[b] then
-      print(string.format("Block at: %02X starts at %04X", b, block_map[b].start))
+    if block_map[bit32.lshift(b, 8)] then
+      print(string.format("Block at: %02X starts at %04X", b, block_map[bit32.lshift(b, 8)].start))
     end
   end
 end
@@ -34,6 +34,18 @@ memory.generate_block = function(size)
   return block
 end
 
+-- Default, unmapped memory
+memory.unmapped = {}
+memory.unmapped.mt = {}
+memory.unmapped.mt.__index = function(table, key)
+  return 0x00
+end
+memory.unmapped.mt.__newindex = function(table, key, value)
+  -- Do nothing!
+end
+setmetatable(memory.unmapped, memory.unmapped.mt)
+memory.map_block(0, 0xFF, memory.unmapped)
+
 -- Main Memory
 memory.work_ram_0 = memory.generate_block(4 * 1024)
 memory.work_ram_1 = memory.generate_block(4 * 1024)
@@ -53,23 +65,14 @@ memory.map_block(0xE0, 0xFD, memory.work_ram_echo)
 
 memory.read_byte = function(address)
   local high_byte = bit32.band(address, 0xFF00)
-  if block_map[high_byte] then
-    local adjusted_address = address - block_map[high_byte].start
-    return block_map[high_byte].block[adjusted_address]
-  end
-
-  -- No mapped block for this memory exists! Return something sane-ish.
-  -- TODO: Research what real hardware does on unmapped memory regions and
-  -- do that here instead.
-  return 0x00
+  local adjusted_address = address - block_map[high_byte].start
+  return block_map[high_byte].block[adjusted_address]
 end
 
 memory.write_byte = function(address, byte)
   local high_byte = bit32.band(address, 0xFF00)
-  if block_map[high_byte] then
-    local adjusted_address = address - block_map[high_byte].start
-    block_map[high_byte].block[adjusted_address] = byte
-  end
+  local adjusted_address = address - block_map[high_byte].start
+  block_map[high_byte].block[adjusted_address] = byte
 
   -- Note: If no memory is mapped to handle this write, DO NOTHING. (This is fine.)
 end
