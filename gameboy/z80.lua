@@ -1607,6 +1607,20 @@ function process_interrupts()
   return false
 end
 
+-- For any opcodes that at this point are undefined,
+-- go ahead and "define" them with the following panic
+-- function
+function undefined_opcode()
+  local opcode = read_byte(band(reg.pc - 1, 0xFFFF))
+  print(string.format("Unhandled opcode!: %x", opcode))
+end
+
+for i = 0, 0xFF do
+  if not opcodes[i] then
+    opcodes[i] = undefined_opcode()
+  end
+end
+
 function process_instruction()
   if profile_enabled then
     Pie:attach()
@@ -1619,37 +1633,29 @@ function process_instruction()
   -- correct hardware wise, and this doesn't seem like a broken implementation,
   -- so I want to leave it like it is for now.
   if process_interrupts() then
-    --if profile_enabled then
-      --Pie:detach()
-    --end
+    if profile_enabled then
+      Pie:detach()
+    end
     return true --interrupt firing counts as one instruction, for debugging
   end
 
   --  If the processor is currently halted, then do nothing.
   if z80.halted ~= 0 then
     add_cycles(4)
-    --if profile_enabled then
-      --Pie:detach()
-    --end
+    if profile_enabled then
+      Pie:detach()
+    end
     return true
   else
     local opcode = read_byte(reg.pc)
     reg.pc = band(reg.pc + 1, 0xFFFF)
-    if opcodes[opcode] ~= nil then
-      -- run this instruction!
-      opcodes[opcode]()
-      -- add a base clock of 4 to every instruction
-      add_cycles(4)
-    else
-      print(string.format("Unhandled opcode: %x", opcode))
-      --if profile_enabled then
-        --Pie:detach()
-      --end
-      return false
+    -- run this instruction!
+    opcodes[opcode]()
+    -- add a base clock of 4 to every instruction
+    add_cycles(4)
+    if profile_enabled then
+      Pie:detach()
     end
-    --if profile_enabled then
-      --Pie:detach()
-    --end
     return true
   end
 end

@@ -40,8 +40,7 @@ timers.update = function()
     io.ram[io.ports.DIV] = bit32.band(io.ram[io.ports.DIV] + 1, 0xFF)
     timers.div_offset = timers.div_offset + 256
   end
-
-  --if timer_enabled() then
+  
   if timers.timer_enabled then
     local rate_select = bit32.band(io.ram[io.ports.TAC], 0x3)
     if timers.system_clock > timers.timer_offset + timers.clock_rates[rate_select] then
