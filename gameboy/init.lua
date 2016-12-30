@@ -61,7 +61,7 @@ end
 
 gameboy.step = function()
   gameboy.graphics.update()
-  process_instruction()
+  gameboy.z80.process_instruction()
   return
 end
 

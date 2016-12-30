@@ -1576,7 +1576,7 @@ opcodes[0xEF] = function() call_address(0x28) end
 opcodes[0xF7] = function() call_address(0x30) end
 opcodes[0xFF] = function() call_address(0x38) end
 
-function process_interrupts()
+z80.process_interrupts = function()
   if interrupts.enabled ~= 0 then
     --local fired = band(memory[0xFFFF], memory[0xFF0F])
     local fired = band(io.ram[0xFF], io.ram[0x0F])
@@ -1621,23 +1621,11 @@ for i = 0, 0xFF do
   end
 end
 
-function process_instruction()
+z80.process_instruction = function()
   if profile_enabled then
     Pie:attach()
   end
   timers.update()
-
-  -- BGB, another gameboy emulator, disagrees with the interrupt timing.
-  -- It allows one extra instruction to be processed after an EI instruction
-  -- is called, before actually servicing the interrupt. I'm not sure what's
-  -- correct hardware wise, and this doesn't seem like a broken implementation,
-  -- so I want to leave it like it is for now.
-  if process_interrupts() then
-    if profile_enabled then
-      Pie:detach()
-    end
-    return true --interrupt firing counts as one instruction, for debugging
-  end
 
   --  If the processor is currently halted, then do nothing.
   if z80.halted ~= 0 then
@@ -1664,6 +1652,14 @@ function request_interrupt(bitmask)
   io.ram[0x0F] = band(bor(io.ram[0x0F], bitmask), 0x1F)
   if band(io.ram[0xFF], bitmask) ~= 0 then
     z80.halted = 0
+  end
+  z80.process_interrupts()
+end
+
+io.write_logic[io.ports.IF] = function(byte)
+  io.ram[io.ports.IF] = byte
+  if byte ~= 0 then
+    z80.process_interrupts()
   end
 end
 

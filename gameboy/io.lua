@@ -62,19 +62,25 @@ ports.IF = 0x0F
 io.ports = ports
 
 
+io.write_logic = {}
+io.read_logic = {}
+io.write_mask = {}
+
 io.ram = memory.generate_block(0x100)
 io.block = {}
 io.block.mt = {}
 io.block.mt.__index = function(table, address)
-  return io.ram[address - 0xFF00]
+  address = address - 0xFF00
+  if io.read_logic[address] then
+    return io.read_logic[address]()
+  else
+    return io.ram[address]
+  end
 end
 
-io.write_mask = {}
 io.write_mask[ports.JOYP] = 0x30
 io.write_mask[ports.STAT] = 0x78
 io.write_mask[ports.LY] = 0x00
-
-io.write_logic = {}
 
 io.write_logic[ports.LY] = function(byte)
   -- LY, writes reset the counter
