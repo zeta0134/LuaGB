@@ -50,8 +50,8 @@ setmetatable(memory.unmapped, memory.unmapped.mt)
 memory.map_block(0, 0xFF, memory.unmapped)
 
 -- Main Memory
-memory.work_ram_0 = memory.generate_block(4 * 1024, 0xC0)
-memory.work_ram_1 = memory.generate_block(4 * 1024, 0xD0)
+memory.work_ram_0 = memory.generate_block(4 * 1024, 0xC000)
+memory.work_ram_1 = memory.generate_block(4 * 1024, 0xD000)
 memory.map_block(0xC0, 0xCF, memory.work_ram_0, 0)
 memory.map_block(0xD0, 0xDF, memory.work_ram_1, 0)
 
@@ -82,11 +82,11 @@ memory.reset = function()
   -- DIRECTLY controls, so initialization logic can be performed
   -- elsewhere as appropriate.
 
-  for i = 0, #memory.work_ram_0 do
+  for i = 0xC000, 0xCFFF do
     memory.work_ram_0[i] = 0
   end
 
-  for i = 0, #memory.work_ram_1 do
+  for i = 0xD000, 0xDFFF do
     memory.work_ram_1[i] = 0
   end
 end
