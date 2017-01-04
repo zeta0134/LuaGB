@@ -924,7 +924,7 @@ opcodes[0xE8] = function()
   reg.flags.z = 0
   reg.flags.n = 0
 
-  add_cycles(12)
+  add_cycles(8)
 end
 
 -- ld HL, SP + dd
@@ -934,8 +934,8 @@ opcodes[0xF8] = function()
   opcodes[0xE8]()
   reg.set_hl(reg.sp)
   reg.sp = old_sp
-  --op E8 is 16 clocks, this is 4 clocks less
-  add_cycles(4)
+  --op E8 is 12 clocks, this is 8 clocks less
+  add_cycles(-4)
 end
 
 -- ====== GMB Rotate and Shift Commands ======
@@ -1189,7 +1189,7 @@ opcodes[0x08] = function()
   local address = upper + lower
   write_byte(address, band(reg.sp, 0xFF))
   write_byte(band(address + 1, 0xFFFF), rshift(band(reg.sp, 0xFF00), 8))
-  add_cycles(4)
+  add_cycles(8)
 end
 
 -- ====== GMB Singlebit Operation Commands ======
@@ -1505,40 +1505,32 @@ opcodes[0xC9] = function() ret() end
 opcodes[0xC0] = function()
   if reg.flags.z == 0 then
     ret()
-    add_cycles(16)
-  else
-    add_cycles(4)
   end
+  add_cycles(4)
 end
 
 -- ret nc
 opcodes[0xD0] = function()
   if reg.flags.c == 0 then
     ret()
-    add_cycles(16)
-  else
-    add_cycles(4)
   end
+  add_cycles(4)
 end
 
 -- ret nz
 opcodes[0xC8] = function()
   if reg.flags.z == 1 then
     ret()
-    add_cycles(6)
-  else
-    add_cycles(4)
   end
+  add_cycles(4)
 end
 
 -- ret nz
 opcodes[0xD8] = function()
   if reg.flags.c == 1 then
     ret()
-    add_cycles(16)
-  else
-    add_cycles(4)
   end
+  add_cycles(4)
 end
 
 -- reti
