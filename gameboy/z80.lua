@@ -811,20 +811,18 @@ opcodes[0x27] = function()
       a = a - 0x60
     end
   end
-  -- Always reset H
+  -- Always reset H and Z
   reg.flags.h = 0
+  reg.flags.z = 0
+
   -- If a is greater than 0xFF, set the carry flag
   if band(0x100, a) == 0x100 then
     reg.flags.c = 1
-  else
-    reg.flags.c = 0
   end
   reg.a = band(a, 0xFF)
   -- Update zero flag based on A's contents
   if reg.a == 0 then
     reg.flags.z = 1
-  else
-    reg.flags.z = 0
   end
 end
 
@@ -1314,6 +1312,7 @@ end
 opcodes[0xFB] = function()
   interrupts.enable()
   --print("Enabled interrupts with EI")
+  z80.process_interrupts()
 end
 
 -- ====== GMB Jumpcommands ======
@@ -1551,6 +1550,7 @@ end
 opcodes[0xD9] = function()
   ret()
   interrupts.enable()
+  z80.process_interrupts()
 end
 
 -- note: used only for the RST instructions below
