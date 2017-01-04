@@ -906,21 +906,19 @@ opcodes[0xE8] = function()
 
   -- half carry
   --if band(reg.sp, 0xFFF) + offset > 0xFFF or band(reg.sp, 0xFFF) + offset < 0 then
-  if band(reg.sp, 0xFFF) + band(offset, 0xFFF) > 0xFFF then
+  if band(reg.sp, 0xF) + band(offset, 0xF) > 0xF then
     reg.flags.h = 1
   else
     reg.flags.h = 0
   end
-
-  reg.sp = reg.sp + offset
-
   -- carry
-  -- if reg.sp > 0xFFFF or reg.sp < 0x0000 then
-  if reg.sp > 0xFFFF then
+  if band(reg.sp, 0xFF) + band(offset, 0xFF) > 0xFF then
     reg.flags.c = 1
   else
     reg.flags.c = 0
   end
+
+  reg.sp = reg.sp + offset
   reg.sp = band(reg.sp, 0xFFFF)
 
   reg.flags.z = 0
