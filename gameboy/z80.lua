@@ -1622,30 +1622,25 @@ for i = 0, 0xFF do
 end
 
 z80.process_instruction = function()
-  if profile_enabled then
-    Pie:attach()
-  end
-  timers.update()
+  --if profile_enabled then
+  --  Pie:attach()
+  --end
 
   --  If the processor is currently halted, then do nothing.
-  if z80.halted ~= 0 then
-    add_cycles(4)
-    if profile_enabled then
-      Pie:detach()
-    end
-    return true
-  else
+  if z80.halted == 0 then
     local opcode = read_byte(reg.pc)
+    -- Advance to one byte beyond the opcode
     reg.pc = band(reg.pc + 1, 0xFFFF)
-    -- run this instruction!
+    -- Run the instruction
     opcodes[opcode]()
-    -- add a base clock of 4 to every instruction
-    add_cycles(4)
-    if profile_enabled then
-      Pie:detach()
-    end
-    return true
   end
+  -- add a base clock of 4 to every instruction
+  add_cycles(4)
+
+  --if profile_enabled then
+  --  Pie:detach()
+  --end
+  return true
 end
 
 function request_interrupt(bitmask)
