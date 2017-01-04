@@ -1046,7 +1046,7 @@ cb[0x02] = function() reg.d = reg_rlc(reg.d); add_cycles(4) end
 cb[0x03] = function() reg.e = reg_rlc(reg.e); add_cycles(4) end
 cb[0x04] = function() reg.h = reg_rlc(reg.h); add_cycles(4) end
 cb[0x05] = function() reg.l = reg_rlc(reg.l); add_cycles(4) end
-cb[0x06] = function() write_byte(reg.hl(), reg_rlc(read_byte(reg.hl()))); add_cycles(8) end
+cb[0x06] = function() write_byte(reg.hl(), reg_rlc(read_byte(reg.hl()))); add_cycles(12) end
 cb[0x07] = function() reg.a = reg_rlc(reg.a); add_cycles(4) end
 
 -- rl r
@@ -1056,7 +1056,7 @@ cb[0x12] = function() reg.d = reg_rl(reg.d); add_cycles(4) end
 cb[0x13] = function() reg.e = reg_rl(reg.e); add_cycles(4) end
 cb[0x14] = function() reg.h = reg_rl(reg.h); add_cycles(4) end
 cb[0x15] = function() reg.l = reg_rl(reg.l); add_cycles(4) end
-cb[0x16] = function() write_byte(reg.hl(), reg_rl(read_byte(reg.hl()))); add_cycles(8) end
+cb[0x16] = function() write_byte(reg.hl(), reg_rl(read_byte(reg.hl()))); add_cycles(12) end
 cb[0x17] = function() reg.a = reg_rl(reg.a); add_cycles(4) end
 
 -- rrc r
@@ -1066,7 +1066,7 @@ cb[0x0A] = function() reg.d = reg_rrc(reg.d); add_cycles(4) end
 cb[0x0B] = function() reg.e = reg_rrc(reg.e); add_cycles(4) end
 cb[0x0C] = function() reg.h = reg_rrc(reg.h); add_cycles(4) end
 cb[0x0D] = function() reg.l = reg_rrc(reg.l); add_cycles(4) end
-cb[0x0E] = function() write_byte(reg.hl(), reg_rrc(read_byte(reg.hl()))); add_cycles(8) end
+cb[0x0E] = function() write_byte(reg.hl(), reg_rrc(read_byte(reg.hl()))); add_cycles(12) end
 cb[0x0F] = function() reg.a = reg_rrc(reg.a); add_cycles(4) end
 
 -- rl r
@@ -1076,7 +1076,7 @@ cb[0x1A] = function() reg.d = reg_rr(reg.d); add_cycles(4) end
 cb[0x1B] = function() reg.e = reg_rr(reg.e); add_cycles(4) end
 cb[0x1C] = function() reg.h = reg_rr(reg.h); add_cycles(4) end
 cb[0x1D] = function() reg.l = reg_rr(reg.l); add_cycles(4) end
-cb[0x1E] = function() write_byte(reg.hl(), reg_rr(read_byte(reg.hl()))); add_cycles(8) end
+cb[0x1E] = function() write_byte(reg.hl(), reg_rr(read_byte(reg.hl()))); add_cycles(12) end
 cb[0x1F] = function() reg.a = reg_rr(reg.a); add_cycles(4) end
 
 reg_sla = function(value)
@@ -1148,7 +1148,7 @@ cb[0x22] = function() reg.d = reg_sla(reg.d) end
 cb[0x23] = function() reg.e = reg_sla(reg.e) end
 cb[0x24] = function() reg.h = reg_sla(reg.h) end
 cb[0x25] = function() reg.l = reg_sla(reg.l) end
-cb[0x26] = function() write_byte(reg.hl(), reg_sla(read_byte(reg.hl()))); add_cycles(12) end
+cb[0x26] = function() write_byte(reg.hl(), reg_sla(read_byte(reg.hl()))); add_cycles(8) end
 cb[0x27] = function() reg.a = reg_sla(reg.a) end
 
 -- swap r (high and low nybbles)
@@ -1158,18 +1158,18 @@ cb[0x32] = function() reg.d = reg_swap(reg.d) end
 cb[0x33] = function() reg.e = reg_swap(reg.e) end
 cb[0x34] = function() reg.h = reg_swap(reg.h) end
 cb[0x35] = function() reg.l = reg_swap(reg.l) end
-cb[0x36] = function() write_byte(reg.hl(), reg_swap(read_byte(reg.hl()))); add_cycles(12) end
+cb[0x36] = function() write_byte(reg.hl(), reg_swap(read_byte(reg.hl()))); add_cycles(8) end
 cb[0x37] = function() reg.a = reg_swap(reg.a) end
 
 -- sra r
-cb[0x28] = function() reg.b = reg_sra(reg.b) end
-cb[0x29] = function() reg.c = reg_sra(reg.c) end
-cb[0x2A] = function() reg.d = reg_sra(reg.d) end
-cb[0x2B] = function() reg.e = reg_sra(reg.e) end
-cb[0x2C] = function() reg.h = reg_sra(reg.h) end
-cb[0x2D] = function() reg.l = reg_sra(reg.l) end
-cb[0x2E] = function() write_byte(reg.hl(), reg_sra(read_byte(reg.hl()))); add_cycles(12) end
-cb[0x2F] = function() reg.a = reg_sra(reg.a) end
+cb[0x28] = function() reg.b = reg_sra(reg.b); add_cycles(-4) end
+cb[0x29] = function() reg.c = reg_sra(reg.c); add_cycles(-4) end
+cb[0x2A] = function() reg.d = reg_sra(reg.d); add_cycles(-4) end
+cb[0x2B] = function() reg.e = reg_sra(reg.e); add_cycles(-4) end
+cb[0x2C] = function() reg.h = reg_sra(reg.h); add_cycles(-4) end
+cb[0x2D] = function() reg.l = reg_sra(reg.l); add_cycles(-4) end
+cb[0x2E] = function() write_byte(reg.hl(), reg_sra(read_byte(reg.hl()))); add_cycles(4) end
+cb[0x2F] = function() reg.a = reg_sra(reg.a); add_cycles(-4) end
 
 -- srl r
 cb[0x38] = function() reg.b = reg_srl(reg.b) end
@@ -1178,7 +1178,7 @@ cb[0x3A] = function() reg.d = reg_srl(reg.d) end
 cb[0x3B] = function() reg.e = reg_srl(reg.e) end
 cb[0x3C] = function() reg.h = reg_srl(reg.h) end
 cb[0x3D] = function() reg.l = reg_srl(reg.l) end
-cb[0x3E] = function() write_byte(reg.hl(), reg_srl(read_byte(reg.hl()))); add_cycles(12) end
+cb[0x3E] = function() write_byte(reg.hl(), reg_srl(read_byte(reg.hl()))); add_cycles(8) end
 cb[0x3F] = function() reg.a = reg_srl(reg.a) end
 
 -- ====== GMB Special Purpose / Relocated Commands ======
@@ -1208,7 +1208,7 @@ opcodes[0xCB] = function()
   local cb_op = read_nn()
   if cb[cb_op] ~= nil then
     --revert the timing; this is handled automatically by the various functions
-    add_cycles(4)
+    add_cycles(-4)
     cb[cb_op]()
     return
   end
@@ -1225,7 +1225,6 @@ opcodes[0xCB] = function()
     if reg_index == 5 then reg_bit(reg.l, bit) end
     if reg_index == 6 then reg_bit(read_byte(reg.hl()), bit); add_cycles(4) end
     if reg_index == 7 then reg_bit(reg.a, bit) end
-    add_cycles(4)
   end
   if high_half_nybble == 0x2 then
     -- res n, r
@@ -1239,7 +1238,6 @@ opcodes[0xCB] = function()
     if reg_index == 5 then reg.l = band(reg.l, bxor(reg.l, lshift(0x1, bit))) end
     if reg_index == 6 then write_byte(reg.hl(), band(read_byte(reg.hl()), bxor(read_byte(reg.hl()), lshift(0x1, bit)))); add_cycles(8) end
     if reg_index == 7 then reg.a = band(reg.a, bxor(reg.a, lshift(0x1, bit))) end
-    add_cycles(4)
   end
 
   if high_half_nybble == 0x3 then
@@ -1252,7 +1250,6 @@ opcodes[0xCB] = function()
     if reg_index == 5 then reg.l = bor(lshift(0x1, bit), reg.l) end
     if reg_index == 6 then write_byte(reg.hl(), bor(lshift(0x1, bit), read_byte(reg.hl()))); add_cycles(8) end
     if reg_index == 7 then reg.a = bor(lshift(0x1, bit), reg.a) end
-    add_cycles(4)
   end
 end
 
