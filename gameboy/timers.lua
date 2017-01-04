@@ -5,7 +5,7 @@ local interrupts = require("gameboy/interrupts")
 
 local timers = {}
 
-local system_clocks_per_second = 4398046
+local system_clocks_per_second = 4194304
 
 timers.system_clock = 0
 
@@ -17,7 +17,6 @@ timers.clock_rates[3] = math.floor(system_clocks_per_second / 16384)
 
 timers.div_base = 0
 timers.timer_offset = 0
-
 timers.timer_enabled = false
 
 --local timer_enabled = function()
@@ -37,12 +36,13 @@ end
 io.write_logic[io.ports.TAC] = function(byte)
   io.ram[io.ports.TAC] = byte
   timers.timer_enabled = (bit32.band(io.ram[io.ports.TAC], 0x4) == 0x4)
+  timers.timer_offset = timers.system_clock
 end
 
 timers.update = function()
   if timers.timer_enabled then
     local rate_select = bit32.band(io.ram[io.ports.TAC], 0x3)
-    if timers.system_clock > timers.timer_offset + timers.clock_rates[rate_select] then
+    while timers.system_clock > timers.timer_offset + timers.clock_rates[rate_select] do
       io.ram[io.ports.TIMA] = bit32.band(io.ram[io.ports.TIMA] + 1, 0xFF)
       timers.timer_offset = timers.timer_offset + timers.clock_rates[rate_select]
       if io.ram[io.ports.TIMA] == 0x00 then
