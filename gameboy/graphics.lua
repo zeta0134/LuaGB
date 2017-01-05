@@ -25,11 +25,43 @@ graphics.clear_screen = function()
   end
 end
 
+graphics.tiles = {}
+for i = 0, 384 - 1 do
+  graphics.tiles[i] = {}
+  for x = 0, 7 do
+    graphics.tiles[i][x] = {}
+    for y = 0, 7 do
+      graphics.tiles[i][x][y] = 0
+    end
+  end
+end
+
 -- Initialize VRAM blocks in main memory
--- TODO: Implement access restrictions here based
--- on the Status register
 graphics.vram = memory.generate_block(8 * 1024, 0x8000)
-memory.map_block(0x80, 0x9F, graphics.vram, 0)
+graphics.vram_map = {}
+graphics.vram_map.mt = {}
+graphics.vram_map.mt.__index = function(table, address)
+  return graphics.vram[address]
+end
+graphics.vram_map.mt.__newindex = function(table, address, value)
+  graphics.vram[address] = value
+  if address >= 0x8000 and address <= 0x97FF then
+    -- Update the cached tile data
+    local tile_index = math.floor((address - 0x8000) / 16)
+    local y = math.floor((address % 16) / 2)
+    -- kill the lower bit
+    address = bit32.band(address, 0xFFFE)
+    local lower_bits = graphics.vram[address]
+    local upper_bits = graphics.vram[address + 1]
+    for x = 0, 7 do
+      local palette_index = bit32.band(bit32.rshift(lower_bits, 7 - x), 0x1) + (bit32.band(bit32.rshift(upper_bits, 7 - x), 0x1) * 2)
+      graphics.tiles[tile_index][x][y] = palette_index
+    end
+  end
+end
+setmetatable(graphics.vram_map, graphics.vram_map.mt)
+memory.map_block(0x80, 0x9F, graphics.vram_map, 0)
+
 graphics.oam = memory.generate_block(0xA0, 0xFE00)
 graphics.oam.mt = {}
 graphics.oam.mt.__index = function(table, address)
