@@ -36,6 +36,22 @@ for i = 0, 384 - 1 do
   end
 end
 
+graphics.map_0 = {}
+for x = 0, 31 do
+  graphics.map_0[x] = {}
+  for y = 0, 31 do
+    graphics.map_0[x][y] = 0
+  end
+end
+
+graphics.map_1 = {}
+for x = 0, 31 do
+  graphics.map_1[x] = {}
+  for y = 0, 31 do
+    graphics.map_1[x][y] = 0
+  end
+end
+
 -- Initialize VRAM blocks in main memory
 graphics.vram = memory.generate_block(8 * 1024, 0x8000)
 graphics.vram_map = {}
@@ -57,6 +73,16 @@ graphics.vram_map.mt.__newindex = function(table, address, value)
       local palette_index = bit32.band(bit32.rshift(lower_bits, 7 - x), 0x1) + (bit32.band(bit32.rshift(upper_bits, 7 - x), 0x1) * 2)
       graphics.tiles[tile_index][x][y] = palette_index
     end
+  end
+  if address >= 0x9800 and address <= 0x9BFF then
+    local x = address % 32
+    local y = math.floor((address - 0x9800) / 32)
+    graphics.map_0[x][y] = value
+  end
+  if address >= 0x9C00 and address <= 0x9FFF then
+    local x = address % 32
+    local y = math.floor((address - 0x9C00) / 32)
+    graphics.map_1[x][y] = value
   end
 end
 setmetatable(graphics.vram_map, graphics.vram_map.mt)
