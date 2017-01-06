@@ -355,11 +355,11 @@ graphics.update = function()
 end
 
 -- TODO: Handle proper color palettes?
-local colors = {}
-colors[0] = {255, 255, 255}
-colors[1] = {192, 192, 192}
-colors[2] = {128, 128, 128}
-colors[3] = {0, 0, 0}
+local screen_colors = {}
+screen_colors[0] = {255, 255, 255}
+screen_colors[1] = {192, 192, 192}
+screen_colors[2] = {128, 128, 128}
+screen_colors[3] = {0, 0, 0}
 
 local function plot_pixel(buffer, x, y, r, g, b)
   buffer[y][x][1] = r
@@ -379,7 +379,37 @@ graphics.getColorFromIndex = function(index, palette)
     palette = bit32.rshift(palette, 2)
     index = index - 1
   end
-  return colors[bit32.band(palette, 0x3)]
+  return screen_colors[bit32.band(palette, 0x3)]
+end
+
+graphics.bg_palette =   {}
+graphics.obj0_palette = {}
+graphics.obj1_palette = {}
+for i = 0, 3 do
+  graphics.bg_palette[i] = screen_colors[i]
+  graphics.obj0_palette[i] = screen_colors[i]
+  graphics.obj1_palette[i] = screen_colors[i]
+end
+
+io.write_logic[ports.BGP] = function(byte)
+  io.ram[ports.BGP] = byte
+  for i = 0, 3 do
+    graphics.bg_palette[i] = graphics.getColorFromIndex(i, byte)
+  end
+end
+
+io.write_logic[ports.OBP0] = function(byte)
+  io.ram[ports.OBP0] = byte
+  for i = 0, 3 do
+    graphics.obj0_palette[i] = graphics.getColorFromIndex(i, byte)
+  end
+end
+
+io.write_logic[ports.OBP1] = function(byte)
+  io.ram[ports.OBP1] = byte
+  for i = 0, 3 do
+    graphics.obj1_palette[i] = graphics.getColorFromIndex(i, byte)
+  end
 end
 
 graphics.getIndexFromTile = function(tile_address, subpixel_x, subpixel_y)
