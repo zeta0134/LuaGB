@@ -7,7 +7,8 @@ oam.width = 320
 oam.init = function(gameboy)
   oam.canvas = love.graphics.newCanvas(320, 800)
   oam.gameboy = gameboy
-  oam.sprite_canvas = love.graphics.newCanvas(8,16)
+  oam.sprite_imagedata = love.image.newImageData(8, 16)
+  oam.sprite_image = love.graphics.newImage(oam.sprite_imagedata)
 end
 
 oam.draw_sprite = function(sprite_address, sx, sy, sprite_size)
@@ -23,18 +24,17 @@ oam.draw_sprite = function(sprite_address, sx, sy, sprite_size)
   end
   local sprite_flags = graphics.oam[sprite_address + 3]
 
-  local sprite_palette = io.ram[ports.OBP0]
+  local sprite_palette = graphics.obj0_palette
   if bit32.band(sprite_flags, 0x10) ~= 0 then
-    sprite_palette = io.ram[ports.OBP1]
+    sprite_palette = graphics.obj1_palette
   end
 
   local address = 0x8000 + (sprite_tile * 16)
 
   for y = 0, (sprite_size - 1) do
     for x = 0, 7 do
-      local color = graphics.getColorFromTile(address, x, y, sprite_palette)
-      love.graphics.setColor(color[1], color[2], color[3])
-      love.graphics.points(0.5 + sx + x, 0.5 + sy + y)
+      local color = sprite_palette[graphics.getIndexFromTile(address, x, y, sprite_palette)]
+      oam.sprite_imagedata:setPixel(sx + x, sy + y, color[1], color[2], color[3], 255)
     end
   end
 
@@ -42,6 +42,11 @@ oam.draw_sprite = function(sprite_address, sx, sy, sprite_size)
 end
 
 oam.draw_sprites = function()
+  -- Clear out the sprite buffer before we start
+  oam.sprite_imagedata:mapPixel(function()
+    return 0, 0, 0, 0
+  end)
+
   local cell_size = 80
   local sprites_per_row = 4
   local sprite_scaling = 4
@@ -61,14 +66,13 @@ oam.draw_sprites = function()
     -- draw the sprite
     love.graphics.setColor(color, color, color)
     love.graphics.rectangle("fill", x * cell_size, y * cell_size, cell_size, cell_size)
-    love.graphics.setCanvas(oam.sprite_canvas)
-    love.graphics.clear()
     local tile, sprite_x, sprite_y, flags = oam.draw_sprite(0xFE00 + (i * 4), 0, 0, sprite_size)
     love.graphics.setCanvas(oam.canvas)
     love.graphics.push()
     love.graphics.scale(sprite_scaling, sprite_scaling)
     love.graphics.setColor(255, 255, 255)
-    love.graphics.draw(oam.sprite_canvas, (x * cell_size + sprite_scaling) / sprite_scaling, (y * cell_size + sprite_scaling) / sprite_scaling)
+    oam.sprite_image:refresh()
+    love.graphics.draw(oam.sprite_image, (x * cell_size + sprite_scaling) / sprite_scaling, (y * cell_size + sprite_scaling) / sprite_scaling)
     love.graphics.pop()
     -- draw info about this sprite
     love.graphics.print(string.format("T-%02X", tile    ), x * cell_size + cell_size - 40, y * cell_size + 4)
