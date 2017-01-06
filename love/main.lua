@@ -15,7 +15,8 @@ local active_panels = {}
 
 local ubuntu_font
 
-local game_screen_canvas
+local game_screen_image
+local game_screen_imagedata
 local debug_tile_canvas
 
 local emulator_running = false
@@ -51,7 +52,9 @@ function love.load(args)
   --love.graphics.setPointStyle("rough")
   ubuntu_font = love.graphics.newFont("UbuntuMono-R.ttf", 18)
   love.graphics.setFont(ubuntu_font)
-  game_screen_canvas = love.graphics.newCanvas(256, 256)
+  --game_screen_canvas = love.graphics.newCanvas(256, 256)
+  game_screen_imagedata = love.image.newImageData(256, 256)
+  game_screen_image = love.graphics.newImage(game_screen_imagedata)
 
   if #args < 2 then
     print("Usage: love love [path to game.gb]")
@@ -146,19 +149,17 @@ function print_instructions()
 end
 
 function draw_game_screen(dx, dy, scale)
-  love.graphics.setCanvas(game_screen_canvas)
-  love.graphics.clear()
   for y = 0, 143 do
     for x = 0, 159 do
-      love.graphics.setColor(gameboy.graphics.game_screen[y][x][1], gameboy.graphics.game_screen[y][x][2], gameboy.graphics.game_screen[y][x][3], 255)
-      love.graphics.points(0.5 + x, 0.5 + y)
+      game_screen_imagedata:setPixel(x, y, gameboy.graphics.game_screen[y][x][1], gameboy.graphics.game_screen[y][x][2], gameboy.graphics.game_screen[y][x][3], 255)
     end
   end
-  love.graphics.setColor(255, 255, 255)
   love.graphics.setCanvas() -- reset to main FB
+  love.graphics.setColor(255, 255, 255)
   love.graphics.push()
   love.graphics.scale(scale, scale)
-  love.graphics.draw(game_screen_canvas, dx / scale, dy / scale)
+  game_screen_image:refresh()
+  love.graphics.draw(game_screen_image, dx / scale, dy / scale)
   love.graphics.pop()
 end
 
