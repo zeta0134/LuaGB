@@ -4,7 +4,9 @@ vram.width = 256
 
 vram.init = function(gameboy)
   vram.canvas = love.graphics.newCanvas(256, 800)
-  vram.tile_canvas = love.graphics.newCanvas(256, 256)
+  vram.tile_imagedata = love.image.newImageData(256, 256)
+  vram.tile_image = love.graphics.newImage(vram.tile_imagedata)
+
   vram.gameboy = gameboy
 end
 
@@ -39,16 +41,17 @@ vram.draw_tile = function(gameboy, tile_index, sx, sy)
   for x = 0, 7 do
     for y = 0, 7 do
       local index = tile[x][y]
-      local color = gameboy.graphics.getColorFromIndex(index)
-      love.graphics.setColor(color[1], color[2], color[3])
-      love.graphics.points(0.5 + sx + x, 0.5 + sy + y)
+      local color = gameboy.graphics.bg_palette[index]
+      vram.tile_imagedata:setPixel(sx + x, sy + y, color[1], color[2], color[3], 255)
     end
   end
 end
 
 vram.draw_tiles = function(gameboy, dx, dy, tiles_across, scale)
-  love.graphics.setCanvas(vram.tile_canvas)
-  love.graphics.clear()
+  -- Clear out the tile image
+  vram.tile_imagedata:mapPixel(function()
+    return 0, 0, 0, 0
+  end)
   local x = 0
   local y = 0
   for i = 0, 384 - 1 do
@@ -63,13 +66,16 @@ vram.draw_tiles = function(gameboy, dx, dy, tiles_across, scale)
   love.graphics.setCanvas(vram.canvas)
   love.graphics.push()
   love.graphics.scale(scale, scale)
-  love.graphics.draw(vram.tile_canvas, dx / scale, dy / scale)
+  vram.tile_image:refresh()
+  love.graphics.draw(vram.tile_image, dx / scale, dy / scale)
   love.graphics.pop()
 end
 
 function vram.draw_background(gameboy, map, dx, dy, scale)
-  love.graphics.setCanvas(vram.tile_canvas)
-  love.graphics.clear()
+  -- Clear out the tile image
+  vram.tile_imagedata:mapPixel(function()
+    return 0, 0, 0, 0
+  end)
   local tile_data = gameboy.graphics.LCD_Control.TileData()
   for x = 0, 31 do
     for y = 0, 31 do
@@ -89,7 +95,9 @@ function vram.draw_background(gameboy, map, dx, dy, scale)
   love.graphics.setColor(255, 255, 255)
   love.graphics.push()
   love.graphics.scale(scale, scale)
-  love.graphics.draw(vram.tile_canvas, dx / scale, dy / scale)
+  --love.graphics.draw(vram.tile_canvas, dx / scale, dy / scale)
+  vram.tile_image:refresh()
+  love.graphics.draw(vram.tile_image, dx / scale, dy / scale)
   love.graphics.pop()
 end
 
