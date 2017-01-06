@@ -67,25 +67,6 @@ vram.draw_tiles = function(gameboy, dx, dy, tiles_across, scale)
   love.graphics.pop()
 end
 
---function vram.draw_tilemap(gameboy, dx, dy, address, scale)
---  love.graphics.setCanvas(vram.tile_canvas)
---  love.graphics.clear()
---  local tile_data = gameboy.graphics.LCD_Control.TileData()
---  for y = 0, 255 do
---    for x = 0, 255 do
---      local color = gameboy.graphics.getColorFromTilemap(address, tile_data, x, y)
---      love.graphics.setColor(color[1], color[2], color[3])
---      love.graphics.points(0.5 + x, 0.5 + y)
---    end
---  end
---  love.graphics.setCanvas(vram.canvas)
---  love.graphics.setColor(255, 255, 255)
---  love.graphics.push()
---  love.graphics.scale(scale, scale)
---  love.graphics.draw(vram.tile_canvas, dx / scale, dy / scale)
---  love.graphics.pop()
---end
-
 function vram.draw_background(gameboy, map, dx, dy, scale)
   love.graphics.setCanvas(vram.tile_canvas)
   love.graphics.clear()
