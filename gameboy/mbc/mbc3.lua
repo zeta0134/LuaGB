@@ -5,8 +5,15 @@ mbc3.raw_data = {}
 mbc3.external_ram = {}
 mbc3.rom_bank = 0
 mbc3.ram_bank = 0
-mbc3.mode = 0 --0 = ROM bank mode, 1 = RAM bank mode
 mbc3.ram_enable = false
+mbc3.rtc_enable = false
+mbc3.rtc_select = 0x08
+mbc3.rtc = {}
+mbc3.rtc[0x08] = 0
+mbc3.rtc[0x09] = 0
+mbc3.rtc[0x0A] = 0
+mbc3.rtc[0x0B] = 0
+mbc3.rtc[0x0C] = 0
 mbc3.mt = {}
 mbc3.mt.__index = function(table, address)
   -- Lower 16k: return the first bank, always
@@ -16,20 +23,17 @@ mbc3.mt.__index = function(table, address)
   -- Upper 16k: return the currently selected bank
   if address >= 0x4000 and address <= 0x7FFF then
     local rom_bank = mbc3.rom_bank
-    --if mbc3.mode == 0 then
-    --  rom_bank = rom_bank + bit32.lshift(mbc3.ram_bank, 5)
-    --end
     return mbc3.raw_data[(rom_bank * 16 * 1024) + (address - 0x4000)]
   end
 
   if address >= 0xA000 and address <= 0xBFFF and mbc3.ram_enable then
-    local ram_bank = 0
-    if mbc3.mode == 1 then
-      ram_bank = mbc3.ram_bank
+    if mbc3.rtc_enable then
+      return mbc3.rtc[mbc3.rtc_select]
+    else
+      local ram_bank = mbc3.ram_bank
+      return mbc3.external_ram[(address - 0xA000) + (ram_bank * 8 * 1024)]
     end
-    return mbc3.external_ram[(address - 0xA000) + (ram_bank * 8 * 1024)]
   end
-
   return 0x00
 end
 mbc3.mt.__newindex = function(table, address, value)
@@ -51,21 +55,26 @@ mbc3.mt.__newindex = function(table, address, value)
     return
   end
   if address >= 0x4000 and address <= 0x5FFF then
-    mbc3.ram_bank = bit32.band(value, 0x03)
-    return
+    mbc3.rtc_enable = false
+    if value <= 0x03 then
+      mbc3.ram_bank = bit32.band(value, 0x03)
+      return
+    end
+    if value >= 0x08 and value <= 0x0C then
+      mbc3.rtc_enable = true
+      mbc3.rtc_select = value
+      return
+    end
   end
   if address >= 0x6000 and address <= 0x7FFF then
-    mbc3.mode = bit32.band(value, 0x01)
+    -- Would "latch" the RTC registers, not implemented
     return
   end
 
   -- Handle actually writing to External RAM
   if address >= 0xA000 and address <= 0xBFFF and mbc3.ram_enable then
-    local ram_bank = 0
-    if mbc3.mode == 1 then
-      ram_bank = mbc3.ram_bank
-    end
-    mbc3.external_ram[(address - 0xA000) + (ram_bank * 16 * 1024)] = value
+    local ram_bank = mbc3.ram_bank
+    mbc3.external_ram[(address - 0xA000) + (ram_bank * 8 * 1024)] = value
     return
   end
 end
@@ -73,12 +82,18 @@ end
 mbc3.reset = function(self)
   self.rom_bank = 1
   self.ram_bank = 0
-  self.mode = 0
   self.ram_enable = false
+  self.rtc_enable = false
+  self.rtc_select = 0x08
 end
 
 mbc3.save_state = function(self)
-  return {rom_bank = self.rom_bank, ram_bank = self.ram_bank, mode = self.mode, ram_enable = self.ram_enable}
+  return {
+    rom_bank = self.rom_bank,
+    ram_bank = self.ram_bank,
+    ram_enable = self.ram_enable,
+    rtc_enable = self.rtc_enable,
+    rtc_select = self.rtc_enable}
 end
 
 mbc3.load_state = function(self, state_data)
@@ -86,8 +101,9 @@ mbc3.load_state = function(self, state_data)
 
   self.rom_bank = state_data.rom_bank
   self.ram_bank = state_data.ram_bank
-  self.mode = state_data.mode
   self.ram_enable = state_data.ram_enable
+  self.rtc_enable = state_data.rtc_enable
+  self.rtc_select = state_data.rtc_select
 end
 
 setmetatable(mbc3, mbc3.mt)
