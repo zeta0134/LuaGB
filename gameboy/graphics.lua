@@ -445,12 +445,7 @@ end
 
 graphics.getIndexFromTile = function(tile_address, subpixel_x, subpixel_y)
   -- move to the row we need this pixel from
-  --while subpixel_y > 0 do
-  --  tile_address = tile_address + 2
-  --  subpixel_y = subpixel_y - 1
-  --end
   tile_address = tile_address + subpixel_y * 2
-  --subpixel_y = 0
 
   -- grab the pixel color we need, and translate it into a palette index
   local palette_index = 0
@@ -464,10 +459,6 @@ graphics.getIndexFromTile = function(tile_address, subpixel_x, subpixel_y)
   -- finally, return the color from the table, based on this index
   -- todo: allow specifying the palette?
   return palette_index
-end
-
-graphics.getColorFromTile = function(tile_address, subpixel_x, subpixel_y, palette)
-  return graphics.getColorFromIndex(graphics.getIndexFromTile(tile_address, subpixel_x, subpixel_y), palette)
 end
 
 graphics.getIndexFromTilemap = function(map_address, tile_data, x, y)
@@ -485,11 +476,6 @@ graphics.getIndexFromTilemap = function(map_address, tile_data, x, y)
   local subpixel_y = y - (tile_y * 8)
 
   return graphics.getIndexFromTile(tile_address, subpixel_x, subpixel_y)
-end
-
-graphics.getColorFromTilemap = function(map_address, tile_data, x, y)
-  local index = graphics.getIndexFromTilemap(map_address, tile_data, x, y)
-  return graphics.getColorFromIndex(index, io.ram[ports.BGP])
 end
 
 local function draw_sprites_into_scanline(scanline, bg_index)
@@ -553,10 +539,12 @@ local function draw_sprites_into_scanline(scanline, bg_index)
 
     local sprite_bg_priority = (bit32.band(0x80, sprite_flags) == 0)
 
-    local sprite_palette = io.ram[ports.OBP0]
+    local sprite_palette = graphics.obj0_palette
     if bit32.band(sprite_flags, 0x10) ~= 0 then
-      sprite_palette = io.ram[ports.OBP1]
+      sprite_palette = graphics.obj1_palette
     end
+
+    local tile = graphics.tiles[sprite_tile]
 
     for x = 0, 7 do
       local display_x = sprite_x - 8 + x
@@ -565,10 +553,10 @@ local function draw_sprites_into_scanline(scanline, bg_index)
         if x_flipped then
           sub_x = 7 - x
         end
-        local subpixel_index = graphics.getIndexFromTile(0x8000 + sprite_tile * 16, sub_x, sub_y, sprite_palette)
+        local subpixel_index = tile[sub_x][sub_y]
         if subpixel_index > 0 then
           if sprite_bg_priority or bg_index[display_x] == 0 then
-            local subpixel_color = graphics.getColorFromIndex(subpixel_index, sprite_palette)
+            local subpixel_color = sprite_palette[subpixel_index]
             plot_pixel(graphics.game_screen, display_x, scanline, unpack(subpixel_color))
           end
         end
