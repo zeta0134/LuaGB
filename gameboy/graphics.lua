@@ -26,30 +26,23 @@ graphics.clear_screen = function()
 end
 
 graphics.tiles = {}
-for i = 0, 384 - 1 do
-  graphics.tiles[i] = {}
-  for x = 0, 7 do
-    graphics.tiles[i][x] = {}
-    for y = 0, 7 do
-      graphics.tiles[i][x][y] = 0
-    end
-  end
-end
-
 graphics.map_0 = {}
-for x = 0, 31 do
-  graphics.map_0[x] = {}
-  for y = 0, 31 do
-    graphics.map_0[x][y] = 0
-  end
-end
-
 graphics.map_1 = {}
-for x = 0, 31 do
-  graphics.map_1[x] = {}
-  for y = 0, 31 do
-    graphics.map_1[x][y] = 0
-  end
+
+-- TODO: Handle proper color palettes?
+local screen_colors = {}
+screen_colors[0] = {255, 255, 255}
+screen_colors[1] = {192, 192, 192}
+screen_colors[2] = {128, 128, 128}
+screen_colors[3] = {0, 0, 0}
+
+graphics.bg_palette =   {}
+graphics.obj0_palette = {}
+graphics.obj1_palette = {}
+for i = 0, 3 do
+  graphics.bg_palette[i] = screen_colors[i]
+  graphics.obj0_palette[i] = screen_colors[i]
+  graphics.obj1_palette[i] = screen_colors[i]
 end
 
 -- Initialize VRAM blocks in main memory
@@ -104,6 +97,7 @@ memory.map_block(0xFE, 0xFE, graphics.oam, 0)
 graphics.initialize = function()
   graphics.Status.SetMode(2)
   graphics.clear_screen()
+  graphics.reset()
 end
 
 graphics.reset = function()
@@ -122,6 +116,31 @@ graphics.reset = function()
 
   graphics.clear_screen()
   graphics.Status.SetMode(2)
+
+  -- Clear out the cache
+  for i = 0, 384 - 1 do
+    graphics.tiles[i] = {}
+    for x = 0, 7 do
+      graphics.tiles[i][x] = {}
+      for y = 0, 7 do
+        graphics.tiles[i][x][y] = 0
+      end
+    end
+  end
+
+  for x = 0, 31 do
+    graphics.map_0[x] = {}
+    for y = 0, 31 do
+      graphics.map_0[x][y] = 0
+    end
+  end
+
+  for x = 0, 31 do
+    graphics.map_1[x] = {}
+    for y = 0, 31 do
+      graphics.map_1[x][y] = 0
+    end
+  end
 end
 
 graphics.save_state = function()
@@ -140,6 +159,38 @@ graphics.save_state = function()
   state.vblank_count = graphics.vblank_count
   state.last_edge = graphics.last_edge
 
+  -- deep copy the cached graphics data
+  state.tiles = {}
+  for i = 0, 384 - 1 do
+    state.tiles[i] = {}
+    for x = 0, 7 do
+      state.tiles[i][x] = {}
+      for y = 0, 7 do
+        state.tiles[i][x][y] = graphics.tiles[i][x][y]
+      end
+    end
+  end
+
+  state.map_0 = {}
+  for x = 0, 31 do
+    state.map_0[x] = {}
+    for y = 0, 31 do
+      state.map_0[x][y] = graphics.map_0[x][y]
+    end
+  end
+
+  state.map_1 = {}
+  for x = 0, 31 do
+    state.map_1[x] = {}
+    for y = 0, 31 do
+      state.map_1[x][y] = graphics.map_1[x][y]
+    end
+  end
+
+  state.bg_palette = graphics.bg_palette
+  state.obj0_palette = graphics.obj0_palette
+  state.obj1_palette = graphics.obj1_palette
+
   -- TODO: Do we bother to save the screen?
   return state
 end
@@ -153,6 +204,30 @@ graphics.load_state = function(state)
   end
   graphics.vblank_count = state.vblank_count
   graphics.last_edge = state.last_edge
+
+  for i = 0, 384 - 1 do
+    for x = 0, 7 do
+      for y = 0, 7 do
+        graphics.tiles[i][x][y] = state.tiles[i][x][y]
+      end
+    end
+  end
+
+  for x = 0, 31 do
+    for y = 0, 31 do
+      graphics.map_0[x][y] = state.map_0[x][y]
+    end
+  end
+
+  for x = 0, 31 do
+    for y = 0, 31 do
+      graphics.map_1[x][y] = state.map_1[x][y]
+    end
+  end
+
+  graphics.bg_palette = state.bg_palette
+  graphics.obj0_palette = state.obj0_palette
+  graphics.obj1_palette = state.obj1_palette
 end
 
 local LCD_Control = {}
@@ -354,13 +429,6 @@ graphics.update = function()
   end
 end
 
--- TODO: Handle proper color palettes?
-local screen_colors = {}
-screen_colors[0] = {255, 255, 255}
-screen_colors[1] = {192, 192, 192}
-screen_colors[2] = {128, 128, 128}
-screen_colors[3] = {0, 0, 0}
-
 local function plot_pixel(buffer, x, y, r, g, b)
   buffer[y][x][1] = r
   buffer[y][x][2] = g
@@ -380,15 +448,6 @@ graphics.getColorFromIndex = function(index, palette)
     index = index - 1
   end
   return screen_colors[bit32.band(palette, 0x3)]
-end
-
-graphics.bg_palette =   {}
-graphics.obj0_palette = {}
-graphics.obj1_palette = {}
-for i = 0, 3 do
-  graphics.bg_palette[i] = screen_colors[i]
-  graphics.obj0_palette[i] = screen_colors[i]
-  graphics.obj1_palette[i] = screen_colors[i]
 end
 
 io.write_logic[ports.BGP] = function(byte)
