@@ -67,6 +67,7 @@ mbc1.mt.__newindex = function(table, address, value)
       ram_bank = mbc1.ram_bank
     end
     mbc1.external_ram[(address - 0xA000) + (ram_bank * 8 * 1024)] = value
+    mbc1.external_ram.dirty = true
     return
   end
 end
