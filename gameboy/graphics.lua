@@ -443,24 +443,6 @@ io.write_logic[ports.OBP1] = function(byte)
   end
 end
 
-graphics.getIndexFromTile = function(tile_address, subpixel_x, subpixel_y)
-  -- move to the row we need this pixel from
-  tile_address = tile_address + subpixel_y * 2
-
-  -- grab the pixel color we need, and translate it into a palette index
-  local palette_index = 0
-  if bit32.band(graphics.vram[tile_address], bit32.lshift(0x1, 7 - subpixel_x)) ~= 0 then
-    palette_index = palette_index + 1
-  end
-  tile_address = tile_address + 1
-  if bit32.band(graphics.vram[tile_address], bit32.lshift(0x1, 7 - subpixel_x)) ~= 0 then
-    palette_index = palette_index + 2
-  end
-  -- finally, return the color from the table, based on this index
-  -- todo: allow specifying the palette?
-  return palette_index
-end
-
 graphics.getIndexFromTilemap = function(map_address, tile_data, x, y)
   local tile_x = bit32.rshift(x, 3)
   local tile_y = bit32.rshift(y, 3)
@@ -469,13 +451,15 @@ graphics.getIndexFromTilemap = function(map_address, tile_data, x, y)
     if tile_index > 127 then
       tile_index = tile_index - 256
     end
+    -- add offset to re-root at tile 256 (so effectively, we read from tile 192 - 384)
+    tile_index = tile_index + 256
   end
-  local tile_address = tile_data + tile_index * 16
+
 
   local subpixel_x = x - (tile_x * 8)
   local subpixel_y = y - (tile_y * 8)
 
-  return graphics.getIndexFromTile(tile_address, subpixel_x, subpixel_y)
+  return graphics.tiles[tile_index][subpixel_x][subpixel_y]
 end
 
 local function draw_sprites_into_scanline(scanline, bg_index)
@@ -587,19 +571,22 @@ graphics.draw_scanline = function(scanline)
 
   local w_x = io.ram[ports.WX] - 7
   local w_y = io.ram[ports.WY]
+
   for x = 0, 159 do
     scanline_bg_index[x] = 0
     if window_enabled and w_x <= x and w_y <= scanline then
       -- The Window is visible here, so draw that
       local window_index = graphics.getIndexFromTilemap(window_tilemap, tile_data, x - w_x, scanline - w_y)
       scanline_bg_index[x] = window_index
-      plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.getColorFromIndex(window_index, io.ram[ports.BGP])))
+      --plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.getColorFromIndex(window_index, io.ram[ports.BGP])))
+      plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.bg_palette[window_index]))
     else
       -- The background is visible
       if background_enabled then
         local bg_index = graphics.getIndexFromTilemap(background_tilemap, tile_data, bg_x, bg_y)
         scanline_bg_index[x] = bg_index
-        plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.getColorFromIndex(bg_index, io.ram[ports.BGP])))
+        --plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.getColorFromIndex(bg_index, io.ram[ports.BGP])))
+        plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.bg_palette[bg_index]))
       end
     end
     bg_x = bg_x + 1

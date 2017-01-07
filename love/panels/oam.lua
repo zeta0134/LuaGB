@@ -29,11 +29,9 @@ oam.draw_sprite = function(sprite_address, sx, sy, sprite_size)
     sprite_palette = graphics.obj1_palette
   end
 
-  local address = 0x8000 + (sprite_tile * 16)
-
   for y = 0, (sprite_size - 1) do
     for x = 0, 7 do
-      local color = sprite_palette[graphics.getIndexFromTile(address, x, y, sprite_palette)]
+      local color = sprite_palette[graphics.tiles[sprite_tile][x][y]]
       oam.sprite_imagedata:setPixel(sx + x, sy + y, color[1], color[2], color[3], 255)
     end
   end
