@@ -43,57 +43,40 @@ end
 
 local game_filename = ""
 local window_title = ""
+local save_delay = 0
 
 -- GLOBAL ON PURPOSE
 profile_enabled = false
 
-function love.load(args)
-  love.graphics.setDefaultFilter("nearest", "nearest")
-  --love.graphics.setPointStyle("rough")
-  ubuntu_font = love.graphics.newFont("UbuntuMono-R.ttf", 18)
-  love.graphics.setFont(ubuntu_font)
-  --game_screen_canvas = love.graphics.newCanvas(256, 256)
-  game_screen_imagedata = love.image.newImageData(256, 256)
-  game_screen_image = love.graphics.newImage(game_screen_imagedata)
-
-  if #args < 2 then
-    print("Usage: love love [path to game.gb]")
-    love.event.quit()
-    return
-  end
-
-  local game_path = args[2]
-  game_filename = game_path
-  while string.find(game_filename, "/") do
-    game_filename = string.sub(game_filename, string.find(game_filename, "/") + 1)
-  end
-
-  gameboy.initialize()
-
-  file_data, size = love.filesystem.read(game_path)
-  if file_data then
-    gameboy.cartridge.load(file_data, size)
+local function save_ram()
+  local filename = game_filename .. ".sav"
+  local save_data = binser.serialize(gameboy.cartridge.external_ram)
+  if love.filesystem.write(filename, save_data) then
+    print("Successfully wrote SRAM to: ", filename)
   else
-    print("Couldn't open ", game_path, " bailing.")
-    love.event.quit()
-    return
+    print("Failed to save SRAM: ", filename)
   end
+end
 
-  -- Initialize Debug Panels
-  for _, panel in pairs(panels) do
-    panel.init(gameboy)
-    panel.active = true
+local function load_ram()
+  local filename = game_filename .. ".sav"
+  local file_data, size = love.filesystem.read(filename)
+  if type(size) == "string" then
+    print(size)
+    print("Couldn't load SRAM: ", filename)
+  else
+    if size > 0 then
+      local save_data, elements = binser.deserialize(file_data)
+      if elements > 0 then
+        for i = 0, #save_data[1] do
+          gameboy.cartridge.external_ram[i] = save_data[1][i]
+        end
+        print("Loaded SRAM: ", filename)
+      else
+        print("Error parsing SRAM data for ", filename)
+      end
+    end
   end
-
-  table.insert(active_panels, panels.io)
-  table.insert(active_panels, panels.vram)
-  table.insert(active_panels, panels.oam)
-  table.insert(active_panels, panels.disassembler)
-
-  resize_window()
-
-  window_title = "LuaGB - " .. gameboy.cartridge.header.title
-  love.window.setTitle(window_title)
 end
 
 local function save_state(number)
@@ -124,6 +107,56 @@ local function load_state(number)
       end
     end
   end
+end
+
+function love.load(args)
+  love.graphics.setDefaultFilter("nearest", "nearest")
+  --love.graphics.setPointStyle("rough")
+  ubuntu_font = love.graphics.newFont("UbuntuMono-R.ttf", 18)
+  love.graphics.setFont(ubuntu_font)
+  --game_screen_canvas = love.graphics.newCanvas(256, 256)
+  game_screen_imagedata = love.image.newImageData(256, 256)
+  game_screen_image = love.graphics.newImage(game_screen_imagedata)
+
+  if #args < 2 then
+    print("Usage: love love [path to game.gb]")
+    love.event.quit()
+    return
+  end
+
+  local game_path = args[2]
+  game_filename = game_path
+  while string.find(game_filename, "/") do
+    game_filename = string.sub(game_filename, string.find(game_filename, "/") + 1)
+  end
+
+  gameboy.initialize()
+
+  file_data, size = love.filesystem.read(game_path)
+  if file_data then
+    gameboy.cartridge.load(file_data, size)
+    load_ram()
+  else
+    print("Couldn't open ", game_path, " bailing.")
+    love.event.quit()
+    return
+  end
+
+  -- Initialize Debug Panels
+  for _, panel in pairs(panels) do
+    panel.init(gameboy)
+    panel.active = true
+  end
+
+  table.insert(active_panels, panels.io)
+  table.insert(active_panels, panels.vram)
+  table.insert(active_panels, panels.oam)
+  table.insert(active_panels, panels.disassembler)
+
+  resize_window()
+
+  window_title = "LuaGB - " .. gameboy.cartridge.header.title
+  love.window.setTitle(window_title)
 end
 
 function print_instructions()
@@ -257,6 +290,14 @@ end
 function love.update()
   if emulator_running then
     gameboy.run_until_vblank()
+  end
+  if gameboy.cartridge.external_ram.dirty then
+    save_delay = save_delay + 1
+  end
+  if save_delay > 60 then
+    save_delay = 0
+    gameboy.cartridge.external_ram.dirty = false
+    save_ram()
   end
 end
 

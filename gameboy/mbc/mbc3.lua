@@ -75,6 +75,7 @@ mbc3.mt.__newindex = function(table, address, value)
   if address >= 0xA000 and address <= 0xBFFF and mbc3.ram_enable then
     local ram_bank = mbc3.ram_bank
     mbc3.external_ram[(address - 0xA000) + (ram_bank * 8 * 1024)] = value
+    mbc3.external_ram.dirty = true
     return
   end
 end
