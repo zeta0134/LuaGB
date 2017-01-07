@@ -302,7 +302,7 @@ Status.SetMode = function(mode)
   io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xF8) + bit32.band(mode, 0x3)
   if mode == 0 then
     -- HBlank
-    graphics.draw_scanline(graphics.scanline())
+    graphics.draw_scanline(io.ram[ports.LY])
   end
   if mode == 1 then
     if LCD_Control.DisplayEnabled() then
@@ -315,34 +315,6 @@ Status.SetMode = function(mode)
   end
 end
 
-local SCY = function()
-  return io.ram[ports.SCY]
-end
-
-local SCX = function()
-  return io.ram[ports.SCX]
-end
-
-local WY = function()
-  return io.ram[ports.WY]
-end
-
-local WX = function()
-  return io.ram[ports.WX]
-end
-
-graphics.scanline = function()
-  return io.ram[ports.LY]
-end
-
-graphics.set_scanline = function(value)
-  io.ram[ports.LY] = value
-end
-
-graphics.scanline_compare = function()
-  return io.ram[ports.LYC]
-end
-
 local time_at_this_mode = function()
   return timers.system_clock - graphics.last_edge
 end
@@ -352,12 +324,12 @@ local handle_mode = {}
 handle_mode[0] = function()
   if timers.system_clock - graphics.last_edge > 204 then
     graphics.last_edge = graphics.last_edge + 204
-    graphics.set_scanline(graphics.scanline() + 1)
+    io.ram[ports.LY] = io.ram[ports.LY] + 1
     -- If enabled, fire an HBlank interrupt
     if bit32.band(io.ram[ports.STAT], 0x08) ~= 0 then
       request_interrupt(interrupts.LCDStat)
     end
-    if graphics.scanline() == graphics.scanline_compare() then
+    if io.ram[ports.LY] == io.ram[ports.LYC] then
       -- set the LY compare bit
       io.ram[ports.STAT] = bit32.bor(io.ram[ports.STAT], 0x4)
       if bit32.band(io.ram[ports.STAT], 0x40) ~= 0 then
@@ -367,7 +339,7 @@ handle_mode[0] = function()
       -- clear the LY compare bit
       io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xFB)
     end
-    if graphics.scanline() >= 144 then
+    if io.ram[ports.LY] >= 144 then
       Status.SetMode(1)
       request_interrupt(interrupts.VBlank)
       if bit32.band(io.ram[ports.STAT], 0x10) ~= 0 then
@@ -388,16 +360,16 @@ end
 handle_mode[1] = function()
   if timers.system_clock - graphics.last_edge > 456 then
     graphics.last_edge = graphics.last_edge + 456
-    graphics.set_scanline(graphics.scanline() + 1)
+    io.ram[ports.LY] = io.ram[ports.LY] + 1
   end
-  if graphics.scanline() >= 154 then
-    graphics.set_scanline(0)
+  if io.ram[ports.LY] >= 154 then
+    io.ram[ports.LY] = 0
     Status.SetMode(2)
     if bit32.band(io.ram[ports.STAT], 0x20) ~= 0 then
       request_interrupt(interrupts.LCDStat)
     end
   end
-  if graphics.scanline() == graphics.scanline_compare() then
+  if io.ram[ports.LY] == io.ram[ports.LYC] then
     -- TODO: fire LCD STAT interrupt, and set appropriate flag
   end
 end
@@ -608,8 +580,8 @@ local function draw_sprites_into_scanline(scanline, bg_index)
 end
 
 graphics.draw_scanline = function(scanline)
-  local bg_y = scanline + SCY()
-  local bg_x = SCX()
+  local bg_y = scanline + io.ram[ports.SCY]
+  local bg_x = io.ram[ports.SCX]
   -- wrap the map in the Y direction
   if bg_y >= 256 then
     bg_y = bg_y - 256
@@ -625,8 +597,8 @@ graphics.draw_scanline = function(scanline)
   local window_enabled = LCD_Control.WindowEnabled()
   local background_enabled = LCD_Control.BackgroundEnabled()
 
-  local w_x = WX() - 7
-  local w_y = WY()
+  local w_x = io.ram[ports.WX] - 7
+  local w_y = io.ram[ports.WY]
   for x = 0, 159 do
     scanline_bg_index[x] = 0
     if window_enabled and w_x <= x and w_y <= scanline then

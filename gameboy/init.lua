@@ -74,11 +74,11 @@ end
 
 gameboy.run_until_vblank = function()
   local instructions = 0
-  while gameboy.graphics.scanline() == 144 and instructions < 100000 do
+  while gameboy.io.ram[gameboy.io.ports.LY] == 144 and instructions < 100000 do
     gameboy.step()
     instructions = instructions + 1
   end
-  while gameboy.graphics.scanline() ~= 144 and instructions < 100000  do
+  while gameboy.io.ram[gameboy.io.ports.LY] ~= 144 and instructions < 100000  do
     gameboy.step()
     instructions = instructions + 1
   end
