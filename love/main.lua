@@ -294,7 +294,7 @@ function love.update()
   if gameboy.cartridge.external_ram.dirty then
     save_delay = save_delay + 1
   end
-  if save_delay > 60 then
+  if save_delay > 60 * 10 then
     save_delay = 0
     gameboy.cartridge.external_ram.dirty = false
     save_ram()
