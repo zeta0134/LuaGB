@@ -1,5 +1,6 @@
 local gameboy = {}
 
+gameboy.audio = require("gameboy/audio")
 gameboy.cartridge = require("gameboy/cartridge")
 gameboy.graphics = require("gameboy/graphics")
 gameboy.input = require("gameboy/input")
@@ -82,6 +83,7 @@ gameboy.run_until_vblank = function()
     gameboy.step()
     instructions = instructions + 1
   end
+  gameboy.audio.update()
 end
 
 gameboy.run_until_hblank = function()
@@ -91,6 +93,7 @@ gameboy.run_until_hblank = function()
     gameboy.step()
     instructions = instructions + 1
   end
+  gameboy.audio.update()
 end
 
 return gameboy

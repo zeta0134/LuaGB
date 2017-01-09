@@ -109,6 +109,15 @@ local function load_state(number)
   end
 end
 
+function play_gameboy_audio(buffer)
+  local data = love.sound.newSoundData(2048, 32768, 16, 1)
+  for i = 0, 2047 do
+    data:setSample(i, buffer[i])
+  end
+  local source = love.audio.newSource(data)
+  love.audio.play(source)
+end
+
 function love.load(args)
   love.graphics.setDefaultFilter("nearest", "nearest")
   --love.graphics.setPointStyle("rough")
@@ -157,6 +166,10 @@ function love.load(args)
 
   window_title = "LuaGB - " .. gameboy.cartridge.header.title
   love.window.setTitle(window_title)
+
+  gameboy.audio.on_buffer_full(function(buffer)
+    play_gameboy_audio(buffer)
+  end)
 end
 
 function print_instructions()
