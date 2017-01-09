@@ -16,7 +16,7 @@ audio.initialize = function()
 end
 
 audio.tone2 = {}
-audio.tone2.frequency = 440 -- in Hz
+audio.tone2.period = 1 -- in cycles
 audio.tone2.volume_current = 0
 audio.tone2.volume_initial = 0
 audio.tone2.volume_direction = 1
@@ -25,7 +25,6 @@ audio.tone2.current_sample = 0      -- in samples
 audio.tone2.max_length = 0          -- in samples
 audio.tone2.continuous = false
 audio.tone2.duty_length = .75       -- percentage, from 0-1
-audio.tone2.last_edge = 0 -- in seconds (NOT samples)
 
 local wave_patterns = {}
 wave_patterns[0] = .125
@@ -61,9 +60,26 @@ end
 -- Channel 2 Frequency - Low Bits
 io.write_logic[ports.NR23] = function(byte)
   io.ram[ports.NR23] = byte
-  local freq_high = bit32.lshift(bit32.band(io.ram[ports.NR23], 0x07), 8)
-  local freq_value = freq_high + byte
-  audio.tone2.frequency = 131072 / (2048 - freq_value)
+  local freq_high = bit32.lshift(bit32.band(io.ram[ports.NR24], 0x07), 8)
+  local freq_low = byte
+  local freq_value = freq_high + freq_low
+  audio.tone2.period = 32 * (2048 - freq_value)
+end
+
+io.write_logic[ports.NR23] = function(byte)
+  io.ram[ports.NR24] = byte
+  local restart = (bit32.band(byte, 0x80) ~= 0)
+  local continuous = (bit32.band(byte, 0x40) ~= 0)
+  local freq_high = bit32.lshift(bit32.band(byte, 0x07), 8)
+  local freq_low = io.ram[ports.NR23]
+  local freq_value = freq_high + freq_low
+
+  audio.tone2.period = 32 * (2048 - freq_value)
+  audio.tone2.continuous = continuous
+  if restart then
+    audio.tone2.current_sample = 0
+    audio.tone2.volume_current = audio.tone2.volume_initial
+  end
 end
 
 audio.update = function()
