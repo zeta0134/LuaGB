@@ -44,9 +44,6 @@ ports.VBK = 0x4F
 -- DMA Transfer Start (Write Only)
 ports.DMA = 0x46
 
--- (Omitting a large number of ports here that aren't acutally implemented,
---  mostly related to sound)
-
 -- Joypad
 ports.JOYP = 0x00
 
@@ -56,8 +53,32 @@ ports.TIMA = 0x05
 ports.TMA = 0x06
 ports.TAC = 0x07
 
+-- Interrupts
 ports.IE = 0xFF
 ports.IF = 0x0F
+
+-- Sound
+ports.NR10 = 0x10
+ports.NR11 = 0x11
+ports.NR12 = 0x12
+ports.NR13 = 0x13
+ports.NR14 = 0x14
+
+ports.NR21 = 0x16
+ports.NR22 = 0x17
+ports.NR23 = 0x18
+ports.NR24 = 0x19
+
+ports.NR30 = 0x1A
+ports.NR31 = 0x1B
+ports.NR32 = 0x1C
+ports.NR33 = 0x1D
+ports.NR34 = 0x1E
+
+ports.NR41 = 0x20
+ports.NR42 = 0x21
+ports.NR43 = 0x22
+ports.NR44 = 0x23
 
 io.ports = ports
 
