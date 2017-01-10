@@ -197,7 +197,10 @@ audio.tone1.generate_sample = function(clock_cycle)
   local tone1 = audio.tone1
   local duration = clock_cycle - tone1.base_cycle
   if tone1.continuous or (duration <= tone1.max_length) then
-    local volume = tone1.volume_initial + tone1.volume_direction * math.floor(duration / tone1.volume_step_length)
+    local volume = tone1.volume_initial
+    if tone1.volume_step_length > 0 then
+      volume = volume + tone1.volume_direction * math.floor(duration / tone1.volume_step_length)
+    end
     if volume > 0 then
       if volume > 0xF then
         volume = 0xF
@@ -217,7 +220,10 @@ audio.tone2.generate_sample = function(clock_cycle)
   local tone2 = audio.tone2
   local duration = clock_cycle - tone2.base_cycle
   if tone2.continuous or (duration <= tone2.max_length) then
-    local volume = tone2.volume_initial + tone2.volume_direction * math.floor(duration / tone2.volume_step_length)
+    local volume = tone2.volume_initial
+    if tone2.volume_step_length > 0 then
+      volume = volume + tone2.volume_direction * math.floor(duration / tone2.volume_step_length)
+    end
     if volume > 0 then
       if volume > 0xF then
         volume = 0xF
@@ -244,7 +250,7 @@ audio.generate_pending_samples = function()
     local tone2 = audio.tone2.generate_sample(next_sample_cycle)
     audio.buffer[next_sample] = (tone1 + tone2) / 4
     next_sample = next_sample + 1
-    if next_sample >= 32768 then
+    if next_sample >= 8192 then
       audio.__on_buffer_full(audio.buffer)
       next_sample = 0
     end
