@@ -368,6 +368,12 @@ audio.generate_pending_samples = function()
     sample_right = sample_right / 4
     sample_left = sample_left / 4
 
+    -- Left/Right Channel Volume
+    local right_volume = bit32.rshift(bit32.band(io.ram[ports.NR50], 0x70), 4)
+    local left_volume = bit32.band(io.ram[ports.NR50], 0x07)
+
+    sample_right = sample_right * right_volume / 7
+    sample_left = sample_left * left_volume / 7
 
     audio.buffer[next_sample] = sample_left
     next_sample = next_sample + 1
