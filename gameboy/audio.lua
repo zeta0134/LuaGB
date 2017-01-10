@@ -21,8 +21,8 @@ audio.tone2 = {}
 audio.tone2.period = 128 -- in cycles
 audio.tone2.volume_initial = 0
 audio.tone2.volume_direction = 1
-audio.tone2.volume_step_length = 0 -- in samples
-audio.tone2.max_length = 0          -- in samples
+audio.tone2.volume_step_length = 0 -- in cycles
+audio.tone2.max_length = 0          -- in cycles
 audio.tone2.continuous = false
 audio.tone2.duty_length = .75       -- percentage, from 0-1
 audio.tone2.base_cycle = 0
@@ -40,8 +40,8 @@ io.write_logic[ports.NR21] = function(byte)
   local wave_pattern = bit32.rshift(bit32.band(byte, 0xC0), 6)
   audio.tone2.duty_length = wave_patterns[wave_pattern]
   local length_data = bit32.band(byte, 0x3F)
-  local length_seconds = (64 - length_data) * (1 / 256)
-  audio.tone2.max_length = length_seconds * 44100
+  local length_cycles = (64 - length_data) * 16384
+  audio.tone2.max_length = length_cycles
 end
 
 -- Channel 2 Volume Envelope
@@ -56,8 +56,8 @@ io.write_logic[ports.NR22] = function(byte)
     audio.tone2.volume_direction = -1
   end
   local envelope_step_data = bit32.band(byte, 0x07)
-  local envelope_step_seconds = envelope_step_data * (1 / 64)
-  audio.tone2.volume_step_length = envelope_step_seconds * 44100
+  local envelope_step_cycles = envelope_step_data * 65536
+  audio.tone2.volume_step_length = envelope_step_cycles
 end
 
 -- Channel 2 Frequency - Low Bits
@@ -87,15 +87,23 @@ io.write_logic[ports.NR24] = function(byte)
 end
 
 audio.tone2.generate_sample = function(clock_cycle)
-  -- TODO: handle volume, sweep, max length
-  -- For now: just generate a tone! Let it play, it'll sound gross!
-
-  local period_progress = (clock_cycle % audio.tone2.period) / audio.tone2.period
-  if period_progress > audio.tone2.duty_length then
-    return -1.0
-  else
-    return 1.0
+  local tone2 = audio.tone2
+  local duration = clock_cycle - tone2.base_cycle
+  if tone2.continuous or (duration <= tone2.max_length) then
+    local volume = tone2.volume_initial + tone2.volume_direction * math.floor(duration / tone2.volume_step_length)
+    if volume > 0 then
+      if volume > 0xF then
+        volume = 0xF
+      end
+      local period_progress = (clock_cycle % tone2.period) / tone2.period
+      if period_progress > tone2.duty_length then
+        return volume / 0xF * -1
+      else
+        return volume / 0xF
+      end
+    end
   end
+  return 0
 end
 
 local next_sample = 0
@@ -107,7 +115,7 @@ audio.generate_pending_samples = function()
   while next_sample_cycle < timers.system_clock do
     audio.buffer[next_sample] = audio.tone2.generate_sample(next_sample_cycle)
     next_sample = next_sample + 1
-    if next_sample >= 2048 then
+    if next_sample >= 4096 then
       audio.__on_buffer_full(audio.buffer)
       next_sample = 0
     end
