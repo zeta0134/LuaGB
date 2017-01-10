@@ -43,6 +43,14 @@ audio.tone2.continuous = false
 audio.tone2.duty_length = .75       -- percentage, from 0-1
 audio.tone2.base_cycle = 0
 
+audio.wave3 = {}
+audio.wave3.enabled = false
+audio.wave3.max_length = 0 -- in cycles
+audio.wave3.volume_shift = 0
+audio.wave3.period = 0 -- in cycles
+audio.wave3.consecutive = false
+audio.wave3.base_cycle = 0
+
 local wave_patterns = {}
 wave_patterns[0] = .125
 wave_patterns[1] = .25
@@ -173,6 +181,61 @@ io.write_logic[ports.NR24] = function(byte)
   end
 end
 
+-- Channel 3 Enabled
+io.write_logic[ports.NR30] = function(byte)
+  audio.generate_pending_samples()
+  io.ram[ports.NR30] = byte
+  audio.wave3.enabled = bit32.band(byte, 0x80) ~= 0
+end
+
+-- Channel 3 Length
+io.write_logic[ports.NR31] = function(byte)
+  audio.generate_pending_samples()
+  io.ram[ports.NR31] = byte
+  local length_cycles = (256 - byte) * 16384
+  audio.wave3.max_cycles = length_cycles
+end
+
+-- Channel 3 Volume
+local volume_shift_mappings = {}
+volume_shift_mappings[0] = 4
+volume_shift_mappings[1] = 0
+volume_shift_mappings[2] = 1
+volume_shift_mappings[3] = 2
+io.write_logic[ports.NR32] = function(byte)
+  audio.generate_pending_samples()
+  io.ram[ports.NR32] = byte
+  local volume_select = bit32.rshift(bit32.band(byte, 0x60), 5)
+  audio.wave3.volume_shift = volume_shift_mappings[volume_select]
+end
+
+-- Channel 3 Frequency - Low Bits
+io.write_logic[ports.NR33] = function(byte)
+  audio.generate_pending_samples()
+  io.ram[ports.NR33] = byte
+  local freq_high = bit32.lshift(bit32.band(io.ram[ports.NR34], 0x07), 8)
+  local freq_low = byte
+  local freq_value = freq_high + freq_low
+  audio.wave3.period = 32 * (2048 - freq_value)
+end
+
+-- Channel 3 Frequency and Trigger - High Bits
+io.write_logic[ports.NR34] = function(byte)
+  audio.generate_pending_samples()
+  io.ram[ports.NR34] = byte
+  local restart = (bit32.band(byte, 0x80) ~= 0)
+  local continuous = (bit32.band(byte, 0x40) == 0)
+  local freq_high = bit32.lshift(bit32.band(byte, 0x07), 8)
+  local freq_low = io.ram[ports.NR33]
+  local freq_value = freq_high + freq_low
+
+  audio.wave3.period = 32 * (2048 - freq_value)
+  audio.wave3.continuous = continuous
+  if restart then
+    audio.wave3.base_cycle = timers.system_clock
+  end
+end
+
 audio.tone1.update_frequency_shift = function(clock_cycle)
   local tone1 = audio.tone1
   if tone1.frequency_shift_time > 0 then
@@ -235,6 +298,21 @@ audio.tone2.generate_sample = function(clock_cycle)
         return volume / 0xF
       end
     end
+  end
+  return 0
+end
+
+audio.wave3.generate_sample = function(clock_cycle)
+  local wave3 = audio.wave3
+  local duration = clock_cycle - wave3.base_cycle
+  if wave3.continuous or (duration <= wave3.max_length) then
+    local period_progress = (clock_cycle % wave3.period) / wave3.period
+    local sample_index = math.floor(period_progress * 32)
+    if sample_index > 31 then
+      sample_index = 31
+    end
+    local byte_index = bit32.rshift(sample_index, 1)
+
   end
   return 0
 end
