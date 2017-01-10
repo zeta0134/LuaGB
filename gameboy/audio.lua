@@ -12,7 +12,7 @@ local audio = {}
 audio.buffer = {}
 
 audio.initialize = function()
-  for i = 0, 4096 do
+  for i = 0, 32768 do
     audio.buffer[i] = 0
   end
 end
@@ -27,7 +27,7 @@ audio.tone1.continuous = false
 audio.tone1.duty_length = .75       -- percentage, from 0-1
 audio.tone1.base_cycle = 0
 audio.tone1.frequency_shadow = 0
-audio.tone1.frequency_sweep_time = 0 -- in cycles, 0 == disabled
+audio.tone1.frequency_shift_time = 0 -- in cycles, 0 == disabled
 audio.tone1.frequency_shift_counter = 0 -- should be reset on trigger
 audio.tone1.frequency_shift_direction = 1
 audio.tone1.frequency_shift_amount = 0
@@ -104,7 +104,7 @@ io.write_logic[ports.NR14] = function(byte)
   audio.generate_pending_samples()
   io.ram[ports.NR14] = byte
   local restart = (bit32.band(byte, 0x80) ~= 0)
-  local continuous = (bit32.band(byte, 0x40) ~= 0)
+  local continuous = (bit32.band(byte, 0x40) == 0)
   local freq_high = bit32.lshift(bit32.band(byte, 0x07), 8)
   local freq_low = io.ram[ports.NR13]
   local freq_value = freq_high + freq_low
@@ -115,7 +115,7 @@ io.write_logic[ports.NR14] = function(byte)
     audio.tone1.base_cycle = timers.system_clock
   end
   audio.tone1.frequency_shadow = freq_value
-  audio.tone1.frequency_counter = 0
+  audio.tone1.frequency_shift_counter = 0
   audio.tone1.disabled = false
 end
 
@@ -161,7 +161,7 @@ io.write_logic[ports.NR24] = function(byte)
   audio.generate_pending_samples()
   io.ram[ports.NR24] = byte
   local restart = (bit32.band(byte, 0x80) ~= 0)
-  local continuous = (bit32.band(byte, 0x40) ~= 0)
+  local continuous = (bit32.band(byte, 0x40) == 0)
   local freq_high = bit32.lshift(bit32.band(byte, 0x07), 8)
   local freq_low = io.ram[ports.NR23]
   local freq_value = freq_high + freq_low
@@ -175,8 +175,8 @@ end
 
 audio.tone1.update_frequency_shift = function(clock_cycle)
   local tone1 = audio.tone1
-  if tone1.frequency_sweep_time > 0 then
-    local next_edge = tone1.base_cycle + tone1.frequency_sweep_time * tone1.frequency_shift_counter
+  if tone1.frequency_shift_time > 0 then
+    local next_edge = tone1.base_cycle + tone1.frequency_shift_time * tone1.frequency_shift_counter
     if clock_cycle >= next_edge then
       local adjustment = bit32.rshift(tone1.frequency_shadow, tone1.frequency_shift_amount) * tone1.frequency_shift_direction
       tone1.frequency_shadow = tone1.frequency_shadow + adjustment
@@ -244,7 +244,7 @@ audio.generate_pending_samples = function()
     local tone2 = audio.tone2.generate_sample(next_sample_cycle)
     audio.buffer[next_sample] = (tone1 + tone2) / 4
     next_sample = next_sample + 1
-    if next_sample >= 4096 then
+    if next_sample >= 32768 then
       audio.__on_buffer_full(audio.buffer)
       next_sample = 0
     end

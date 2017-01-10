@@ -110,8 +110,8 @@ local function load_state(number)
 end
 
 function play_gameboy_audio(buffer)
-  local data = love.sound.newSoundData(4096, 32768, 16, 1)
-  for i = 0, 4095 do
+  local data = love.sound.newSoundData(32768, 32768, 16, 1)
+  for i = 0, 32767 do
     data:setSample(i, buffer[i])
   end
   local source = love.audio.newSource(data)
