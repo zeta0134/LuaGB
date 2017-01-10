@@ -26,6 +26,12 @@ audio.tone1.max_length = 0          -- in cycles
 audio.tone1.continuous = false
 audio.tone1.duty_length = .75       -- percentage, from 0-1
 audio.tone1.base_cycle = 0
+audio.tone1.frequency_shadow = 0
+audio.tone1.frequency_sweep_time = 0 -- in cycles, 0 == disabled
+audio.tone1.frequency_shift_counter = 0 -- should be reset on trigger
+audio.tone1.frequency_shift_direction = 1
+audio.tone1.frequency_shift_amount = 0
+audio.tone1.disabled = false
 
 audio.tone2 = {}
 audio.tone2.period = 128 -- in cycles
@@ -42,6 +48,19 @@ wave_patterns[0] = .125
 wave_patterns[1] = .25
 wave_patterns[2] = .50
 wave_patterns[3] = .75
+
+io.write_logic[ports.NR10] = function(byte)
+  audio.generate_pending_samples()
+  io.ram[ports.NR10] = byte
+  local sweep_time = bit32.rshift(bit32.band(byte, 0x70), 4)
+  audio.tone1.frequency_shift_time = sweep_time * 32768
+  if bit32.band(byte, 0x08) ~= 0 then
+    audio.tone1.frequency_shift_direction = -1
+  else
+    audio.tone1.frequency_shift_direction = 1
+  end
+  audio.tone1.frequency_shift_amount = bit32.band(byte, 0x07)
+end
 
 -- Channel 1 Sound Length / Wave Pattern Duty
 io.write_logic[ports.NR11] = function(byte)
@@ -80,7 +99,7 @@ io.write_logic[ports.NR13] = function(byte)
   audio.tone1.period = 32 * (2048 - freq_value)
 end
 
--- Channel 1 Frequency and Init - High Bits
+-- Channel 1 Frequency and Trigger - High Bits
 io.write_logic[ports.NR14] = function(byte)
   audio.generate_pending_samples()
   io.ram[ports.NR14] = byte
@@ -95,6 +114,9 @@ io.write_logic[ports.NR14] = function(byte)
   if restart then
     audio.tone1.base_cycle = timers.system_clock
   end
+  audio.tone1.frequency_shadow = freq_value
+  audio.tone1.frequency_counter = 0
+  audio.tone1.disabled = false
 end
 
 -- Channel 2 Sound Length / Wave Pattern Duty
@@ -134,7 +156,7 @@ io.write_logic[ports.NR23] = function(byte)
   audio.tone2.period = 32 * (2048 - freq_value)
 end
 
--- Channel 2 Frequency and Init - High Bits
+-- Channel 2 Frequency and Trigger - High Bits
 io.write_logic[ports.NR24] = function(byte)
   audio.generate_pending_samples()
   io.ram[ports.NR24] = byte
@@ -151,8 +173,27 @@ io.write_logic[ports.NR24] = function(byte)
   end
 end
 
+audio.tone1.update_frequency_shift = function(clock_cycle)
+  local tone1 = audio.tone1
+  if tone1.frequency_sweep_time > 0 then
+    local next_edge = tone1.base_cycle + tone1.frequency_sweep_time * tone1.frequency_shift_counter
+    if clock_cycle >= next_edge then
+      local adjustment = bit32.rshift(tone1.frequency_shadow, tone1.frequency_shift_amount) * tone1.frequency_shift_direction
+      tone1.frequency_shadow = tone1.frequency_shadow + adjustment
+      if tone1.frequency_shadow >= 2048 then
+        tone1.frequency_shadow = 2047
+        tone1.disabled = true
+      end
+      io.ram[ports.NR13] = bit32.band(tone1.frequency_shadow, 0xFF)
+      io.ram[ports.NR14] = bit32.rshift(bit32.band(tone1.frequency_shadow, 0x0700), 8) + bit32.band(io.ram[ports.NR14], 0xF8)
+      tone1.period = 32 * (2048 - tone1.frequency_shadow)
+      tone1.frequency_shift_counter = tone1.frequency_shift_counter + 1
+    end
+  end
+end
+
 audio.tone1.generate_sample = function(clock_cycle)
-  -- TODO: Implement frequency sweep
+  audio.tone1.update_frequency_shift(clock_cycle)
   local tone1 = audio.tone1
   local duration = clock_cycle - tone1.base_cycle
   if tone1.continuous or (duration <= tone1.max_length) then
