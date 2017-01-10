@@ -48,7 +48,7 @@ audio.wave3.enabled = false
 audio.wave3.max_length = 0 -- in cycles
 audio.wave3.volume_shift = 0
 audio.wave3.period = 0 -- in cycles
-audio.wave3.consecutive = false
+audio.wave3.continuous = false
 audio.wave3.base_cycle = 0
 
 local wave_patterns = {}
@@ -192,8 +192,8 @@ end
 io.write_logic[ports.NR31] = function(byte)
   audio.generate_pending_samples()
   io.ram[ports.NR31] = byte
-  local length_cycles = (256 - byte) * 16384
-  audio.wave3.max_cycles = length_cycles
+  local length_cycles = (256 - byte) * 4096
+  audio.wave3.max_length = length_cycles
 end
 
 -- Channel 3 Volume
@@ -216,7 +216,7 @@ io.write_logic[ports.NR33] = function(byte)
   local freq_high = bit32.lshift(bit32.band(io.ram[ports.NR34], 0x07), 8)
   local freq_low = byte
   local freq_value = freq_high + freq_low
-  audio.wave3.period = 32 * (2048 - freq_value)
+  audio.wave3.period = 64 * (2048 - freq_value)
 end
 
 -- Channel 3 Frequency and Trigger - High Bits
@@ -229,7 +229,7 @@ io.write_logic[ports.NR34] = function(byte)
   local freq_low = io.ram[ports.NR33]
   local freq_value = freq_high + freq_low
 
-  audio.wave3.period = 32 * (2048 - freq_value)
+  audio.wave3.period = 64 * (2048 - freq_value)
   audio.wave3.continuous = continuous
   if restart then
     audio.wave3.base_cycle = timers.system_clock
@@ -306,13 +306,26 @@ audio.wave3.generate_sample = function(clock_cycle)
   local wave3 = audio.wave3
   local duration = clock_cycle - wave3.base_cycle
   if wave3.continuous or (duration <= wave3.max_length) then
-    local period_progress = (clock_cycle % wave3.period) / wave3.period
+    local period = wave3.period
+    local period_progress = (duration % period) / (period)
     local sample_index = math.floor(period_progress * 32)
     if sample_index > 31 then
       sample_index = 31
     end
     local byte_index = bit32.rshift(sample_index, 1)
-
+    local sample = io.ram[0x30 + byte_index]
+    -- If this is an even numbered sample, shift the high nybble
+    -- to the lower nybble
+    if sample_index % 2 == 0 then
+      sample = bit32.rshift(sample, 4)
+    end
+    -- Regardless, mask out the lower nybble; this becomes our sample to play
+    sample = bit32.band(sample, 0x0F)
+    -- Shift the sample based on the volume parameter
+    sample = bit32.rshift(sample, wave3.volume_shift)
+    -- This sample will be from 0-15, we need to adjust it so that it's from -1  to 1
+    sample = (sample - 8) / 8
+    return sample
   end
   return 0
 end
@@ -326,9 +339,41 @@ audio.generate_pending_samples = function()
   while next_sample_cycle < timers.system_clock do
     local tone1 = audio.tone1.generate_sample(next_sample_cycle)
     local tone2 = audio.tone2.generate_sample(next_sample_cycle)
-    audio.buffer[next_sample] = (tone1 + tone2) / 4
+    local wave3 = audio.wave3.generate_sample(next_sample_cycle)
+
+    local sample_left = 0
+    local sample_right = 0
+
+    local channels_enabled = io.ram[ports.NR51]
+    if bit32.band(channels_enabled, 0x40) ~= 0 then
+      sample_right = sample_right + wave3
+    end
+    if bit32.band(channels_enabled, 0x20) ~= 0 then
+      sample_right = sample_right + tone2
+    end
+    if bit32.band(channels_enabled, 0x10) ~= 0 then
+      sample_right = sample_right + tone1
+    end
+
+    if bit32.band(channels_enabled, 0x04) ~= 0 then
+      sample_left = sample_left + wave3
+    end
+    if bit32.band(channels_enabled, 0x02) ~= 0 then
+      sample_left = sample_left + tone2
+    end
+    if bit32.band(channels_enabled, 0x01) ~= 0 then
+      sample_left = sample_left + tone1
+    end
+
+    sample_right = sample_right / 4
+    sample_left = sample_left / 4
+
+
+    audio.buffer[next_sample] = sample_left
     next_sample = next_sample + 1
-    if next_sample >= 8192 then
+    audio.buffer[next_sample] = sample_right
+    next_sample = next_sample + 1
+    if next_sample >= 32768 then
       audio.__on_buffer_full(audio.buffer)
       next_sample = 0
     end

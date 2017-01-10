@@ -80,6 +80,10 @@ ports.NR42 = 0x21
 ports.NR43 = 0x22
 ports.NR44 = 0x23
 
+ports.NR50 = 0x24
+ports.NR51 = 0x25
+ports.NR52 = 0x26
+
 io.ports = ports
 
 
