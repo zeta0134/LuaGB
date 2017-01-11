@@ -51,6 +51,15 @@ audio.wave3.period = 0 -- in cycles
 audio.wave3.continuous = false
 audio.wave3.base_cycle = 0
 
+audio.noise4 = {}
+audio.noise4.volume_initial = 0
+audio.noise4.volume_direction = 1
+audio.noise4.volume_step_length = 0 -- in cycles
+audio.noise4.max_length = 0          -- in cycles
+audio.noise4.continuous = false
+audio.noise4.base_cycle = 0
+audio.noise4.polynomial_counter = 0
+
 local wave_patterns = {}
 wave_patterns[0] = .125
 wave_patterns[1] = .25
@@ -234,6 +243,40 @@ io.write_logic[ports.NR34] = function(byte)
   if restart then
     audio.wave3.base_cycle = timers.system_clock
   end
+end
+
+-- Channel 4 Length
+io.write_logic[ports.NR41] = function(byte)
+  audio.generate_pending_samples()
+  io.ram[ports.NR41] = byte
+  local wave_pattern = bit32.rshift(bit32.band(byte, 0xC0), 6)
+  audio.noise4.duty_length = wave_patterns[wave_pattern]
+  local length_data = bit32.band(byte, 0x3F)
+  local length_cycles = (64 - length_data) * 16384
+  audio.noise4.max_length = length_cycles
+end
+
+-- Channel 4 Volume Envelope
+io.write_logic[ports.NR42] = function(byte)
+  audio.generate_pending_samples()
+  io.ram[ports.NR42] = byte
+  audio.noise4.volume_initial = bit32.rshift(bit32.band(byte, 0xF0), 4)
+  local direction = bit32.band(byte, 0x08)
+  if direction > 0 then
+    audio.noise4.volume_direction = 1
+  else
+    audio.noise4.volume_direction = -1
+  end
+  local envelope_step_data = bit32.band(byte, 0x07)
+  local envelope_step_cycles = envelope_step_data * 65536
+  audio.noise4.volume_step_length = envelope_step_cycles
+end
+
+-- Channel 4 Polynomial Counter
+io.write_logic[ports.NR43] = function(byte)
+  audio.generate_pending_samples()
+  io.ram[ports.NR43] = byte
+  
 end
 
 audio.tone1.update_frequency_shift = function(clock_cycle)
