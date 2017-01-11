@@ -58,7 +58,10 @@ audio.noise4.volume_step_length = 0 -- in cycles
 audio.noise4.max_length = 0          -- in cycles
 audio.noise4.continuous = false
 audio.noise4.base_cycle = 0
-audio.noise4.polynomial_counter = 0
+audio.noise4.polynomial_period = 0
+audio.noise4.polynomial_lfsr = 0x7F -- 15 bits
+audio.noise4.polynomial_last_shift = 0 -- in cycles
+audio.noise4.polynomial_wide = true
 
 local wave_patterns = {}
 wave_patterns[0] = .125
@@ -276,7 +279,29 @@ end
 io.write_logic[ports.NR43] = function(byte)
   audio.generate_pending_samples()
   io.ram[ports.NR43] = byte
-  
+  local shift_clock_frequency = bit32.rshift(bit32.band(byte, 0xF0), 4)
+  local wide_step = bit32.band(byte, 0x08) == 0
+  local dividing_ratio = bit32.band(byte, 0x07)
+  if dividing_ratio == 0 then
+    dividing_ratio = 0.5
+  end
+
+  -- Maybe?
+  local polynomial_frequency = 524288 / dividing_ratio / bit32.lshift(0x1, shift_clock_frequency + 1)
+  audio.noise4.polynomial_period = 4194304 / polynomial_frequency
+  audio.noise4.polynomial_wide = wide_step
+end
+
+io.write_logic[ports.NR44] = function(byte)
+  audio.generate_pending_samples()
+  io.ram[ports.NR44] = byte
+  local restart = (bit32.band(byte, 0x80) ~= 0)
+  local continuous = (bit32.band(byte, 0x40) == 0)
+
+  audio.noise4.continuous = continuous
+  if restart then
+    audio.noise4.base_cycle = timers.system_clock
+  end
 end
 
 audio.tone1.update_frequency_shift = function(clock_cycle)
@@ -298,6 +323,28 @@ audio.tone1.update_frequency_shift = function(clock_cycle)
   end
 end
 
+audio.noise4.update_lfsr = function(clock_cycle)
+  if clock_cycle - audio.noise4.polynomial_last_shift > audio.noise4.polynomial_period then
+    local lfsr = audio.noise4.polynomial_lfsr
+    -- Grab the lowest two bits in LSFR and XOR them together
+    local bit0 = bit32.band(lfsr, 0x1)
+    local bit1 = bit32.rshift(bit32.band(lfsr, 0x2), 1)
+    local xor = bit32.bxor(bit0, bit1)
+    -- Shift LSFR down by one
+    lfsr = bit32.rshift(lfsr, 1)
+    -- Place the XOR'd bit into the high bit (14) always
+    xor = bit32.lshift(xor, 14)
+    lfsr = bit32.bor(xor, lfsr)
+    if not audio.noise4.polynomial_wide then
+      -- place the XOR'd bit into bit 6 as well
+      xor = bit32.rshift(xor, 8)
+      lfsr = bit32.bor(xor, bit32.band(lfsr, 0x5F))
+    end
+    audio.noise4.polynomial_last_shift = audio.noise4.polynomial_last_shift + audio.noise4.polynomial_period
+    audio.noise4.polynomial_lfsr = lfsr
+  end
+end
+
 audio.tone1.generate_sample = function(clock_cycle)
   audio.tone1.update_frequency_shift(clock_cycle)
   local tone1 = audio.tone1
@@ -311,7 +358,7 @@ audio.tone1.generate_sample = function(clock_cycle)
       if volume > 0xF then
         volume = 0xF
       end
-      local period_progress = (clock_cycle % tone1.period) / tone1.period
+      local period_progress = (duration % tone1.period) / tone1.period
       if period_progress > tone1.duty_length then
         return volume / 0xF * -1
       else
@@ -373,6 +420,30 @@ audio.wave3.generate_sample = function(clock_cycle)
   return 0
 end
 
+audio.noise4.generate_sample = function(clock_cycle)
+  audio.noise4.update_lfsr(clock_cycle)
+  local noise4 = audio.noise4
+  local duration = clock_cycle - noise4.base_cycle
+  if noise4.continuous or (duration <= noise4.max_length) then
+    local volume = noise4.volume_initial
+    if noise4.volume_step_length > 0 then
+      volume = volume + noise4.volume_direction * math.floor(duration / noise4.volume_step_length)
+    end
+    if volume > 0 then
+      if volume > 0xF then
+        volume = 0xF
+      end
+      -- Output high / low is based on the INVERTED low bit of LFSR
+      if bit32.band(noise4.polynomial_lfsr, 0x1) == 0 then
+        return volume / 0xF
+      else
+        return volume / 0xF * -1
+      end
+    end
+  end
+  return 0
+end
+
 local next_sample = 0
 local next_sample_cycle = 0
 
@@ -380,14 +451,18 @@ audio.__on_buffer_full = function(buffer) print("HI!!") end
 
 audio.generate_pending_samples = function()
   while next_sample_cycle < timers.system_clock do
-    local tone1 = audio.tone1.generate_sample(next_sample_cycle)
-    local tone2 = audio.tone2.generate_sample(next_sample_cycle)
-    local wave3 = audio.wave3.generate_sample(next_sample_cycle)
+    local tone1  = audio.tone1.generate_sample(next_sample_cycle)
+    local tone2  = audio.tone2.generate_sample(next_sample_cycle)
+    local wave3  = audio.wave3.generate_sample(next_sample_cycle)
+    local noise4 = audio.noise4.generate_sample(next_sample_cycle)
 
     local sample_left = 0
     local sample_right = 0
 
     local channels_enabled = io.ram[ports.NR51]
+    if bit32.band(channels_enabled, 0x80) ~= 0 then
+      sample_right = sample_right + noise4
+    end
     if bit32.band(channels_enabled, 0x40) ~= 0 then
       sample_right = sample_right + wave3
     end
@@ -398,6 +473,9 @@ audio.generate_pending_samples = function()
       sample_right = sample_right + tone1
     end
 
+    if bit32.band(channels_enabled, 0x08) ~= 0 then
+      sample_left = sample_left + noise4
+    end
     if bit32.band(channels_enabled, 0x04) ~= 0 then
       sample_left = sample_left + wave3
     end
