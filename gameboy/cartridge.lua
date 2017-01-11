@@ -6,6 +6,7 @@ local cartridge = {}
 local mbc_none = require("gameboy/mbc/none")
 local mbc1 = require("gameboy/mbc/mbc1")
 local mbc3 = require("gameboy/mbc/mbc3")
+local mbc5 = require("gameboy/mbc/mbc5")
 
 cartridge.external_ram = memory.generate_block(32 * 1024)
 cartridge.external_ram.dirty = false
@@ -19,6 +20,13 @@ mbc_mappings[0x03] = mbc1
 mbc_mappings[0x11] = mbc3
 mbc_mappings[0x12] = mbc3
 mbc_mappings[0x13] = mbc3
+
+mbc_mappings[0x19] = mbc5
+mbc_mappings[0x1A] = mbc5
+mbc_mappings[0x1B] = mbc5
+mbc_mappings[0x1C] = mbc5
+mbc_mappings[0x1D] = mbc5
+mbc_mappings[0x1E] = mbc5
 
 cartridge.load = function(file_data, size)
   print("Reading cartridge into memory...")
