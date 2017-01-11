@@ -109,16 +109,19 @@ local function load_state(number)
   end
 end
 
+local sound_buffer = nil
+
 function play_gameboy_audio(buffer)
-  local data = love.sound.newSoundData(32768, 32768, 16, 2)
+  --local data = love.sound.newSoundData(32768, 32768, 16, 2)
   for i = 0, 32768 - 1 do
-    data:setSample(i, buffer[i])
+    sound_buffer:setSample(i, buffer[i])
   end
-  local source = love.audio.newSource(data)
+  local source = love.audio.newSource(sound_buffer)
   love.audio.play(source)
 end
 
 function love.load(args)
+  sound_buffer = love.sound.newSoundData(32768, 32768, 16, 2)
   love.graphics.setDefaultFilter("nearest", "nearest")
   --love.graphics.setPointStyle("rough")
   ubuntu_font = love.graphics.newFont("UbuntuMono-R.ttf", 18)

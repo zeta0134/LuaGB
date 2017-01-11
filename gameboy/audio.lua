@@ -292,6 +292,7 @@ io.write_logic[ports.NR43] = function(byte)
   audio.noise4.polynomial_wide = wide_step
 end
 
+-- Channel 4 Trigger
 io.write_logic[ports.NR44] = function(byte)
   audio.generate_pending_samples()
   io.ram[ports.NR44] = byte
@@ -302,6 +303,9 @@ io.write_logic[ports.NR44] = function(byte)
   if restart then
     audio.noise4.base_cycle = timers.system_clock
   end
+
+  -- Reset the LSFR to all 1's
+  audio.noise4.polynomial_lfsr = 0x7F
 end
 
 audio.tone1.update_frequency_shift = function(clock_cycle)
