@@ -18,6 +18,7 @@ audio.initialize = function()
 end
 
 audio.tone1 = {}
+audio.tone1.debug_disabled = false
 audio.tone1.period = 128 -- in cycles
 audio.tone1.volume_initial = 0
 audio.tone1.volume_direction = 1
@@ -34,6 +35,7 @@ audio.tone1.frequency_shift_amount = 0
 audio.tone1.disabled = false
 
 audio.tone2 = {}
+audio.tone2.debug_disabled = false
 audio.tone2.period = 128 -- in cycles
 audio.tone2.volume_initial = 0
 audio.tone2.volume_direction = 1
@@ -44,6 +46,7 @@ audio.tone2.duty_length = .75       -- percentage, from 0-1
 audio.tone2.base_cycle = 0
 
 audio.wave3 = {}
+audio.wave3.debug_disabled = false
 audio.wave3.enabled = false
 audio.wave3.max_length = 0 -- in cycles
 audio.wave3.volume_shift = 0
@@ -52,6 +55,7 @@ audio.wave3.continuous = false
 audio.wave3.base_cycle = 0
 
 audio.noise4 = {}
+audio.noise4.debug_disabled = false
 audio.noise4.volume_initial = 0
 audio.noise4.volume_direction = 1
 audio.noise4.volume_step_length = 0 -- in cycles
@@ -495,29 +499,29 @@ audio.generate_pending_samples = function()
     local sample_right = 0
 
     local channels_enabled = io.ram[ports.NR51]
-    if bit32.band(channels_enabled, 0x80) ~= 0 then
+    if bit32.band(channels_enabled, 0x80) ~= 0 and not audio.noise4.debug_disabled then
       sample_right = sample_right + noise4
     end
-    if bit32.band(channels_enabled, 0x40) ~= 0 then
+    if bit32.band(channels_enabled, 0x40) ~= 0 and not audio.wave3.debug_disabled  then
       sample_right = sample_right + wave3
     end
-    if bit32.band(channels_enabled, 0x20) ~= 0 then
+    if bit32.band(channels_enabled, 0x20) ~= 0 and not audio.tone2.debug_disabled  then
       sample_right = sample_right + tone2
     end
-    if bit32.band(channels_enabled, 0x10) ~= 0 then
+    if bit32.band(channels_enabled, 0x10) ~= 0 and not audio.tone1.debug_disabled  then
       sample_right = sample_right + tone1
     end
 
-    if bit32.band(channels_enabled, 0x08) ~= 0 then
+    if bit32.band(channels_enabled, 0x08) ~= 0 and not audio.noise4.debug_disabled  then
       sample_left = sample_left + noise4
     end
-    if bit32.band(channels_enabled, 0x04) ~= 0 then
+    if bit32.band(channels_enabled, 0x04) ~= 0 and not audio.wave3.debug_disabled  then
       sample_left = sample_left + wave3
     end
-    if bit32.band(channels_enabled, 0x02) ~= 0 then
+    if bit32.band(channels_enabled, 0x02) ~= 0 and not audio.tone2.debug_disabled  then
       sample_left = sample_left + tone2
     end
-    if bit32.band(channels_enabled, 0x01) ~= 0 then
+    if bit32.band(channels_enabled, 0x01) ~= 0 and not audio.tone1.debug_disabled  then
       sample_left = sample_left + tone1
     end
 

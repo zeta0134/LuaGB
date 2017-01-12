@@ -237,7 +237,7 @@ action_keys.d = function()
   resize_window()
 end
 
-for i = 1, 9 do
+for i = 1, 8 do
   action_keys[tostring(i)] = function()
     load_state(i)
   end
@@ -246,6 +246,11 @@ for i = 1, 9 do
     save_state(i)
   end
 end
+
+action_keys["f9"] = function() gameboy.audio.tone1.debug_disabled = not gameboy.audio.tone1.debug_disabled end
+action_keys["f10"] = function() gameboy.audio.tone2.debug_disabled = not gameboy.audio.tone2.debug_disabled end
+action_keys["f11"] = function() gameboy.audio.wave3.debug_disabled = not gameboy.audio.wave3.debug_disabled end
+action_keys["f12"] = function() gameboy.audio.noise4.debug_disabled = not gameboy.audio.noise4.debug_disabled end
 
 local toggle_panel = function(name)
   if panels[name].active then
