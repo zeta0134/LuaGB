@@ -299,7 +299,7 @@ Status.Mode = function()
 end
 
 Status.SetMode = function(mode)
-  io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xF8) + bit32.band(mode, 0x3)
+  io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xFC) + bit32.band(mode, 0x3)
   if mode == 0 then
     -- HBlank
     graphics.draw_scanline(io.ram[ports.LY])
@@ -443,10 +443,10 @@ io.write_logic[ports.OBP1] = function(byte)
   end
 end
 
-graphics.getIndexFromTilemap = function(map_address, tile_data, x, y)
+graphics.getIndexFromTilemap = function(map, tile_data, x, y)
   local tile_x = bit32.rshift(x, 3)
   local tile_y = bit32.rshift(y, 3)
-  local tile_index = graphics.vram[(map_address + (tile_y * 32) + (tile_x))]
+  local tile_index = map[tile_x][tile_y]
   if tile_data == 0x9000 then
     if tile_index > 127 then
       tile_index = tile_index - 256
@@ -454,7 +454,6 @@ graphics.getIndexFromTilemap = function(map_address, tile_data, x, y)
     -- add offset to re-root at tile 256 (so effectively, we read from tile 192 - 384)
     tile_index = tile_index + 256
   end
-
 
   local subpixel_x = x - (tile_x * 8)
   local subpixel_y = y - (tile_y * 8)
@@ -564,10 +563,20 @@ graphics.draw_scanline = function(scanline)
   -- Grab this stuff just once, rather than every iteration
   -- through the loop
   local tile_data = LCD_Control.TileData()
-  local window_tilemap = LCD_Control.WindowTilemap()
-  local background_tilemap = LCD_Control.BackgroundTilemap()
+  local window_tilemap_address = LCD_Control.WindowTilemap()
+  local background_tilemap_address = LCD_Control.BackgroundTilemap()
   local window_enabled = LCD_Control.WindowEnabled()
   local background_enabled = LCD_Control.BackgroundEnabled()
+
+  local window_tilemap = graphics.map_0
+  if window_tilemap_address == 0x9C00 then
+    window_tilemap = graphics.map_1
+  end
+
+  local background_tilemap = graphics.map_0
+  if background_tilemap_address == 0x9C00 then
+    background_tilemap = graphics.map_1
+  end
 
   local w_x = io.ram[ports.WX] - 7
   local w_y = io.ram[ports.WY]

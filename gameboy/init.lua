@@ -61,15 +61,9 @@ gameboy.load_state = function(state)
 end
 
 gameboy.step = function()
-  if profile_enabled then
-    Pie:attach()
-  end
   gameboy.timers.update()
   gameboy.graphics.update()
   gameboy.z80.process_instruction()
-  if profile_enabled then
-    Pie:detach()
-  end
   return
 end
 

@@ -1,7 +1,6 @@
 local bit32 = require("bit")
 local gameboy = require("gameboy")
 local binser = require("vendor/binser")
-local pie = require("vendor/piefiller")
 
 local panels = {}
 
@@ -11,6 +10,8 @@ panels.io = require("panels/io")
 panels.vram = require("panels/vram")
 panels.oam = require("panels/oam")
 panels.disassembler = require("panels/disassembler")
+
+require("vendor/profiler")
 
 local active_panels = {}
 
@@ -22,10 +23,6 @@ local debug_tile_canvas
 
 local emulator_running = false
 local debug_mode = true
-
-Pie = pie:new()
-Pie:attach()
-Pie:detach()
 
 local resize_window = function()
   local width = 160 * 2 --width of gameboy screen
@@ -286,10 +283,6 @@ input_mappings["return"] = "Start"
 input_mappings.rshift = "Select"
 
 function love.keypressed(key)
-  if profile_enabled then
-    Pie:keypressed(key)
-  end
-
   if input_mappings[key] then
     gameboy.input.keys[input_mappings[key]] = 1
     gameboy.input.update()
@@ -314,6 +307,9 @@ function love.keyreleased(key)
 end
 
 function love.update()
+  if profile_enabled then
+    profilerStart()
+  end
   if emulator_running then
     gameboy.run_until_vblank()
   end
@@ -324,6 +320,9 @@ function love.update()
     save_delay = 0
     gameboy.cartridge.external_ram.dirty = false
     save_ram()
+  end
+  if profile_enabled then
+    profilerStop()
   end
 end
 
@@ -345,8 +344,11 @@ function love.draw()
     love.graphics.setColor(0, 0, 0, 128)
     love.graphics.rectangle("fill", 0, 0, 1024, 1024)
     love.graphics.setColor(255, 255, 255)
-    Pie:draw()
   end
 
   love.window.setTitle("(FPS: " .. love.timer.getFPS() .. ") - " .. window_title)
+end
+
+function love.quit()
+  profilerReport("profiler.txt")
 end
