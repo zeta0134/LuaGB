@@ -403,27 +403,29 @@ end
 audio.wave3.generate_sample = function(clock_cycle)
   local wave3 = audio.wave3
   local duration = clock_cycle - wave3.base_cycle
-  if wave3.continuous or (duration <= wave3.max_length) then
-    local period = wave3.period
-    local period_progress = (duration % period) / (period)
-    local sample_index = math.floor(period_progress * 32)
-    if sample_index > 31 then
-      sample_index = 31
+  if wave3.enabled then
+    if wave3.continuous or (duration <= wave3.max_length) then
+      local period = wave3.period
+      local period_progress = (duration % period) / (period)
+      local sample_index = math.floor(period_progress * 32)
+      if sample_index > 31 then
+        sample_index = 31
+      end
+      local byte_index = bit32.rshift(sample_index, 1)
+      local sample = io.ram[0x30 + byte_index]
+      -- If this is an even numbered sample, shift the high nybble
+      -- to the lower nybble
+      if sample_index % 2 == 0 then
+        sample = bit32.rshift(sample, 4)
+      end
+      -- Regardless, mask out the lower nybble; this becomes our sample to play
+      sample = bit32.band(sample, 0x0F)
+      -- Shift the sample based on the volume parameter
+      sample = bit32.rshift(sample, wave3.volume_shift)
+      -- This sample will be from 0-15, we need to adjust it so that it's from -1  to 1
+      sample = (sample - 8) / 8
+      return sample
     end
-    local byte_index = bit32.rshift(sample_index, 1)
-    local sample = io.ram[0x30 + byte_index]
-    -- If this is an even numbered sample, shift the high nybble
-    -- to the lower nybble
-    if sample_index % 2 == 0 then
-      sample = bit32.rshift(sample, 4)
-    end
-    -- Regardless, mask out the lower nybble; this becomes our sample to play
-    sample = bit32.band(sample, 0x0F)
-    -- Shift the sample based on the volume parameter
-    sample = bit32.rshift(sample, wave3.volume_shift)
-    -- This sample will be from 0-15, we need to adjust it so that it's from -1  to 1
-    sample = (sample - 8) / 8
-    return sample
   end
   return 0
 end
