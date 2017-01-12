@@ -453,6 +453,37 @@ local next_sample_cycle = 0
 
 audio.__on_buffer_full = function(buffer) print("HI!!") end
 
+audio.debug = {}
+audio.debug.current_sample = 0
+audio.debug.max_samples = 256
+audio.debug.tone1 = {}
+audio.debug.tone2 = {}
+audio.debug.wave3 = {}
+audio.debug.noise4 = {}
+audio.debug.final = {}
+for i = 0, audio.debug.max_samples do
+  audio.debug.tone1[i] = 0
+  audio.debug.tone2[i] = 0
+  audio.debug.wave3[i] = 0
+  audio.debug.noise4[i] = 0
+  audio.debug.final[i] = 0
+end
+
+audio.save_debug_samples = function(tone1, tone2, wave3, noise4, final)
+  local debug = audio.debug
+  debug.tone1[debug.current_sample] = tone1
+  debug.tone2[debug.current_sample] = tone2
+  debug.wave3[debug.current_sample] = wave3
+  debug.noise4[debug.current_sample] = noise4
+  debug.final[debug.current_sample] = final
+  debug.current_sample = debug.current_sample + 1
+  if debug.current_sample >= debug.max_samples then
+    debug.current_sample = 0
+  end
+end
+
+audio.debug.enabled = true
+
 audio.generate_pending_samples = function()
   while next_sample_cycle < timers.system_clock do
     local tone1  = audio.tone1.generate_sample(next_sample_cycle)
@@ -492,6 +523,11 @@ audio.generate_pending_samples = function()
 
     sample_right = sample_right / 4
     sample_left = sample_left / 4
+
+    if audio.debug.enabled then
+      -- Debug in mono
+      audio.save_debug_samples(tone1, tone2, wave3, noise4, (tone1 + tone2 + wave3 + noise4) / 4)
+    end
 
     -- Left/Right Channel Volume
     local right_volume = bit32.rshift(bit32.band(io.ram[ports.NR50], 0x70), 4)

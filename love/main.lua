@@ -5,6 +5,7 @@ local pie = require("vendor/piefiller")
 
 local panels = {}
 
+panels.audio = require("panels/audio")
 panels.registers = require("panels/registers")
 panels.io = require("panels/io")
 panels.vram = require("panels/vram")
@@ -160,6 +161,7 @@ function love.load(args)
     panel.active = true
   end
 
+  table.insert(active_panels, panels.audio)
   table.insert(active_panels, panels.io)
   table.insert(active_panels, panels.vram)
   table.insert(active_panels, panels.oam)
@@ -264,6 +266,7 @@ action_keys.kp1 = function() toggle_panel("io") end
 action_keys.kp2 = function() toggle_panel("vram") end
 action_keys.kp3 = function() toggle_panel("oam") end
 action_keys.kp4 = function() toggle_panel("disassembler") end
+action_keys.kp5 = function() toggle_panel("audio") end
 
 action_keys.lshift = function() profile_enabled = not profile_enabled end
 
