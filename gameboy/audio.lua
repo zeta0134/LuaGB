@@ -53,7 +53,7 @@ audio.reset = function()
   audio.tone2.frequency_last_update = 0 -- in cycles
   audio.tone2.period_counter = 0
   audio.tone2.wave_duty_counter = 0
-  audio.tone1.frequency_shadow = 0
+  audio.tone2.frequency_shadow = 0
 
   audio.wave3.debug_disabled = false
   audio.wave3.enabled = false
@@ -62,6 +62,10 @@ audio.reset = function()
   audio.wave3.period = 0 -- in cycles
   audio.wave3.continuous = false
   audio.wave3.base_cycle = 0
+  audio.wave3.frequency_last_update = 0 -- in cycles
+  audio.wave3.period_counter = 0
+  audio.wave3.sample_index = 0
+  audio.wave3.frequency_shadow = 0
 
   audio.noise4.debug_disabled = false
   audio.noise4.volume_initial = 0
@@ -289,9 +293,12 @@ io.write_logic[ports.NR34] = function(byte)
   local freq_value = freq_high + freq_low
 
   audio.wave3.period = 64 * (2048 - freq_value)
+  audio.wave3.period_conter = (2048 - freq_value)
+  audio.wave3.frequency_shadow = freq_value
   audio.wave3.continuous = continuous
   if restart then
     audio.wave3.base_cycle = timers.system_clock
+    audio.wave3.sample_index = 0
   end
 end
 
@@ -475,17 +482,26 @@ audio.wave3.generate_sample = function(clock_cycle)
   local duration = clock_cycle - wave3.base_cycle
   if wave3.enabled then
     if wave3.continuous or (duration <= wave3.max_length) then
-      local period = wave3.period
-      local period_progress = (duration % period) / (period)
-      local sample_index = math.floor(period_progress * 32)
-      if sample_index > 31 then
-        sample_index = 31
+      --local period = wave3.period
+      --local period_progress = (duration % period) / (period)
+      --local sample_index = math.floor(period_progress * 32)
+      while clock_cycle > wave3.frequency_last_update + 2 do
+        wave3.period_counter = wave3.period_counter - 1
+        if wave3.period_counter <= 0 then
+          wave3.period_counter = (2048 - wave3.frequency_shadow)
+          wave3.sample_index = wave3.sample_index + 1
+          if wave3.sample_index >= 32 then
+            wave3.sample_index = 0
+          end
+        end
+        wave3.frequency_last_update = wave3.frequency_last_update + 2
       end
-      local byte_index = bit32.rshift(sample_index, 1)
+
+      local byte_index = bit32.rshift(wave3.sample_index, 1)
       local sample = io.ram[0x30 + byte_index]
       -- If this is an even numbered sample, shift the high nybble
       -- to the lower nybble
-      if sample_index % 2 == 0 then
+      if wave3.sample_index % 2 == 0 then
         sample = bit32.rshift(sample, 4)
       end
       -- Regardless, mask out the lower nybble; this becomes our sample to play

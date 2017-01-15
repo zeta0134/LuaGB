@@ -118,6 +118,23 @@ function play_gameboy_audio(buffer)
   love.audio.play(source)
 end
 
+function dump_audio(buffer)
+  -- play the sound still
+  play_gameboy_audio(buffer)
+  -- convert this to a bytestring for output
+  local output = ""
+  local chars = {}
+  for i = 0, 32768 - 1 do
+    local sample = buffer[i]
+    sample = math.floor(sample * (32768 - 1)) -- re-root in 16-bit range
+    chars[i * 2] = string.char(bit32.band(sample, 0xFF))
+    chars[i * 2 + 1] = string.char(bit32.rshift(bit32.band(sample, 0xFF00), 8))
+  end
+  output = table.concat(chars)
+
+  love.filesystem.append("audiodump.raw", output, 32768 * 2)
+end
+
 function love.load(args)
   sound_buffer = love.sound.newSoundData(32768, 32768, 16, 2)
   love.graphics.setDefaultFilter("nearest", "nearest")
@@ -169,9 +186,7 @@ function love.load(args)
   window_title = "LuaGB - " .. gameboy.cartridge.header.title
   love.window.setTitle(window_title)
 
-  gameboy.audio.on_buffer_full(function(buffer)
-    play_gameboy_audio(buffer)
-  end)
+  gameboy.audio.on_buffer_full(play_gameboy_audio)
 
   love.audio.setVolume(0.1)
 end
@@ -269,6 +284,20 @@ action_keys.kp2 = function() toggle_panel("vram") end
 action_keys.kp3 = function() toggle_panel("oam") end
 action_keys.kp4 = function() toggle_panel("disassembler") end
 action_keys.kp5 = function() toggle_panel("audio") end
+
+local audio_dump_running = false
+action_keys.a = function()
+  if audio_dump_running then
+    gameboy.audio.on_buffer_full(play_gameboy_audio)
+    print("Stopped dumping audio.")
+    audio_dump_running = false
+  else
+    love.filesystem.remove("audiodump.raw")
+    gameboy.audio.on_buffer_full(dump_audio)
+    print("Started dumping audio to audiodump.raw ...")
+    audio_dump_running = true
+  end
+end
 
 action_keys.lshift = function() profile_enabled = not profile_enabled end
 
