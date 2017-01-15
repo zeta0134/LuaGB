@@ -11,6 +11,7 @@ gameboy.timers = require("gameboy/timers")
 gameboy.z80 = require("gameboy/z80")
 
 gameboy.initialize = function()
+  gameboy.audio.initialize()
   gameboy.graphics.initialize()
 
   gameboy.reset()
@@ -24,6 +25,7 @@ gameboy.reset = function()
 
   -- Note: IO needs to come first here, as some subsequent modules
   -- manipulate IO registers during reset / initialization
+  gameboy.audio.reset()
   gameboy.io.reset()
   gameboy.memory.reset()
   gameboy.cartridge.reset()
@@ -36,6 +38,7 @@ end
 
 gameboy.save_state = function()
   local state = {}
+  state.audio = gameboy.audio.save_state()
   state.io = gameboy.io.save_state()
   state.memory = gameboy.memory.save_state()
   state.cartridge = gameboy.cartridge.save_state()
@@ -49,6 +52,7 @@ gameboy.save_state = function()
 end
 
 gameboy.load_state = function(state)
+  gameboy.audio.load_state(state.audio)
   gameboy.io.load_state(state.io)
   gameboy.memory.load_state(state.memory)
   gameboy.cartridge.load_state(state.cartridge)

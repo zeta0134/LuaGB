@@ -10,62 +10,84 @@ local audio = {}
 -- to implement any other sampling frequencies until this is more stable.
 
 audio.buffer = {}
+audio.tone1 = {}
+audio.tone2 = {}
+audio.wave3 = {}
+audio.noise4 = {}
+
+local next_sample = 0
+local next_sample_cycle = 0
+
+audio.reset = function()
+  audio.tone1.debug_disabled = false
+  audio.tone1.period = 128 -- in cycles
+  audio.tone1.volume_initial = 0
+  audio.tone1.volume_direction = 1
+  audio.tone1.volume_step_length = 0 -- in cycles
+  audio.tone1.max_length = 0          -- in cycles
+  audio.tone1.continuous = false
+  audio.tone1.duty_length = .75       -- percentage, from 0-1
+  audio.tone1.base_cycle = 0
+  audio.tone1.frequency_shadow = 0
+  audio.tone1.frequency_shift_time = 0 -- in cycles, 0 == disabled
+  audio.tone1.frequency_shift_counter = 0 -- should be reset on trigger
+  audio.tone1.frequency_shift_direction = 1
+  audio.tone1.frequency_shift_amount = 0
+  audio.tone1.disabled = false
+
+  audio.tone2.debug_disabled = false
+  audio.tone2.period = 128 -- in cycles
+  audio.tone2.volume_initial = 0
+  audio.tone2.volume_direction = 1
+  audio.tone2.volume_step_length = 0 -- in cycles
+  audio.tone2.max_length = 0          -- in cycles
+  audio.tone2.continuous = false
+  audio.tone2.duty_length = .75       -- percentage, from 0-1
+  audio.tone2.base_cycle = 0
+
+  audio.wave3.debug_disabled = false
+  audio.wave3.enabled = false
+  audio.wave3.max_length = 0 -- in cycles
+  audio.wave3.volume_shift = 0
+  audio.wave3.period = 0 -- in cycles
+  audio.wave3.continuous = false
+  audio.wave3.base_cycle = 0
+
+  audio.noise4.debug_disabled = false
+  audio.noise4.volume_initial = 0
+  audio.noise4.volume_direction = 1
+  audio.noise4.volume_step_length = 0 -- in cycles
+  audio.noise4.max_length = 0          -- in cycles
+  audio.noise4.continuous = false
+  audio.noise4.base_cycle = 0
+  audio.noise4.polynomial_period = 0
+  audio.noise4.polynomial_lfsr = 0x7F -- 15 bits
+  audio.noise4.polynomial_last_shift = 0 -- in cycles
+  audio.noise4.polynomial_wide = true
+
+  next_sample = 0
+  next_sample_cycle = 0
+end
 
 audio.initialize = function()
   for i = 0, 32768 do
     audio.buffer[i] = 0
   end
+
+  audio.reset()
 end
 
-audio.tone1 = {}
-audio.tone1.debug_disabled = false
-audio.tone1.period = 128 -- in cycles
-audio.tone1.volume_initial = 0
-audio.tone1.volume_direction = 1
-audio.tone1.volume_step_length = 0 -- in cycles
-audio.tone1.max_length = 0          -- in cycles
-audio.tone1.continuous = false
-audio.tone1.duty_length = .75       -- percentage, from 0-1
-audio.tone1.base_cycle = 0
-audio.tone1.frequency_shadow = 0
-audio.tone1.frequency_shift_time = 0 -- in cycles, 0 == disabled
-audio.tone1.frequency_shift_counter = 0 -- should be reset on trigger
-audio.tone1.frequency_shift_direction = 1
-audio.tone1.frequency_shift_amount = 0
-audio.tone1.disabled = false
+audio.save_state = function()
+  local state = {}
+  state.next_sample = next_sample
+  state.next_sample_cycle = next_sample_cycle
+  return state
+end
 
-audio.tone2 = {}
-audio.tone2.debug_disabled = false
-audio.tone2.period = 128 -- in cycles
-audio.tone2.volume_initial = 0
-audio.tone2.volume_direction = 1
-audio.tone2.volume_step_length = 0 -- in cycles
-audio.tone2.max_length = 0          -- in cycles
-audio.tone2.continuous = false
-audio.tone2.duty_length = .75       -- percentage, from 0-1
-audio.tone2.base_cycle = 0
-
-audio.wave3 = {}
-audio.wave3.debug_disabled = false
-audio.wave3.enabled = false
-audio.wave3.max_length = 0 -- in cycles
-audio.wave3.volume_shift = 0
-audio.wave3.period = 0 -- in cycles
-audio.wave3.continuous = false
-audio.wave3.base_cycle = 0
-
-audio.noise4 = {}
-audio.noise4.debug_disabled = false
-audio.noise4.volume_initial = 0
-audio.noise4.volume_direction = 1
-audio.noise4.volume_step_length = 0 -- in cycles
-audio.noise4.max_length = 0          -- in cycles
-audio.noise4.continuous = false
-audio.noise4.base_cycle = 0
-audio.noise4.polynomial_period = 0
-audio.noise4.polynomial_lfsr = 0x7F -- 15 bits
-audio.noise4.polynomial_last_shift = 0 -- in cycles
-audio.noise4.polynomial_wide = true
+audio.load_state = function(state)
+  next_sample = state.next_sample
+  next_sample_cycle = state.next_sample_cycle
+end
 
 local wave_patterns = {}
 wave_patterns[0] = .125
@@ -454,10 +476,7 @@ audio.noise4.generate_sample = function(clock_cycle)
   return 0
 end
 
-local next_sample = 0
-local next_sample_cycle = 0
-
-audio.__on_buffer_full = function(buffer) print("HI!!") end
+audio.__on_buffer_full = function(buffer) end
 
 audio.debug = {}
 audio.debug.current_sample = 0
