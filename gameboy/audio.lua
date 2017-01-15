@@ -27,7 +27,12 @@ audio.reset = function()
   audio.tone1.max_length = 0          -- in cycles
   audio.tone1.continuous = false
   audio.tone1.duty_length = .75       -- percentage, from 0-1
+  audio.tone1.wave_pattern = 0
   audio.tone1.base_cycle = 0
+  audio.tone1.frequency_last_update = 0 -- in cycles
+  audio.tone1.wave_duty_counter = 0
+  audio.tone1.period_counter = 0
+  audio.tone1.frequency_target = 0
   audio.tone1.frequency_shadow = 0
   audio.tone1.frequency_shift_time = 0 -- in cycles, 0 == disabled
   audio.tone1.frequency_shift_counter = 0 -- should be reset on trigger
@@ -43,7 +48,12 @@ audio.reset = function()
   audio.tone2.max_length = 0          -- in cycles
   audio.tone2.continuous = false
   audio.tone2.duty_length = .75       -- percentage, from 0-1
+  audio.tone2.wave_pattern = 0
   audio.tone2.base_cycle = 0
+  audio.tone2.frequency_last_update = 0 -- in cycles
+  audio.tone2.period_counter = 0
+  audio.tone2.wave_duty_counter = 0
+  audio.tone1.frequency_shadow = 0
 
   audio.wave3.debug_disabled = false
   audio.wave3.enabled = false
@@ -95,6 +105,12 @@ wave_patterns[1] = .25
 wave_patterns[2] = .50
 wave_patterns[3] = .75
 
+local wave_pattern_tables = {}
+wave_pattern_tables[0] = {0,0,0,0,0,0,0,1}
+wave_pattern_tables[1] = {1,0,0,0,0,0,0,1}
+wave_pattern_tables[2] = {1,0,0,0,0,1,1,1}
+wave_pattern_tables[3] = {0,1,1,1,1,1,1,0}
+
 io.write_logic[ports.NR10] = function(byte)
   audio.generate_pending_samples()
   io.ram[ports.NR10] = byte
@@ -114,6 +130,7 @@ io.write_logic[ports.NR11] = function(byte)
   io.ram[ports.NR11] = byte
   local wave_pattern = bit32.rshift(bit32.band(byte, 0xC0), 6)
   audio.tone1.duty_length = wave_patterns[wave_pattern]
+  audio.tone1.wave_pattern = wave_pattern
   local length_data = bit32.band(byte, 0x3F)
   local length_cycles = (64 - length_data) * 16384
   audio.tone1.max_length = length_cycles
@@ -161,6 +178,7 @@ io.write_logic[ports.NR14] = function(byte)
     audio.tone1.base_cycle = timers.system_clock
   end
   audio.tone1.frequency_shadow = freq_value
+  audio.tone1.period_conter = (2048 - freq_value)
   audio.tone1.frequency_shift_counter = 0
   audio.tone1.disabled = false
 end
@@ -171,6 +189,7 @@ io.write_logic[ports.NR21] = function(byte)
   io.ram[ports.NR21] = byte
   local wave_pattern = bit32.rshift(bit32.band(byte, 0xC0), 6)
   audio.tone2.duty_length = wave_patterns[wave_pattern]
+  audio.tone2.wave_pattern = wave_pattern
   local length_data = bit32.band(byte, 0x3F)
   local length_cycles = (64 - length_data) * 16384
   audio.tone2.max_length = length_cycles
@@ -213,6 +232,8 @@ io.write_logic[ports.NR24] = function(byte)
   local freq_value = freq_high + freq_low
 
   audio.tone2.period = 32 * (2048 - freq_value)
+  audio.tone2.period_conter = (2048 - freq_value)
+  audio.tone2.frequency_shadow = freq_value
   audio.tone2.continuous = continuous
   if restart then
     audio.tone2.base_cycle = timers.system_clock
@@ -334,8 +355,13 @@ io.write_logic[ports.NR44] = function(byte)
   audio.noise4.polynomial_lfsr = 0x7F
 end
 
+audio.tone1.update_frequency = function(clock_cycle)
+
+end
+
 audio.tone1.update_frequency_shift = function(clock_cycle)
   local tone1 = audio.tone1
+  -- A shift_time of 0 disables frequency shifting entirely
   if tone1.frequency_shift_time > 0 then
     local next_edge = tone1.base_cycle + tone1.frequency_shift_time * tone1.frequency_shift_counter
     if clock_cycle >= next_edge then
@@ -345,8 +371,6 @@ audio.tone1.update_frequency_shift = function(clock_cycle)
         tone1.frequency_shadow = 2047
         tone1.disabled = true
       end
-      io.ram[ports.NR13] = bit32.band(tone1.frequency_shadow, 0xFF)
-      io.ram[ports.NR14] = bit32.rshift(bit32.band(tone1.frequency_shadow, 0x0700), 8) + bit32.band(io.ram[ports.NR14], 0xF8)
       tone1.period = 32 * (2048 - tone1.frequency_shadow)
       tone1.frequency_shift_counter = tone1.frequency_shift_counter + 1
     end
@@ -388,8 +412,20 @@ audio.tone1.generate_sample = function(clock_cycle)
       if volume > 0xF then
         volume = 0xF
       end
-      local period_progress = (duration % tone1.period) / tone1.period
-      if period_progress > tone1.duty_length then
+
+      while clock_cycle > tone1.frequency_last_update + 4 do
+        tone1.period_counter = tone1.period_counter - 1
+        if tone1.period_counter <= 0 then
+          tone1.period_counter = (2048 - tone1.frequency_shadow)
+          tone1.wave_duty_counter = tone1.wave_duty_counter + 1
+          if tone1.wave_duty_counter >= 8 then
+            tone1.wave_duty_counter = 0
+          end
+        end
+        tone1.frequency_last_update = tone1.frequency_last_update + 4
+      end
+
+      if wave_pattern_tables[tone1.wave_pattern][tone1.wave_duty_counter + 1] == 0 then
         return volume / 0xF * -1
       else
         return volume / 0xF
@@ -411,8 +447,20 @@ audio.tone2.generate_sample = function(clock_cycle)
       if volume > 0xF then
         volume = 0xF
       end
-      local period_progress = (clock_cycle % tone2.period) / tone2.period
-      if period_progress > tone2.duty_length then
+
+      while clock_cycle > tone2.frequency_last_update + 4 do
+        tone2.period_counter = tone2.period_counter - 1
+        if tone2.period_counter <= 0 then
+          tone2.period_counter = (2048 - tone2.frequency_shadow)
+          tone2.wave_duty_counter = tone2.wave_duty_counter + 1
+          if tone2.wave_duty_counter >= 8 then
+            tone2.wave_duty_counter = 0
+          end
+        end
+        tone2.frequency_last_update = tone2.frequency_last_update + 4
+      end
+
+      if wave_pattern_tables[tone2.wave_pattern][tone2.wave_duty_counter + 1] == 0 then
         return volume / 0xF * -1
       else
         return volume / 0xF
