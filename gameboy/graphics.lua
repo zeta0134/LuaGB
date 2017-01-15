@@ -527,6 +527,11 @@ local function draw_sprites_into_scanline(scanline, bg_index)
       sprite_palette = graphics.obj1_palette
     end
 
+    if sub_y >= 8 then
+      sprite_tile = sprite_tile + 1
+      sub_y = sub_y - 8
+    end
+
     local tile = graphics.tiles[sprite_tile]
 
     for x = 0, 7 do

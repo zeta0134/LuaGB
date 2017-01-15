@@ -31,7 +31,12 @@ oam.draw_sprite = function(sprite_address, sx, sy, sprite_size)
 
   for y = 0, (sprite_size - 1) do
     for x = 0, 7 do
-      local color = sprite_palette[graphics.tiles[sprite_tile][x][y]]
+      local color
+      if y < 8 then
+        color = sprite_palette[graphics.tiles[sprite_tile][x][y]]
+      else
+        color = sprite_palette[graphics.tiles[sprite_tile + 1][x][y - 8]]
+      end
       oam.sprite_imagedata:setPixel(sx + x, sy + y, color[1], color[2], color[3], 255)
     end
   end
