@@ -556,6 +556,10 @@ local function draw_sprites_into_scanline(scanline, bg_index)
 end
 
 graphics.draw_scanline = function(scanline)
+  if scanline < 0 or scanline > 143 then
+    print("Bad scanline: ", scanline)
+    return
+  end
   local bg_y = scanline + io.ram[ports.SCY]
   local bg_x = io.ram[ports.SCX]
   -- wrap the map in the Y direction

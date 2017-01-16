@@ -40,9 +40,10 @@ rom_header.parse_cartridge_header = function(data)
   header.title = extract_string(data, 0x134, 0x143)
   header.manufacturer = extract_string(data, 0x13F, 0x142)
 
-  local cgb = bit32.band(data[0x143], 0x8) ~= 0
+  local cgb = (bit32.band(data[0x143], 0x80) ~= 0)
   if cgb then
     header.color = true
+    header.title = extract_string(data, 0x134, 0x13E)
   else
     header.color = false
   end
