@@ -1,4 +1,5 @@
 local bit32 = require("bit")
+local filebrowser = require("filebrowser")
 local gameboy = require("gameboy")
 local binser = require("vendor/binser")
 
@@ -47,7 +48,7 @@ local save_delay = 0
 profile_enabled = false
 
 local function save_ram()
-  local filename = game_filename .. ".sav"
+  local filename = "saves/" .. game_filename .. ".sav"
   local save_data = binser.serialize(gameboy.cartridge.external_ram)
   if love.filesystem.write(filename, save_data) then
     print("Successfully wrote SRAM to: ", filename)
@@ -57,7 +58,7 @@ local function save_ram()
 end
 
 local function load_ram()
-  local filename = game_filename .. ".sav"
+  local filename = "saves/" .. game_filename .. ".sav"
   local file_data, size = love.filesystem.read(filename)
   if type(size) == "string" then
     print(size)
@@ -79,7 +80,7 @@ end
 
 local function save_state(number)
   local state_data = gameboy.save_state()
-  local filename = game_filename .. ".s" .. number
+  local filename = "states/" .. game_filename .. ".s" .. number
   local state_string = binser.serialize(state_data)
   if love.filesystem.write(filename, state_string) then
     print("Successfully wrote state: ", filename)
@@ -89,7 +90,7 @@ local function save_state(number)
 end
 
 local function load_state(number)
-  local filename = game_filename .. ".s" .. number
+  local filename = "states/" .. game_filename .. ".s" .. number
   local file_data, size = love.filesystem.read(filename)
   if type(size) == "string" then
     print(size)
@@ -181,6 +182,8 @@ function love.load(args)
   table.insert(active_panels, panels.oam)
   table.insert(active_panels, panels.disassembler)
 
+  filebrowser.init()
+
   resize_window()
 
   window_title = "LuaGB - " .. gameboy.cartridge.header.title
@@ -189,6 +192,8 @@ function love.load(args)
   gameboy.audio.on_buffer_full(play_gameboy_audio)
 
   love.audio.setVolume(0.1)
+
+  filebrowser.refresh_items()
 end
 
 function print_instructions()
@@ -376,6 +381,8 @@ function love.draw()
   end
 
   love.window.setTitle("(FPS: " .. love.timer.getFPS() .. ") - " .. window_title)
+
+  --filebrowser.draw()
 end
 
 function love.quit()
