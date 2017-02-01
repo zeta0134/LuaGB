@@ -183,7 +183,7 @@ end
 
 -- used for animations. Assume 60FPS, don't overcomplicate things.
 filebrowser.frame_counter = 0
-filebrowser.draw = function()
+filebrowser.draw = function(dx, dy, scale)
   local palette = filebrowser.gameboy.graphics.screen_colors
 
   -- run the drawing functions to the virtual game screen
@@ -220,8 +220,8 @@ filebrowser.draw = function()
   love.graphics.setColor(255, 255, 255)
   filebrowser.image:refresh()
   love.graphics.push()
-  love.graphics.scale(2, 2)
-  love.graphics.draw(filebrowser.image, 0, 0)
+  love.graphics.scale(scale, scale)
+  love.graphics.draw(filebrowser.image, dx / scale, dy / scale)
   love.graphics.pop()
 
   filebrowser.frame_counter = filebrowser.frame_counter + 1

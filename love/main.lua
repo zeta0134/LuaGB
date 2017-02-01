@@ -23,13 +23,19 @@ local game_screen_imagedata
 local debug_tile_canvas
 
 local emulator_running = false
-local debug_mode = true
+local debug_mode = false
 local menu_active = true
 local game_loaded = false
 
+local screen_scale = 3
+
 local resize_window = function()
-  local width = 160 * 2 --width of gameboy screen
-  local height = 144 * 2 --height of gameboy screen
+  local scale = screen_scale
+  if debug_mode then
+    scale = 2
+  end
+  local width = 160 * scale --width of gameboy screen
+  local height = 144 * scale --height of gameboy screen
   if debug_mode then
     if #active_panels > 0 then
       width = width + 10
@@ -293,6 +299,20 @@ action_keys.kp3 = function() toggle_panel("oam") end
 action_keys.kp4 = function() toggle_panel("disassembler") end
 action_keys.kp5 = function() toggle_panel("audio") end
 
+action_keys["kp+"] = function()
+  if screen_scale < 5 then
+    screen_scale = screen_scale + 1
+    resize_window()
+  end
+end
+
+action_keys["kp-"] = function()
+  if screen_scale > 1 then
+    screen_scale = screen_scale - 1
+    resize_window()
+  end
+end
+
 local audio_dump_running = false
 action_keys.a = function()
   if audio_dump_running then
@@ -335,11 +355,11 @@ function love.keyreleased(key)
 
   if menu_active then
     filebrowser.keyreleased(key)
-  else
-    if input_mappings[key] then
-      gameboy.input.keys[input_mappings[key]] = 0
-      gameboy.input.update()
-    end
+  end
+
+  if input_mappings[key] then
+    gameboy.input.keys[input_mappings[key]] = 0
+    gameboy.input.update()
   end
 
   if key == "escape" and game_loaded then
@@ -387,9 +407,9 @@ function love.draw()
     end
   else
     if menu_active then
-      filebrowser.draw()
+      filebrowser.draw(0, 0, screen_scale)
     else
-      draw_game_screen(0, 0, 2)
+      draw_game_screen(0, 0, screen_scale)
     end
   end
 
