@@ -24,6 +24,7 @@ local debug_tile_canvas
 
 local emulator_running = false
 local debug_mode = true
+local menu_active = true
 
 local resize_window = function()
   local width = 160 * 2 --width of gameboy screen
@@ -38,6 +39,21 @@ local resize_window = function()
     height = 800
   end
   love.window.setMode(width, height)
+end
+
+local toggle_panel = function(name)
+  if panels[name].active then
+    panels[name].active = false
+    for index, value in ipairs(active_panels) do
+      if value == panels[name] then
+        table.remove(active_panels, index)
+      end
+    end
+  else
+    panels[name].active = true
+    table.insert(active_panels, panels[name])
+  end
+  resize_window()
 end
 
 local game_filename = ""
@@ -136,29 +152,13 @@ function dump_audio(buffer)
   love.filesystem.append("audiodump.raw", output, 32768 * 2)
 end
 
-function love.load(args)
-  sound_buffer = love.sound.newSoundData(32768, 32768, 16, 2)
-  love.graphics.setDefaultFilter("nearest", "nearest")
-  --love.graphics.setPointStyle("rough")
-  ubuntu_font = love.graphics.newFont("UbuntuMono-R.ttf", 18)
-  love.graphics.setFont(ubuntu_font)
-  --game_screen_canvas = love.graphics.newCanvas(256, 256)
-  game_screen_imagedata = love.image.newImageData(256, 256)
-  game_screen_image = love.graphics.newImage(game_screen_imagedata)
+local function load_game(game_path)
+  gameboy.reset()
 
-  if #args < 2 then
-    print("Usage: love love [path to game.gb]")
-    love.event.quit()
-    return
-  end
-
-  local game_path = args[2]
   game_filename = game_path
   while string.find(game_filename, "/") do
     game_filename = string.sub(game_filename, string.find(game_filename, "/") + 1)
   end
-
-  gameboy.initialize()
 
   file_data, size = love.filesystem.read(game_path)
   if file_data then
@@ -170,30 +170,46 @@ function love.load(args)
     return
   end
 
-  -- Initialize Debug Panels
-  for _, panel in pairs(panels) do
-    panel.init(gameboy)
-    panel.active = true
-  end
-
-  table.insert(active_panels, panels.audio)
-  table.insert(active_panels, panels.io)
-  table.insert(active_panels, panels.vram)
-  table.insert(active_panels, panels.oam)
-  table.insert(active_panels, panels.disassembler)
-
-  filebrowser.init()
-
-  resize_window()
+  menu_active = false
+  emulator_running = true
 
   window_title = "LuaGB - " .. gameboy.cartridge.header.title
   love.window.setTitle(window_title)
+end
 
+function love.load(args)
+  window_title = "LuaGB"
+  sound_buffer = love.sound.newSoundData(32768, 32768, 16, 2)
+  love.graphics.setDefaultFilter("nearest", "nearest")
+  --love.graphics.setPointStyle("rough")
+  ubuntu_font = love.graphics.newFont("UbuntuMono-R.ttf", 18)
+  love.graphics.setFont(ubuntu_font)
+  --game_screen_canvas = love.graphics.newCanvas(256, 256)
+  game_screen_imagedata = love.image.newImageData(256, 256)
+  game_screen_image = love.graphics.newImage(game_screen_imagedata)
+
+  gameboy.initialize()
+
+  if #args >= 2 then
+    local game_path = args[2]
+    load_game(game_path)
+  end
+
+  -- Initialize Debug Panels
+  for _, panel in pairs(panels) do
+    panel.init(gameboy)
+  end
+
+  toggle_panel("audio")
+
+  filebrowser.is_directory = love.filesystem.isDirectory
+  filebrowser.get_directory_items = love.filesystem.getDirectoryItems
+  filebrowser.load_file = load_game
+  filebrowser.init(gameboy)
+
+  resize_window()
   gameboy.audio.on_buffer_full(play_gameboy_audio)
-
   love.audio.setVolume(0.1)
-
-  filebrowser.refresh_items()
 end
 
 function print_instructions()
@@ -269,21 +285,6 @@ action_keys["f10"] = function() gameboy.audio.tone2.debug_disabled = not gameboy
 action_keys["f11"] = function() gameboy.audio.wave3.debug_disabled = not gameboy.audio.wave3.debug_disabled end
 action_keys["f12"] = function() gameboy.audio.noise4.debug_disabled = not gameboy.audio.noise4.debug_disabled end
 
-local toggle_panel = function(name)
-  if panels[name].active then
-    panels[name].active = false
-    for index, value in ipairs(active_panels) do
-      if value == panels[name] then
-        table.remove(active_panels, index)
-      end
-    end
-  else
-    panels[name].active = true
-    table.insert(active_panels, panels[name])
-  end
-  resize_window()
-end
-
 action_keys.kp1 = function() toggle_panel("io") end
 action_keys.kp2 = function() toggle_panel("vram") end
 action_keys.kp3 = function() toggle_panel("oam") end
@@ -330,13 +331,18 @@ function love.keyreleased(key)
     end
   end
 
-  if input_mappings[key] then
-    gameboy.input.keys[input_mappings[key]] = 0
-    gameboy.input.update()
+  if menu_active then
+    filebrowser.keyreleased(key)
+  else
+    if input_mappings[key] then
+      gameboy.input.keys[input_mappings[key]] = 0
+      gameboy.input.update()
+    end
   end
 
   if key == "escape" then
-    love.event.quit()
+    --love.event.quit()
+    menu_active = not menu_active
   end
 end
 
@@ -344,8 +350,12 @@ function love.update()
   if profile_enabled then
     profilerStart()
   end
-  if emulator_running then
-    gameboy.run_until_vblank()
+  if menu_active then
+    filebrowser.update()
+  else
+    if emulator_running then
+      gameboy.run_until_vblank()
+    end
   end
   if gameboy.cartridge.external_ram.dirty then
     save_delay = save_delay + 1
@@ -364,14 +374,22 @@ function love.draw()
   if debug_mode then
     panels.registers.draw(0, 300)
     print_instructions()
-    draw_game_screen(0, 0, 2)
+    if menu_active then
+      filebrowser.draw()
+    else
+      draw_game_screen(0, 0, 2)
+    end
     local panel_x = 160 * 2 + 10 --width of the gameboy canvas in debug mode
     for _, panel in pairs(active_panels) do
       panel.draw(panel_x, 0)
       panel_x = panel_x + panel.width + 10
     end
   else
-    draw_game_screen(0, 0, 2)
+    if menu_active then
+      filebrowser.draw()
+    else
+      draw_game_screen(0, 0, 2)
+    end
   end
 
   if profile_enabled then
@@ -381,8 +399,6 @@ function love.draw()
   end
 
   love.window.setTitle("(FPS: " .. love.timer.getFPS() .. ") - " .. window_title)
-
-  --filebrowser.draw()
 end
 
 function love.quit()

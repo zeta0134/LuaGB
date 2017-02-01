@@ -35,6 +35,7 @@ screen_colors[0] = {255, 255, 255}
 screen_colors[1] = {192, 192, 192}
 screen_colors[2] = {128, 128, 128}
 screen_colors[3] = {0, 0, 0}
+graphics.screen_colors = screen_colors
 
 graphics.bg_palette =   {}
 graphics.obj0_palette = {}
