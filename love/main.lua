@@ -25,6 +25,7 @@ local debug_tile_canvas
 local emulator_running = false
 local debug_mode = true
 local menu_active = true
+local game_loaded = false
 
 local resize_window = function()
   local width = 160 * 2 --width of gameboy screen
@@ -170,11 +171,12 @@ local function load_game(game_path)
     return
   end
 
-  menu_active = false
-  emulator_running = true
-
   window_title = "LuaGB - " .. gameboy.cartridge.header.title
   love.window.setTitle(window_title)
+
+  menu_active = false
+  emulator_running = true
+  game_loaded = true
 end
 
 function love.load(args)
@@ -340,8 +342,7 @@ function love.keyreleased(key)
     end
   end
 
-  if key == "escape" then
-    --love.event.quit()
+  if key == "escape" and game_loaded then
     menu_active = not menu_active
   end
 end
@@ -403,4 +404,7 @@ end
 
 function love.quit()
   profilerReport("profiler.txt")
+  if game_loaded then
+    save_ram()
+  end
 end
