@@ -396,7 +396,7 @@ function love.draw()
     panels.registers.draw(0, 300)
     print_instructions()
     if menu_active then
-      filebrowser.draw()
+      filebrowser.draw(0, 0, 2)
     else
       draw_game_screen(0, 0, 2)
     end

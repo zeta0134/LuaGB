@@ -15,8 +15,6 @@ gameboy.initialize = function()
   gameboy.graphics.initialize()
 
   gameboy.reset()
-
-  gameboy.memory.print_block_map()
 end
 
 gameboy.reset = function()
