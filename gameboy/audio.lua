@@ -74,8 +74,8 @@ audio.reset = function()
   audio.noise4.max_length = 0          -- in cycles
   audio.noise4.continuous = false
   audio.noise4.base_cycle = 0
-  audio.noise4.polynomial_period = 0
-  audio.noise4.polynomial_lfsr = 0x7F -- 15 bits
+  audio.noise4.polynomial_period = 16
+  audio.noise4.polynomial_lfsr = 0x7FFF -- 15 bits
   audio.noise4.polynomial_last_shift = 0 -- in cycles
   audio.noise4.polynomial_wide = true
 
@@ -329,20 +329,26 @@ io.write_logic[ports.NR42] = function(byte)
   audio.noise4.volume_step_length = envelope_step_cycles
 end
 
+local polynomial_divisors = {}
+polynomial_divisors[0] = 8
+polynomial_divisors[1] = 16
+polynomial_divisors[2] = 32
+polynomial_divisors[3] = 48
+polynomial_divisors[4] = 64
+polynomial_divisors[5] = 80
+polynomial_divisors[6] = 96
+polynomial_divisors[7] = 112
+
 -- Channel 4 Polynomial Counter
 io.write_logic[ports.NR43] = function(byte)
   audio.generate_pending_samples()
   io.ram[ports.NR43] = byte
   local shift_clock_frequency = bit32.rshift(bit32.band(byte, 0xF0), 4)
   local wide_step = bit32.band(byte, 0x08) == 0
-  local dividing_ratio = bit32.band(byte, 0x07)
-  if dividing_ratio == 0 then
-    dividing_ratio = 0.5
-  end
+  local dividing_ratio = polynomial_divisors[bit32.band(byte, 0x07)]
 
   -- Maybe?
-  local polynomial_frequency = 524288 / dividing_ratio / bit32.lshift(0x1, shift_clock_frequency + 1)
-  audio.noise4.polynomial_period = 4194304 / polynomial_frequency
+  audio.noise4.polynomial_period = bit32.lshift(dividing_ratio, shift_clock_frequency) * 2
   audio.noise4.polynomial_wide = wide_step
 end
 
@@ -356,10 +362,9 @@ io.write_logic[ports.NR44] = function(byte)
   audio.noise4.continuous = continuous
   if restart then
     audio.noise4.base_cycle = timers.system_clock
+    -- Reset the LSFR to all 1's
+    audio.noise4.polynomial_lfsr = 0x7FFF
   end
-
-  -- Reset the LSFR to all 1's
-  audio.noise4.polynomial_lfsr = 0x7F
 end
 
 audio.tone1.update_frequency = function(clock_cycle)
@@ -385,7 +390,9 @@ audio.tone1.update_frequency_shift = function(clock_cycle)
 end
 
 audio.noise4.update_lfsr = function(clock_cycle)
-  if clock_cycle - audio.noise4.polynomial_last_shift > audio.noise4.polynomial_period then
+  --print(clock_cycle - audio.noise4.polynomial_last_shift)
+  --print(audio.noise4.polynomial_period)
+  while clock_cycle - audio.noise4.polynomial_last_shift > audio.noise4.polynomial_period do
     local lfsr = audio.noise4.polynomial_lfsr
     -- Grab the lowest two bits in LSFR and XOR them together
     local bit0 = bit32.band(lfsr, 0x1)
@@ -399,7 +406,7 @@ audio.noise4.update_lfsr = function(clock_cycle)
     if not audio.noise4.polynomial_wide then
       -- place the XOR'd bit into bit 6 as well
       xor = bit32.rshift(xor, 8)
-      lfsr = bit32.bor(xor, bit32.band(lfsr, 0x5F))
+      lfsr = bit32.bor(xor, bit32.band(lfsr, 0x7FBF))
     end
     audio.noise4.polynomial_last_shift = audio.noise4.polynomial_last_shift + audio.noise4.polynomial_period
     audio.noise4.polynomial_lfsr = lfsr
