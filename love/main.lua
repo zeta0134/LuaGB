@@ -189,12 +189,18 @@ function love.load(args)
   window_title = "LuaGB"
   sound_buffer = love.sound.newSoundData(32768, 32768, 16, 2)
   love.graphics.setDefaultFilter("nearest", "nearest")
-  --love.graphics.setPointStyle("rough")
   ubuntu_font = love.graphics.newFont("UbuntuMono-R.ttf", 18)
   love.graphics.setFont(ubuntu_font)
-  --game_screen_canvas = love.graphics.newCanvas(256, 256)
   game_screen_imagedata = love.image.newImageData(256, 256)
   game_screen_image = love.graphics.newImage(game_screen_imagedata)
+
+
+  love.window.setIcon(love.image.newImageData("images/icon_16.png"))
+
+  -- Make sure our games / saves / states directories actually exist
+  love.filesystem.createDirectory("games")
+  love.filesystem.createDirectory("states")
+  love.filesystem.createDirectory("saves")
 
   gameboy.initialize()
 
