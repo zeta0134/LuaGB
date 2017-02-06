@@ -222,7 +222,7 @@ filebrowser.keyreleased = function(key)
 end
 
 local palettes = {}
-local palette_index = 1
+local palette_index = 3
 palettes[1] = {{255, 255, 255}, {192, 192, 192}, {128, 128, 128}, {0, 0, 0}}
 palettes[2] = {{215, 215, 215}, {140, 124, 114}, {100, 82, 73}, {45, 45, 45}}
 palettes[3] = {{224, 248, 208}, {136, 192, 112}, {52, 104, 86}, {8, 24, 32}}
