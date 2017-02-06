@@ -17,6 +17,7 @@ mbc_mappings[0x01] = mbc1
 mbc_mappings[0x02] = mbc1
 mbc_mappings[0x03] = mbc1
 
+mbc_mappings[0x10] = mbc3
 mbc_mappings[0x11] = mbc3
 mbc_mappings[0x12] = mbc3
 mbc_mappings[0x13] = mbc3
