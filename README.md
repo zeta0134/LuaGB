@@ -4,7 +4,7 @@ A gameboy emulator written in Pure Lua. Work in progress.
 This is designed to be fairly cross platform, and currently consists of a platform-independent gameboy module which contains the emulator, and a Love2D interface, presently the only supported platform.
 
 ## Build Instructions
-On any Linux system, make sure to install Love 0.10.2, gnu make, and the "zip" utility. Then just run "make" in the source folder. Once built, the resulting .love file works just fine on Windows systems, provided Love 0.10.2 is installed. I have decent success building the project with Bash on Windows 10; the makefile is also simple enough to port to something else if you're so inclinded. Pull requests welcome!
+On any Linux system, make sure to install Love 0.10.2, gnu make, and the "zip" utility. Then just run "make" in the source folder. Once built, the resulting .love file works just fine on Windows systems, provided Love 0.10.2 is installed. I build the project using Bash on Windows because I'm lazy, the makefile should be easy to port to powershell or batch though. Pull requests welcome!
 
 If you'd like games embedded in the resulting .love file, you may drop then in the games folder before running make. Alternately, games will load from the save directory. Due to a by-design limitation with Love2D's filesystem libraries, games may only be loaded from these two locations.
 

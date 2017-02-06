@@ -29,6 +29,7 @@ filebrowser.init = function(gameboy)
   filebrowser.palette_chooser = love.image.newImageData("images/palette_chooser.png")
   filebrowser.d_pad = love.image.newImageData("images/d-pad.png")
   filebrowser.logo = love.image.newImageData("images/logo.png")
+  filebrowser.folder = love.image.newImageData("images/folder.png")
   filebrowser.dango = {}
   for i = 0, 8 do
     filebrowser.dango[i] = love.image.newImageData("images/dango_" .. i .. ".png")
@@ -248,9 +249,14 @@ filebrowser.random_dango = function(button)
   dango_index = math.random(0, 8)
 end
 
+filebrowser.open_save_directory = function(button)
+  love.system.openURL("file://"..love.filesystem.getSaveDirectory())
+end
+
 local regions = {}
 regions.palette = {x=134,y=4,width=20,height=8,action=filebrowser.switch_palette}
 regions.dango = {x=7,y=0,width=21,height=14,action=filebrowser.random_dango}
+regions.folder = {x=110,y=0,width=29,height=14,action=filebrowser.open_save_directory}
 
 filebrowser.mousepressed = function(x, y, button)
   for _, region in pairs(regions) do
@@ -296,6 +302,7 @@ filebrowser.draw = function(dx, dy, scale)
   filebrowser.draw_image( 86, 114, filebrowser.pill_button)     -- Start
   filebrowser.draw_image( 51, 114, filebrowser.pill_button)     -- Select
   filebrowser.draw_image( 12, 104, filebrowser.d_pad)
+  filebrowser.draw_image( 111,  0, filebrowser.folder)
 
   -- Key mappings
   filebrowser.draw_string("X", 140, 111, palette[3])      -- A
