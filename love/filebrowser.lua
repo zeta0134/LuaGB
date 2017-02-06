@@ -23,7 +23,16 @@ end
 filebrowser.init = function(gameboy)
   filebrowser.image_data = love.image.newImageData(160, 144)
   filebrowser.image = love.graphics.newImage(filebrowser.image_data)
-  filebrowser.font = love.image.newImageData("5x3font.png")
+  filebrowser.font = love.image.newImageData("images/5x3font.png")
+  filebrowser.round_button = love.image.newImageData("images/round_button.png")
+  filebrowser.pill_button = love.image.newImageData("images/pill_button.png")
+  filebrowser.palette_chooser = love.image.newImageData("images/palette_chooser.png")
+  filebrowser.d_pad = love.image.newImageData("images/d-pad.png")
+  filebrowser.logo = love.image.newImageData("images/logo.png")
+  filebrowser.dango = {}
+  for i = 0, 8 do
+    filebrowser.dango[i] = love.image.newImageData("images/dango_" .. i .. ".png")
+  end
   filebrowser.gameboy = gameboy
 
   filebrowser.game_screen = {}
@@ -41,8 +50,8 @@ filebrowser.draw_background = function(sx, sy)
   local palette = filebrowser.gameboy.graphics.screen_colors
   for x = 0, 159 do
     for y = 0, 143 do
-      local tx = math.floor((x + sx) / 4)
-      local ty = math.floor((y + sy) / 4)
+      local tx = math.floor((x + sx) / 8)
+      local ty = math.floor((y + sy) / 8)
       if (tx + ty) % 2 == 0 then
         filebrowser.game_screen[y][x] = palette[0]
       else
@@ -61,15 +70,15 @@ filebrowser.draw_string = function(str, dx, dy, color, max_x)
       local font_x = (char % 32) * 4
       local font_y = math.floor(char / 32) * 6
       for x = 0, 3 do
-        if i * 4 + x + dx < max_x then
+        if i * 4 - 4 + x + dx < max_x then
           for y = 0, 5 do
             if y + dy <= 143 then
               local r, g, b, a = filebrowser.font:getPixel(font_x + x, font_y + y)
               if a > 0 then
-                r = color[1] * r
-                g = color[2] * g
-                b = color[3] * b
-                filebrowser.game_screen[y + dy][i * 4 + x + dx] = {r, g, b}
+                r = color[1] * r / 255
+                g = color[2] * g / 255
+                b = color[3] * b / 255
+                filebrowser.game_screen[y + dy][i * 4 - 4 + x + dx] = {r, g, b}
               end
             end
           end
@@ -89,18 +98,48 @@ filebrowser.draw_rectangle = function(dx, dy, width, height, color, filled)
   end
 end
 
-filebrowser.draw_shadow = function(dx, dy, width, height)
+filebrowser.draw_shadow_pixel = function(x, y)
   local palette = filebrowser.gameboy.graphics.screen_colors
+  if filebrowser.game_screen[y][x] == palette[2] then
+    filebrowser.game_screen[y][x] = palette[3]
+  end
+  if filebrowser.game_screen[y][x] == palette[1] then
+    filebrowser.game_screen[y][x] = palette[2]
+  end
+  if filebrowser.game_screen[y][x] == palette[0] then
+    filebrowser.game_screen[y][x] = palette[1]
+  end
+end
+
+filebrowser.draw_shadow = function(dx, dy, width, height)
   for x = dx, dx + width - 1 do
     for y = dy, dy + height - 1 do
-      if filebrowser.game_screen[y][x] == palette[2] then
-        filebrowser.game_screen[y][x] = palette[3]
-      end
-      if filebrowser.game_screen[y][x] == palette[1] then
-        filebrowser.game_screen[y][x] = palette[2]
-      end
-      if filebrowser.game_screen[y][x] == palette[0] then
-        filebrowser.game_screen[y][x] = palette[1]
+      filebrowser.draw_shadow_pixel(x, y)
+    end
+  end
+end
+
+filebrowser.draw_image = function(sx, sy, image)
+  local palette = filebrowser.gameboy.graphics.screen_colors
+  for x = 0, image:getWidth() - 1 do
+    for y = 0, image:getHeight() - 1 do
+      local r, g, b, a = image:getPixel(x, y)
+      if a > 0 then
+        if r == 127 then
+          filebrowser.draw_shadow_pixel(sx + x, sy + y)
+        end
+        if r == 0 then
+          filebrowser.game_screen[sy + y][sx + x] = palette[3]
+        end
+        if r == 64 then
+          filebrowser.game_screen[sy + y][sx + x] = palette[2]
+        end
+        if r == 128 then
+          filebrowser.game_screen[sy + y][sx + x] = palette[1]
+        end
+        if r == 255 then
+          filebrowser.game_screen[sy + y][sx + x] = palette[0]
+        end
       end
     end
   end
@@ -181,6 +220,46 @@ filebrowser.keyreleased = function(key)
   end
 end
 
+local palettes = {}
+local palette_index = 1
+palettes[1] = {{255, 255, 255}, {192, 192, 192}, {128, 128, 128}, {0, 0, 0}}
+palettes[2] = {{215, 215, 215}, {140, 124, 114}, {100, 82, 73}, {45, 45, 45}}
+palettes[3] = {{224, 248, 208}, {136, 192, 112}, {52, 104, 86}, {8, 24, 32}}
+
+
+filebrowser.switch_palette = function(button)
+  if button == 1 then
+    palette_index = palette_index + 1
+  end
+  if button == 2 then
+    palette_index = palette_index - 1
+  end
+  if palette_index < 1 then
+    palette_index = #palettes
+  end
+  if palette_index > #palettes then
+    palette_index = 1
+  end
+  filebrowser.gameboy.graphics.set_bw_palette(unpack(palettes[palette_index]))
+end
+
+local dango_index = 0
+filebrowser.random_dango = function(button)
+  dango_index = math.random(0, 8)
+end
+
+local regions = {}
+regions.palette = {x=134,y=4,width=20,height=8,action=filebrowser.switch_palette}
+regions.dango = {x=7,y=0,width=21,height=14,action=filebrowser.random_dango}
+
+filebrowser.mousepressed = function(x, y, button)
+  for _, region in pairs(regions) do
+    if x >= region.x and x < region.x + region.width and y >= region.y and y < region.y + region.height then
+      region.action(button)
+    end
+  end
+end
+
 -- used for animations. Assume 60FPS, don't overcomplicate things.
 filebrowser.frame_counter = 0
 filebrowser.draw = function(dx, dy, scale)
@@ -195,6 +274,7 @@ filebrowser.draw = function(dx, dy, scale)
   -- highlight box
   filebrowser.draw_rectangle(8, 17 + ((filebrowser.cursor_pos - filebrowser.scroll_pos) * 7), 144, 7, palette[2], true)
 
+  -- Filebrowser / game selection menu
   local y = 18
   local i = 0 - filebrowser.scroll_pos
   for _, item in pairs(filebrowser.items) do
@@ -208,6 +288,24 @@ filebrowser.draw = function(dx, dy, scale)
     end
     i = i + 1
   end
+
+  -- Misc. Options
+  filebrowser.draw_image(133,   4, filebrowser.palette_chooser)
+  filebrowser.draw_image(136, 108, filebrowser.round_button)    -- A
+  filebrowser.draw_image(124, 120, filebrowser.round_button)    -- B
+  filebrowser.draw_image( 86, 114, filebrowser.pill_button)     -- Start
+  filebrowser.draw_image( 51, 114, filebrowser.pill_button)     -- Select
+  filebrowser.draw_image( 12, 104, filebrowser.d_pad)
+
+  -- Key mappings
+  filebrowser.draw_string("X", 140, 111, palette[3])      -- A
+  filebrowser.draw_string("Z", 128, 123, palette[3])      -- B
+  filebrowser.draw_string("ENTER", 92, 117, palette[3])   -- Start
+  filebrowser.draw_string("RSHIFT", 55, 117, palette[3])  -- Select
+
+  -- Logo
+  filebrowser.draw_image(7, 0, filebrowser.dango[dango_index])
+  filebrowser.draw_image(22, 0, filebrowser.logo)
 
   -- Blit the virtual game screen to a love canvas
   for x = 0, 159 do

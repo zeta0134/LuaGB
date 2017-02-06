@@ -37,6 +37,13 @@ screen_colors[2] = {128, 128, 128}
 screen_colors[3] = {0, 0, 0}
 graphics.screen_colors = screen_colors
 
+graphics.set_bw_palette = function(pal_0, pal_1, pal_2, pal_3)
+  screen_colors[0] = pal_0
+  screen_colors[1] = pal_1
+  screen_colors[2] = pal_2
+  screen_colors[3] = pal_3
+end
+
 graphics.bg_palette =   {}
 graphics.obj0_palette = {}
 graphics.obj1_palette = {}

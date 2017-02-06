@@ -348,7 +348,7 @@ io.write_logic[ports.NR43] = function(byte)
   local dividing_ratio = polynomial_divisors[bit32.band(byte, 0x07)]
 
   -- Maybe?
-  audio.noise4.polynomial_period = bit32.lshift(dividing_ratio, shift_clock_frequency) * 2
+  audio.noise4.polynomial_period = bit32.lshift(dividing_ratio, shift_clock_frequency)
   audio.noise4.polynomial_wide = wide_step
 end
 

@@ -367,6 +367,12 @@ function love.keyreleased(key)
   end
 end
 
+function love.mousepressed(x, y, button)
+  if menu_active then
+    filebrowser.mousepressed(x / screen_scale, y / screen_scale, button)
+  end
+end
+
 function love.update()
   if profile_enabled then
     profilerStart()
