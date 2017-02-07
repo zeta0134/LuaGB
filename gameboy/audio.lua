@@ -164,6 +164,7 @@ io.write_logic[ports.NR13] = function(byte)
   local freq_low = byte
   local freq_value = freq_high + freq_low
   audio.tone1.period = 32 * (2048 - freq_value)
+  audio.tone1.frequency_shadow = freq_value
 end
 
 -- Channel 1 Frequency and Trigger - High Bits
@@ -223,6 +224,7 @@ io.write_logic[ports.NR23] = function(byte)
   local freq_low = byte
   local freq_value = freq_high + freq_low
   audio.tone2.period = 32 * (2048 - freq_value)
+  audio.tone2.frequency_shadow = freq_value
 end
 
 -- Channel 2 Frequency and Trigger - High Bits
@@ -280,6 +282,7 @@ io.write_logic[ports.NR33] = function(byte)
   local freq_low = byte
   local freq_value = freq_high + freq_low
   audio.wave3.period = 64 * (2048 - freq_value)
+  audio.wave3.frequency_shadow = freq_value
 end
 
 -- Channel 3 Frequency and Trigger - High Bits
