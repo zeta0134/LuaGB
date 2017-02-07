@@ -1,8 +1,8 @@
 mkdir games
 mkdir love
 
-xcopy /Y /I games love\games
-xcopy /Y /I gameboy love\gameboy
+xcopy /S /E /Y /I games love\games
+xcopy /S /E /Y /I gameboy love\gameboy
 copy /Y LICENSE.txt love\LICENSE.txt
 
 del LuaGB.love
