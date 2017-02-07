@@ -5,6 +5,7 @@ local cartridge = {}
 
 local mbc_none = require("gameboy/mbc/none")
 local mbc1 = require("gameboy/mbc/mbc1")
+local mbc2 = require("gameboy/mbc/mbc2")
 local mbc3 = require("gameboy/mbc/mbc3")
 local mbc5 = require("gameboy/mbc/mbc5")
 
@@ -17,6 +18,10 @@ mbc_mappings[0x01] = mbc1
 mbc_mappings[0x02] = mbc1
 mbc_mappings[0x03] = mbc1
 
+mbc_mappings[0x05] = mbc2
+mbc_mappings[0x06] = mbc2
+
+mbc_mappings[0x0F] = mbc3
 mbc_mappings[0x10] = mbc3
 mbc_mappings[0x11] = mbc3
 mbc_mappings[0x12] = mbc3
