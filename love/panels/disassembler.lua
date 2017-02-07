@@ -62,17 +62,18 @@ disassembler.print_opcodes = function(gameboy)
   local darken_rows = 0
   for i = 1, math.floor(700 / 20) do
     local name, data_values = opcode_string(gameboy.memory[pc], gameboy.memory[pc + 1], gameboy.memory[pc + 2])
+
     local color = {255, 255, 255}
-    if i ~= 1 then
-      if darken_rows > 0 then
-        color = {64, 64, 64}
-        darken_rows = darken_rows - 1
-      else
+    if darken_rows > 0 then
+      color = {64, 64, 64}
+      darken_rows = darken_rows - 1
+    else
+      if i ~= 1 then
         color = {192, 192, 192}
       end
-    end
-    if darken_rows == 0 and data_values > 1 then
-      darken_rows = data_values - 1
+      if darken_rows == 0 and data_values > 1 then
+        darken_rows = data_values - 1
+      end
     end
     love.graphics.setColor(unpack(color))
     love.graphics.print(string.format("%04X: [%02X] %s", pc, gameboy.memory[pc], name), 0, y)
