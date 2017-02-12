@@ -1,3 +1,5 @@
+local bit32 = require("bit")
+
 local gameboy = {}
 
 gameboy.audio = require("gameboy/audio")
@@ -85,11 +87,46 @@ end
 gameboy.run_until_hblank = function()
   local old_scanline = gameboy.io.ram[gameboy.io.ports.LY]
   local instructions = 0
-  while old_scanline == gameboy.io.ram[gameboy.io.ports.LY] and instructions < 100000  do
+  while old_scanline == gameboy.io.ram[gameboy.io.ports.LY] and instructions < 100000 do
     gameboy.step()
     instructions = instructions + 1
   end
   gameboy.audio.update()
+end
+
+local call_opcodes = {[0xCD]=true, [0xC4]=true, [0xD4]=true, [0xCC]=true, [0xDC]=true}
+local rst_opcodes = {[0xC7]=true, [0xCF]=true, [0xD7]=true, [0xDF]=true, [0xE7]=true, [0xEF]=true, [0xF7]=true, [0xFF]=true}
+gameboy.step_over = function()
+  -- Make sure the *current* opcode is a CALL / RST
+  local instructions = 0
+  local pc = gameboy.z80.registers.pc
+  local opcode = gameboy.memory[pc]
+  if call_opcodes[opcode] then
+    local return_address = bit32.band(pc + 3, 0xFFFF)
+    while gameboy.z80.registers.pc ~= return_address and instructions < 10000000 do
+      gameboy.step()
+      instructions = instructions + 1
+    end
+    return
+  end
+  if rst_opcodes[opcode] then
+    local return_address = bit32.band(pc + 1, 0xFFFF)
+    while gameboy.z80.registers.pc ~= return_address and instructions < 10000000 do
+      gameboy.step()
+      instructions = instructions + 1
+    end
+    return
+  end
+  print("Not a CALL / RST opcode! Bailing.")
+end
+
+local ret_opcodes = {[0xC9]=true, [0xC0]=true, [0xD0]=true, [0xC8]=true, [0xD8]=true, [0xD9]=true}
+gameboy.run_until_ret = function()
+  local instructions = 0
+  while ret_opcodes[gameboy.memory[gameboy.z80.registers.pc]] ~= true and instructions < 10000000 do
+    gameboy.step()
+    instructions = instructions + 1
+  end
 end
 
 return gameboy

@@ -279,6 +279,9 @@ action_keys.p = function() emulator_running = not emulator_running end
 action_keys.h = gameboy.run_until_hblank
 action_keys.v = gameboy.run_until_vblank
 
+action_keys.o = gameboy.step_over
+action_keys.i = gameboy.run_until_ret
+
 action_keys.d = function()
   debug_mode = not debug_mode
   resize_window()
