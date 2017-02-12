@@ -6,6 +6,8 @@ mbc5.external_ram = {}
 mbc5.rom_bank = 0
 mbc5.ram_bank = 0
 mbc5.ram_enable = false
+mbc5.rumble_pak = false
+mbc5.rumbling = false
 mbc5.mt = {}
 mbc5.mt.__index = function(table, address)
   -- Lower 16k: return the first bank, always
@@ -44,10 +46,20 @@ mbc5.mt.__newindex = function(table, address, value)
     return
   end
   if address >= 0x4000 and address <= 0x5FFF then
-    if value <= 0x0F then
-      mbc5.ram_bank = value
-      return
+    local ram_mask = 0x0F
+    if mbc5.rumble_pak then
+      ram_mask = 0x7
     end
+    mbc5.ram_bank = bit32.band(value, ram_mask)
+    if bit32.band(value, 0x08) ~= 0 and mbc5.rumbling == false then
+      print("Rumble on!")
+      mbc5.rumbling = true
+    end
+    if bit32.band(value, 0x08) ~= 0 and mbc5.rumbling == true then
+      print("Rumble off!")
+      mbc5.rumbling = false
+    end
+    return
   end
 
   -- Handle actually writing to External RAM

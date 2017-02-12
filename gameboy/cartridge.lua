@@ -13,26 +13,26 @@ cartridge.external_ram = memory.generate_block(32 * 1024)
 cartridge.external_ram.dirty = false
 
 local mbc_mappings = {}
-mbc_mappings[0x00] = mbc_none
-mbc_mappings[0x01] = mbc1
-mbc_mappings[0x02] = mbc1
-mbc_mappings[0x03] = mbc1
+mbc_mappings[0x00] = {mbc=mbc_none, options={}}
+mbc_mappings[0x01] = {mbc=mbc1, options={}}
+mbc_mappings[0x02] = {mbc=mbc1, options={}}
+mbc_mappings[0x03] = {mbc=mbc1, options={}}
 
-mbc_mappings[0x05] = mbc2
-mbc_mappings[0x06] = mbc2
+mbc_mappings[0x05] = {mbc=mbc2, options={}}
+mbc_mappings[0x06] = {mbc=mbc2, options={}}
 
-mbc_mappings[0x0F] = mbc3
-mbc_mappings[0x10] = mbc3
-mbc_mappings[0x11] = mbc3
-mbc_mappings[0x12] = mbc3
-mbc_mappings[0x13] = mbc3
+mbc_mappings[0x0F] = {mbc=mbc3, options={}}
+mbc_mappings[0x10] = {mbc=mbc3, options={}}
+mbc_mappings[0x12] = {mbc=mbc3, options={}}
+mbc_mappings[0x11] = {mbc=mbc3, options={}}
+mbc_mappings[0x13] = {mbc=mbc3, options={}}
 
-mbc_mappings[0x19] = mbc5
-mbc_mappings[0x1A] = mbc5
-mbc_mappings[0x1B] = mbc5
-mbc_mappings[0x1C] = mbc5
-mbc_mappings[0x1D] = mbc5
-mbc_mappings[0x1E] = mbc5
+mbc_mappings[0x19] = {mbc=mbc5, options={}}
+mbc_mappings[0x1A] = {mbc=mbc5, options={}}
+mbc_mappings[0x1B] = {mbc=mbc5, options={}}
+mbc_mappings[0x1C] = {mbc=mbc5, options={rumble_pak=true}}
+mbc_mappings[0x1D] = {mbc=mbc5, options={rumble_pak=true}}
+mbc_mappings[0x1E] = {mbc=mbc5, options={rumble_pak=true}}
 
 cartridge.load = function(file_data, size)
   print("Reading cartridge into memory...")
@@ -45,19 +45,24 @@ cartridge.load = function(file_data, size)
   rom_header.print_cartridge_header(cartridge.header)
 
   if mbc_mappings[cartridge.header.mbc_type] then
+    local MBC = mbc_mappings[cartridge.header.mbc_type].mbc
+    for k, v in pairs(mbc_mappings[cartridge.header.mbc_type].options) do
+      MBC[k] = v
+    end
     print("Using mapper: ", cartridge.header.mbc_name)
-    mbc_mappings[cartridge.header.mbc_type].raw_data = cartridge.raw_data
-    mbc_mappings[cartridge.header.mbc_type].external_ram = cartridge.external_ram
+    MBC.raw_data = cartridge.raw_data
+    MBC.external_ram = cartridge.external_ram
     -- Cart ROM
-    memory.map_block(0x00, 0x7F, mbc_mappings[cartridge.header.mbc_type])
+    memory.map_block(0x00, 0x7F, MBC)
     -- External RAM
-    memory.map_block(0xA0, 0xBF, mbc_mappings[cartridge.header.mbc_type], 0x0000)
+    memory.map_block(0xA0, 0xBF, MBC, 0x0000)
   else
+    local MBC = mbc_mappings[0x00].mbc
     print("Unsupported MBC type! Defaulting to ROM ONLY, game will probably not boot.")
-    mbc_mappings[0x00].raw_data = cartridge.raw_data
-    mbc_mappings[0x00].external_ram = cartridge.external_ram
-    memory.map_block(0x00, 0x7F, mbc_mappings[0x00])
-    memory.map_block(0xA0, 0xBF, mbc_mappings[0x00], 0x0000)
+    MBC.raw_data = cartridge.raw_data
+    MBC.external_ram = cartridge.external_ram
+    memory.map_block(0x00, 0x7F, MBC)
+    memory.map_block(0xA0, 0xBF, MBC, 0x0000)
   end
 
   -- Add a guard to cartridge.raw_data, such that any out-of-bounds reads return 0x00
@@ -73,12 +78,12 @@ cartridge.reset = function()
   if cartridge.header then
     -- Simulates a power cycle, resetting selected banks and other variables
     if mbc_mappings[cartridge.header.mbc_type] then
-      mbc_mappings[cartridge.header.mbc_type]:reset()
+      mbc_mappings[cartridge.header.mbc_type].mbc:reset()
     else
       -- Calling this for logical completeness, but
       -- mbc_mappings[0x00] is actually type none,
       -- whose reset function is a no-op
-      mbc_mappings[0x00]:reset()
+      mbc_mappings[0x00].mbc:reset()
     end
   end
 
@@ -91,9 +96,9 @@ cartridge.save_state = function()
   -- Note: for NOW, don't worry about the cartridge
   -- header, and assume a cart swap has not happened
   if mbc_mappings[cartridge.header.mbc_type] then
-    return mbc_mappings[cartridge.header.mbc_type]:save_state()
+    return mbc_mappings[cartridge.header.mbc_type].mbc:save_state()
   else
-    mbc_mappings[0x00]:save_state()
+    mbc_mappings[0x00].mbc:save_state()
   end
 end
 
@@ -101,9 +106,9 @@ cartridge.load_state = function(state_data)
   -- Note: for NOW, don't worry about the cartridge
   -- header, and assume a cart swap has not happened
   if mbc_mappings[cartridge.header.mbc_type] then
-    return mbc_mappings[cartridge.header.mbc_type]:load_state(state_data)
+    return mbc_mappings[cartridge.header.mbc_type].mbc:load_state(state_data)
   else
-    mbc_mappings[0x00]:load_state(state_data)
+    mbc_mappings[0x00].mbc:load_state(state_data)
   end
 end
 
