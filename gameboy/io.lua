@@ -129,7 +129,9 @@ end
 io.block.mt.__newindex = function(table, address, value)
   address = address - 0xFF00
   if io.write_mask[address] then
-    value = bit32.band(value, io.write_mask[address]) + bit32.band(memory[address], bit32.bnot(io.write_mask[address]))
+    local masked_value = bit32.band(value, io.write_mask[address])
+    local masked_memory = bit32.band(io.ram[address], bit32.bnot(io.write_mask[address]))
+    value = masked_value + masked_memory
   end
   if io.write_logic[address] then
     -- Some addresses (mostly IO ports) have fancy logic or do strange things on
