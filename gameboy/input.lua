@@ -69,8 +69,9 @@ local decode_snes_command = function(command_bits)
   for i = 0, 15 do
     command_bytes[i] = 0
     for b = 0, 7 do
-      command_bytes[i] = bit32.lshift(command_bytes[i], 1)
-      command_bytes[i] = command_bytes[i] + command_bits[8 * i + b]
+      command_bytes[i] = command_bytes[i] + bit32.lshift(command_bits[8 * i + b], 8)
+      command_bytes[i] = bit32.rshift(command_bytes[i], 1)
+
     end
   end
 
@@ -106,6 +107,7 @@ io.write_logic[io.ports.JOYP] = function(byte)
       if pulse == 0x1 then
         command_bits[command_index] = 1
       end
+      --print(command_index, command_bits[command_index])
       command_index = command_index + 1
       if command_index > 128 then
         if command_bits[128] ~= 0 then
@@ -127,6 +129,7 @@ io.write_logic[io.ports.JOYP] = function(byte)
     if pulse == 0x3 and last_write == 0x0 then
       command_started = true
       command_index = 0
+      --print("Command started!")
     end
   end
 
