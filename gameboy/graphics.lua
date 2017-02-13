@@ -469,6 +469,9 @@ graphics.getIndexFromTilemap = function(map, tile_data, x, y)
 end
 
 local function draw_sprites_into_scanline(scanline, bg_index)
+  if not LCD_Control.SpritesEnabled() then
+    return
+  end
   local active_sprites = {}
   local sprite_size = 8
   if LCD_Control.LargeSprites() then
