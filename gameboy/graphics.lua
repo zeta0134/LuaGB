@@ -308,17 +308,14 @@ end
 
 Status.SetMode = function(mode)
   io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xFC) + bit32.band(mode, 0x3)
-  if mode == 0 then
-    -- HBlank
-    graphics.draw_scanline(io.ram[ports.LY])
-  end
-  if mode == 1 then
-    if LCD_Control.DisplayEnabled() then
+  if LCD_Control.DisplayEnabled() then
+    if mode == 0 then
+      -- HBlank
+      graphics.draw_scanline(io.ram[ports.LY])
+    end
+    if mode == 1 then
       -- VBlank
-      --draw_screen()
       graphics.vblank_count = graphics.vblank_count + 1
-    else
-      --clear_screen()
     end
   end
 end
@@ -406,6 +403,8 @@ graphics.update = function()
     -- erase our clock debt, so we don't do stupid timing things when the
     -- display is enabled again later
     graphics.last_edge = timers.system_clock
+    Status.SetMode(0)
+    io.ram[ports.LY] = 0
   end
 end
 
