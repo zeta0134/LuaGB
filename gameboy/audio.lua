@@ -99,6 +99,7 @@ audio.save_state = function()
 end
 
 audio.load_state = function(state)
+  audio.reset()
   next_sample = state.next_sample
   next_sample_cycle = state.next_sample_cycle
 end
