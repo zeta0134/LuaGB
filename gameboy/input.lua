@@ -37,6 +37,33 @@ input.update = function()
   io.ram[io.ports.JOYP] = bit32.bor(bit32.band(io.ram[io.ports.JOYP], 0xF0), bit32.band(active_bits, 0x0F))
 end
 
+local snes_packet_names = {}
+snes_packet_names[0x00] = "PAL 01"
+snes_packet_names[0x01] = "PAL 23"
+snes_packet_names[0x02] = "PAL 03"
+snes_packet_names[0x03] = "PAL 12"
+snes_packet_names[0x04] = "ATTR_BLK"
+snes_packet_names[0x05] = "ATTR_LIN"
+snes_packet_names[0x06] = "ATTR_DIV"
+snes_packet_names[0x07] = "ATTR_CHR"
+snes_packet_names[0x08] = "SOUND"
+snes_packet_names[0x09] = "SOU_TRN"
+snes_packet_names[0x0A] = "PAL_SET"
+snes_packet_names[0x0B] = "PAL_TRN"
+snes_packet_names[0x0C] = "ATRC_EN"
+snes_packet_names[0x0D] = "TEST_EN"
+snes_packet_names[0x0E] = "ICON_EN"
+snes_packet_names[0x0F] = "DATA_SND"
+snes_packet_names[0x10] = "DATA_TRN"
+snes_packet_names[0x11] = "MLT_REG"
+snes_packet_names[0x12] = "JUMP"
+snes_packet_names[0x13] = "CHR_TRN"
+snes_packet_names[0x14] = "PCT_TRN"
+snes_packet_names[0x15] = "ATTR_TRN"
+snes_packet_names[0x16] = "ATTR_SET"
+snes_packet_names[0x17] = "MASK_EN"
+snes_packet_names[0x18] = "OBJ_TRN"
+
 local decode_snes_command = function(command_bits)
   local command_bytes = {}
   for i = 0, 15 do
@@ -47,18 +74,23 @@ local decode_snes_command = function(command_bits)
     end
   end
 
-  local command = command_bytes[0]
+  local command = bit32.rshift(bit32.band(command_bytes[0], 0xF8), 3)
+  local packet_length = bit32.band(command_bytes[0], 0x7)
   local parameters = {}
   for i = 1, 15 do
     parameters[i] = command_bytes[i]
   end
-  return command, parameters
+  return command, packet_length, parameters
 end
 
 local last_write = 0
 local command_bits = {}
 local command_started = false
 local command_index = 0
+
+local hex = function(str)
+  return string.format("$%02X", str)
+end
 
 -- Register hooks for input-related registers
 io.write_logic[io.ports.JOYP] = function(byte)
@@ -76,18 +108,17 @@ io.write_logic[io.ports.JOYP] = function(byte)
       end
       command_index = command_index + 1
       if command_index > 128 then
-        if command_bits[128] == 0 then
-          print("Valid SNES command, decoding!")
-          command, parameters = decode_snes_command(command_bits)
-          print("SNES Command: ", command)
-          print("SNES Parameters: ", unpack(parameters))
-        else
+        if command_bits[128] ~= 0 then
           print("Invalid command! 129th bit was not 0")
-          print("Decoding anyway!")
-          command, parameters = decode_snes_command(command_bits)
-          print("SNES Command: ", command)
-          print("SNES Parameters: ", unpack(parameters))
         end
+        local command, length, parameters = decode_snes_command(command_bits)
+        local command_name = snes_packet_names[command] or "UNKNOWN!!"
+        print("SNES Command: " .. command_name .. " [" .. hex(command) .. "] Length: " .. length)
+        local hex_params = hex(parameters[1])
+        for i = 2, 15 do
+          hex_params = hex_params .. " " .. hex(parameters[i])
+        end
+        print("SNES Parameters: ", hex_params)
         command_started = false
       end
     end
