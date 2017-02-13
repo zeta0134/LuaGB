@@ -107,7 +107,6 @@ io.write_logic[io.ports.JOYP] = function(byte)
       if pulse == 0x1 then
         command_bits[command_index] = 1
       end
-      --print(command_index, command_bits[command_index])
       command_index = command_index + 1
       if command_index > 128 then
         if command_bits[128] ~= 0 then
@@ -129,7 +128,6 @@ io.write_logic[io.ports.JOYP] = function(byte)
     if pulse == 0x3 and last_write == 0x0 then
       command_started = true
       command_index = 0
-      --print("Command started!")
     end
   end
 
