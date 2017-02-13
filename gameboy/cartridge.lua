@@ -9,7 +9,7 @@ local mbc2 = require("gameboy/mbc/mbc2")
 local mbc3 = require("gameboy/mbc/mbc3")
 local mbc5 = require("gameboy/mbc/mbc5")
 
-cartridge.external_ram = memory.generate_block(32 * 1024)
+cartridge.external_ram = memory.generate_block(128 * 1024)
 cartridge.external_ram.dirty = false
 
 local mbc_mappings = {}
