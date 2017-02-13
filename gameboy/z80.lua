@@ -1604,7 +1604,7 @@ end
 
 for i = 0, 0xFF do
   if not opcodes[i] then
-    opcodes[i] = undefined_opcode()
+    opcodes[i] = undefined_opcode
   end
 end
 
@@ -1640,6 +1640,13 @@ end
 
 io.write_logic[io.ports.IF] = function(byte)
   io.ram[io.ports.IF] = byte
+  if byte ~= 0 then
+    z80.process_interrupts()
+  end
+end
+
+io.write_logic[io.ports.IE] = function(byte)
+  io.ram[io.ports.IE] = byte
   if byte ~= 0 then
     z80.process_interrupts()
   end

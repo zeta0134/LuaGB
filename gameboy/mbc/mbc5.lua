@@ -52,11 +52,11 @@ mbc5.mt.__newindex = function(table, address, value)
     end
     mbc5.ram_bank = bit32.band(value, ram_mask)
     if bit32.band(value, 0x08) ~= 0 and mbc5.rumbling == false then
-      print("Rumble on!")
+      --print("Rumble on!")
       mbc5.rumbling = true
     end
     if bit32.band(value, 0x08) ~= 0 and mbc5.rumbling == true then
-      print("Rumble off!")
+      --print("Rumble off!")
       mbc5.rumbling = false
     end
     return
