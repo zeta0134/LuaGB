@@ -14,10 +14,17 @@ gameboy.z80 = require("gameboy/z80")
 
 gameboy.initialize = function()
   gameboy.audio.initialize()
-  gameboy.graphics.initialize()
+  gameboy.graphics.initialize(gameboy)
 
   gameboy.reset()
 end
+
+gameboy.types = {}
+gameboy.types.dmg = 0
+gameboy.types.sgb = 1
+gameboy.types.color = 2
+
+gameboy.type = gameboy.types.color
 
 gameboy.reset = function()
   -- Resets the gameboy's internal state to just after the power-on and boot sequence
@@ -31,7 +38,7 @@ gameboy.reset = function()
   gameboy.cartridge.reset()
   gameboy.graphics.reset() -- Note to self: this needs to come AFTER resetting IO
   gameboy.timers.reset()
-  gameboy.z80.reset()
+  gameboy.z80.reset(gameboy)
 
   gameboy.interrupts.enabled = 1
 end

@@ -28,6 +28,8 @@ end
 graphics.tiles = {}
 graphics.map_0 = {}
 graphics.map_1 = {}
+graphics.map_0_attr = {}
+graphics.map_1_attr = {}
 
 -- TODO: Handle proper color palettes?
 local screen_colors = {}
@@ -54,7 +56,8 @@ for i = 0, 3 do
 end
 
 -- Initialize VRAM blocks in main memory
-graphics.vram = memory.generate_block(8 * 1024, 0x8000)
+graphics.vram = memory.generate_block(16 * 1024, 0x8000)
+graphics.vram.bank = 0
 graphics.vram_map = {}
 graphics.vram_map.mt = {}
 graphics.vram_map.mt.__index = function(table, address)
@@ -64,7 +67,7 @@ graphics.vram_map.mt.__newindex = function(table, address, value)
   graphics.vram[address] = value
   if address >= 0x8000 and address <= 0x97FF then
     -- Update the cached tile data
-    local tile_index = math.floor((address - 0x8000) / 16)
+    local tile_index = math.floor((address - 0x8000) / 16) + (384 * graphics.vram.bank)
     local y = math.floor((address % 16) / 2)
     -- kill the lower bit
     address = bit32.band(address, 0xFFFE)
@@ -78,12 +81,28 @@ graphics.vram_map.mt.__newindex = function(table, address, value)
   if address >= 0x9800 and address <= 0x9BFF then
     local x = address % 32
     local y = math.floor((address - 0x9800) / 32)
-    graphics.map_0[x][y] = value
+    if graphics.vram.bank == 0 then
+      graphics.map_0[x][y] = value
+    else
+      graphics.map_0_attr[x][y].palette = bit32.band(value, 0x07)
+      graphics.map_0_attr[x][y].bank = bit32.rshift(bit32.band(value, 0x08), 3)
+      graphics.map_0_attr[x][y].horizontal_flip = bit32.rshift(bit32.band(value, 0x20), 5)
+      graphics.map_0_attr[x][y].vertical_flip = bit32.rshift(bit32.band(value, 0x40), 6)
+      graphics.map_0_attr[x][y].priority = bit32.rshift(bit32.band(value, 0x80), 7)
+    end
   end
   if address >= 0x9C00 and address <= 0x9FFF then
     local x = address % 32
     local y = math.floor((address - 0x9C00) / 32)
-    graphics.map_1[x][y] = value
+    if graphics.vram.bank == 0 then
+      graphics.map_1[x][y] = value
+    else
+      graphics.map_1_attr[x][y].palette = bit32.band(value, 0x07)
+      graphics.map_1_attr[x][y].bank = bit32.rshift(bit32.band(value, 0x08), 3)
+      graphics.map_1_attr[x][y].horizontal_flip = bit32.rshift(bit32.band(value, 0x20), 5)
+      graphics.map_1_attr[x][y].vertical_flip = bit32.rshift(bit32.band(value, 0x40), 6)
+      graphics.map_1_attr[x][y].priority = bit32.rshift(bit32.band(value, 0x80), 7)
+    end
   end
 end
 setmetatable(graphics.vram_map, graphics.vram_map.mt)
@@ -102,7 +121,18 @@ end
 setmetatable(graphics.oam, graphics.oam.mt)
 memory.map_block(0xFE, 0xFE, graphics.oam, 0)
 
-graphics.initialize = function()
+io.write_logic[0x4F] = function(byte)
+  if graphics.gameboy.type == graphics.gameboy.types.color then
+    io.ram[0x4F] = bit32.band(0x1, byte)
+    graphics.vram.bank = bit32.band(0x1, byte)
+  else
+    -- Not sure if the write mask should apply in DMG / SGB mode
+    io.ram[0x4F] = byte
+  end
+end
+
+graphics.initialize = function(gameboy)
+  graphics.gameboy = gameboy
   graphics.Status.SetMode(2)
   graphics.clear_screen()
   graphics.reset()
@@ -121,12 +151,13 @@ graphics.reset = function()
 
   graphics.vblank_count = 0
   graphics.last_edge = 0
+  graphics.vram.bank = 0
 
   graphics.clear_screen()
   graphics.Status.SetMode(2)
 
   -- Clear out the cache
-  for i = 0, 384 - 1 do
+  for i = 0, 768 - 1 do
     graphics.tiles[i] = {}
     for x = 0, 7 do
       graphics.tiles[i][x] = {}
@@ -138,15 +169,26 @@ graphics.reset = function()
 
   for x = 0, 31 do
     graphics.map_0[x] = {}
+    graphics.map_1[x] = {}
+    graphics.map_0_attr[x] = {}
+    graphics.map_1_attr[x] = {}
     for y = 0, 31 do
       graphics.map_0[x][y] = 0
-    end
-  end
-
-  for x = 0, 31 do
-    graphics.map_1[x] = {}
-    for y = 0, 31 do
       graphics.map_1[x][y] = 0
+      graphics.map_0_attr[x][y] = {}
+      graphics.map_1_attr[x][y] = {}
+
+      graphics.map_0_attr[x][y].palette = 0
+      graphics.map_0_attr[x][y].bank = 0
+      graphics.map_0_attr[x][y].horizontal_flip = false
+      graphics.map_0_attr[x][y].vertical_flip = false
+      graphics.map_0_attr[x][y].priority = false
+
+      graphics.map_1_attr[x][y].palette = 0
+      graphics.map_1_attr[x][y].bank = 0
+      graphics.map_1_attr[x][y].horizontal_flip = false
+      graphics.map_1_attr[x][y].vertical_flip = false
+      graphics.map_1_attr[x][y].priority = false
     end
   end
 end
@@ -224,12 +266,9 @@ graphics.load_state = function(state)
   for x = 0, 31 do
     for y = 0, 31 do
       graphics.map_0[x][y] = state.map_0[x][y]
-    end
-  end
-
-  for x = 0, 31 do
-    for y = 0, 31 do
       graphics.map_1[x][y] = state.map_1[x][y]
+      graphics.map_0_attr[x][y] = state.map_0_attr[x][y]
+      graphics.map_1_attr[x][y] = state.map_1_attr[x][y]
     end
   end
 

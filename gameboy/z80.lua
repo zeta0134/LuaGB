@@ -40,13 +40,17 @@ reg.sp = 0
 
 z80.halted = 0
 
-z80.reset = function()
+z80.reset = function(gameboy)
   reg.flags.z = 1
   reg.flags.n = 0
   reg.flags.h = 1
   reg.flags.c = 1
 
-  reg.a = 0x01
+  if gameboy.type == gameboy.types.color then
+    reg.a = 0x11
+  else
+    reg.a = 0x01
+  end
   reg.b = 0x00
   reg.c = 0x13
   reg.d = 0x00
