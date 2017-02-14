@@ -34,7 +34,7 @@ input.update = function()
   end
   active_bits = bit32.bnot(active_bits)
 
-  io.ram[io.ports.JOYP] = bit32.bor(bit32.band(io.ram[io.ports.JOYP], 0xF0), bit32.band(active_bits, 0x0F))
+  io.ram[io.ports.JOYP] = bit32.bor(0xC0, bit32.band(io.ram[io.ports.JOYP], 0x30), bit32.band(active_bits, 0x0F))
 end
 
 local snes_packet_names = {}
