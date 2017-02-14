@@ -375,7 +375,14 @@ handle_mode[1] = function()
     end
   end
   if io.ram[ports.LY] == io.ram[ports.LYC] then
-    -- TODO: fire LCD STAT interrupt, and set appropriate flag
+    -- set the LY compare bit
+    io.ram[ports.STAT] = bit32.bor(io.ram[ports.STAT], 0x4)
+    if bit32.band(io.ram[ports.STAT], 0x40) ~= 0 then
+      request_interrupt(interrupts.LCDStat)
+    end
+  else
+    -- clear the LY compare bit
+    io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xFB)
   end
 end
 
