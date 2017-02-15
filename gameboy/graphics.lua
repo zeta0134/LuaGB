@@ -56,15 +56,15 @@ for i = 0, 3 do
 end
 
 -- Initialize VRAM blocks in main memory
-graphics.vram = memory.generate_block(16 * 1024, 0x8000)
+graphics.vram = memory.generate_block(16 * 2 * 1024, 0x8000)
 graphics.vram.bank = 0
 graphics.vram_map = {}
 graphics.vram_map.mt = {}
 graphics.vram_map.mt.__index = function(table, address)
-  return graphics.vram[address]
+  return graphics.vram[address + (16 * 1024 * graphics.vram.bank)]
 end
 graphics.vram_map.mt.__newindex = function(table, address, value)
-  graphics.vram[address] = value
+  graphics.vram[address + (16 * 1024 * graphics.vram.bank)] = value
   if address >= 0x8000 and address <= 0x97FF then
     -- Update the cached tile data
     local tile_index = math.floor((address - 0x8000) / 16) + (384 * graphics.vram.bank)
@@ -211,7 +211,7 @@ graphics.save_state = function()
 
   -- deep copy the cached graphics data
   state.tiles = {}
-  for i = 0, 384 - 1 do
+  for i = 0, 768 - 1 do
     state.tiles[i] = {}
     for x = 0, 7 do
       state.tiles[i][x] = {}

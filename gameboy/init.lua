@@ -33,7 +33,7 @@ gameboy.reset = function()
   -- Note: IO needs to come first here, as some subsequent modules
   -- manipulate IO registers during reset / initialization
   gameboy.audio.reset()
-  gameboy.io.reset()
+  gameboy.io.reset(gameboy)
   gameboy.memory.reset()
   gameboy.cartridge.reset()
   gameboy.graphics.reset() -- Note to self: this needs to come AFTER resetting IO

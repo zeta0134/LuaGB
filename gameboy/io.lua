@@ -126,6 +126,16 @@ io.write_logic[ports.DMA] = function(byte)
   -- for several clocks while it finishes.
 end
 
+io.write_logic[0x70] = function(byte)
+  if io.gameboy.type == io.gameboy.types.color then
+    io.ram[0x70] = bit32.band(0x7, byte)
+    memory.work_ram_1.bank = bit32.band(0x7, byte)
+  else
+    -- Not sure if the write mask should apply in DMG / SGB mode
+    io.ram[0x70] = byte
+  end
+end
+
 io.block.mt.__newindex = function(table, address, value)
   address = address - 0xFF00
   if io.write_mask[address] then
@@ -142,7 +152,9 @@ io.block.mt.__newindex = function(table, address, value)
   io.ram[address] = value
 end
 
-io.reset = function()
+io.reset = function(gameboy)
+  io.gameboy = gameboy
+
   for i = 0, #io.ram do
     io.ram[i] = 0
   end
