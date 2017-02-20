@@ -7,6 +7,8 @@ local timers = require("gameboy/timers")
 
 local graphics = {}
 
+graphics.cache = require("cache")
+
 --just for shortening access
 local ports = io.ports
 
@@ -25,11 +27,7 @@ graphics.clear_screen = function()
   end
 end
 
-graphics.tiles = {}
-graphics.map_0 = {}
-graphics.map_1 = {}
-graphics.map_0_attr = {}
-graphics.map_1_attr = {}
+graphics.lcd = {}
 
 -- TODO: Handle proper color palettes?
 local screen_colors = {}
@@ -75,33 +73,33 @@ graphics.vram_map.mt.__newindex = function(table, address, value)
     local upper_bits = graphics.vram[address + 1]
     for x = 0, 7 do
       local palette_index = bit32.band(bit32.rshift(lower_bits, 7 - x), 0x1) + (bit32.band(bit32.rshift(upper_bits, 7 - x), 0x1) * 2)
-      graphics.tiles[tile_index][x][y] = palette_index
+      graphics.cache.tiles[tile_index][x][y] = palette_index
     end
   end
   if address >= 0x9800 and address <= 0x9BFF then
     local x = address % 32
     local y = math.floor((address - 0x9800) / 32)
     if graphics.vram.bank == 0 then
-      graphics.map_0[x][y] = value
+      graphics.cache.map_0[x][y] = value
     else
-      graphics.map_0_attr[x][y].palette = bit32.band(value, 0x07)
-      graphics.map_0_attr[x][y].bank = bit32.rshift(bit32.band(value, 0x08), 3)
-      graphics.map_0_attr[x][y].horizontal_flip = bit32.rshift(bit32.band(value, 0x20), 5)
-      graphics.map_0_attr[x][y].vertical_flip = bit32.rshift(bit32.band(value, 0x40), 6)
-      graphics.map_0_attr[x][y].priority = bit32.rshift(bit32.band(value, 0x80), 7)
+      graphics.cache.map_0_attr[x][y].palette = bit32.band(value, 0x07)
+      graphics.cache.map_0_attr[x][y].bank = bit32.rshift(bit32.band(value, 0x08), 3)
+      graphics.cache.map_0_attr[x][y].horizontal_flip = bit32.rshift(bit32.band(value, 0x20), 5)
+      graphics.cache.map_0_attr[x][y].vertical_flip = bit32.rshift(bit32.band(value, 0x40), 6)
+      graphics.cache.map_0_attr[x][y].priority = bit32.rshift(bit32.band(value, 0x80), 7)
     end
   end
   if address >= 0x9C00 and address <= 0x9FFF then
     local x = address % 32
     local y = math.floor((address - 0x9C00) / 32)
     if graphics.vram.bank == 0 then
-      graphics.map_1[x][y] = value
+      graphics.cache.map_1[x][y] = value
     else
-      graphics.map_1_attr[x][y].palette = bit32.band(value, 0x07)
-      graphics.map_1_attr[x][y].bank = bit32.rshift(bit32.band(value, 0x08), 3)
-      graphics.map_1_attr[x][y].horizontal_flip = bit32.rshift(bit32.band(value, 0x20), 5)
-      graphics.map_1_attr[x][y].vertical_flip = bit32.rshift(bit32.band(value, 0x40), 6)
-      graphics.map_1_attr[x][y].priority = bit32.rshift(bit32.band(value, 0x80), 7)
+      graphics.cache.map_1_attr[x][y].palette = bit32.band(value, 0x07)
+      graphics.cache.map_1_attr[x][y].bank = bit32.rshift(bit32.band(value, 0x08), 3)
+      graphics.cache.map_1_attr[x][y].horizontal_flip = bit32.rshift(bit32.band(value, 0x20), 5)
+      graphics.cache.map_1_attr[x][y].vertical_flip = bit32.rshift(bit32.band(value, 0x40), 6)
+      graphics.cache.map_1_attr[x][y].priority = bit32.rshift(bit32.band(value, 0x80), 7)
     end
   end
 end
@@ -156,41 +154,7 @@ graphics.reset = function()
   graphics.clear_screen()
   graphics.Status.SetMode(2)
 
-  -- Clear out the cache
-  for i = 0, 768 - 1 do
-    graphics.tiles[i] = {}
-    for x = 0, 7 do
-      graphics.tiles[i][x] = {}
-      for y = 0, 7 do
-        graphics.tiles[i][x][y] = 0
-      end
-    end
-  end
-
-  for x = 0, 31 do
-    graphics.map_0[x] = {}
-    graphics.map_1[x] = {}
-    graphics.map_0_attr[x] = {}
-    graphics.map_1_attr[x] = {}
-    for y = 0, 31 do
-      graphics.map_0[x][y] = 0
-      graphics.map_1[x][y] = 0
-      graphics.map_0_attr[x][y] = {}
-      graphics.map_1_attr[x][y] = {}
-
-      graphics.map_0_attr[x][y].palette = 0
-      graphics.map_0_attr[x][y].bank = 0
-      graphics.map_0_attr[x][y].horizontal_flip = false
-      graphics.map_0_attr[x][y].vertical_flip = false
-      graphics.map_0_attr[x][y].priority = false
-
-      graphics.map_1_attr[x][y].palette = 0
-      graphics.map_1_attr[x][y].bank = 0
-      graphics.map_1_attr[x][y].horizontal_flip = false
-      graphics.map_1_attr[x][y].vertical_flip = false
-      graphics.map_1_attr[x][y].priority = false
-    end
-  end
+  graphics.cache.reset()
 end
 
 graphics.save_state = function()
@@ -208,34 +172,6 @@ graphics.save_state = function()
 
   state.vblank_count = graphics.vblank_count
   state.last_edge = graphics.last_edge
-
-  -- deep copy the cached graphics data
-  state.tiles = {}
-  for i = 0, 768 - 1 do
-    state.tiles[i] = {}
-    for x = 0, 7 do
-      state.tiles[i][x] = {}
-      for y = 0, 7 do
-        state.tiles[i][x][y] = graphics.tiles[i][x][y]
-      end
-    end
-  end
-
-  state.map_0 = {}
-  for x = 0, 31 do
-    state.map_0[x] = {}
-    for y = 0, 31 do
-      state.map_0[x][y] = graphics.map_0[x][y]
-    end
-  end
-
-  state.map_1 = {}
-  for x = 0, 31 do
-    state.map_1[x] = {}
-    for y = 0, 31 do
-      state.map_1[x][y] = graphics.map_1[x][y]
-    end
-  end
 
   state.bg_palette = graphics.bg_palette
   state.obj0_palette = graphics.obj0_palette
@@ -255,22 +191,8 @@ graphics.load_state = function(state)
   graphics.vblank_count = state.vblank_count
   graphics.last_edge = state.last_edge
 
-  for i = 0, 384 - 1 do
-    for x = 0, 7 do
-      for y = 0, 7 do
-        graphics.tiles[i][x][y] = state.tiles[i][x][y]
-      end
-    end
-  end
-
-  for x = 0, 31 do
-    for y = 0, 31 do
-      graphics.map_0[x][y] = state.map_0[x][y]
-      graphics.map_1[x][y] = state.map_1[x][y]
-      graphics.map_0_attr[x][y] = state.map_0_attr[x][y]
-      graphics.map_1_attr[x][y] = state.map_1_attr[x][y]
-    end
-  end
+  graphics.cache.reset()
+  graphics.cache.refreshAll()
 
   graphics.bg_palette = state.bg_palette
   graphics.obj0_palette = state.obj0_palette
@@ -511,7 +433,7 @@ graphics.getIndexFromTilemap = function(map, tile_data, x, y)
   local subpixel_x = x - (tile_x * 8)
   local subpixel_y = y - (tile_y * 8)
 
-  return graphics.tiles[tile_index][subpixel_x][subpixel_y]
+  return graphics.cache.tiles[tile_index][subpixel_x][subpixel_y]
 end
 
 local function draw_sprites_into_scanline(scanline, bg_index)
@@ -588,7 +510,7 @@ local function draw_sprites_into_scanline(scanline, bg_index)
       sub_y = sub_y - 8
     end
 
-    local tile = graphics.tiles[sprite_tile]
+    local tile = graphics.cache.tiles[sprite_tile]
 
     for x = 0, 7 do
       local display_x = sprite_x - 8 + x
@@ -633,14 +555,14 @@ graphics.draw_scanline = function(scanline)
   local window_enabled = LCD_Control.WindowEnabled()
   local background_enabled = LCD_Control.BackgroundEnabled()
 
-  local window_tilemap = graphics.map_0
+  local window_tilemap = graphics.cache.map_0
   if window_tilemap_address == 0x9C00 then
-    window_tilemap = graphics.map_1
+    window_tilemap = graphics.cache.map_1
   end
 
-  local background_tilemap = graphics.map_0
+  local background_tilemap = graphics.cache.map_0
   if background_tilemap_address == 0x9C00 then
-    background_tilemap = graphics.map_1
+    background_tilemap = graphics.cache.map_1
   end
 
   local w_x = io.ram[ports.WX] - 7
@@ -652,14 +574,12 @@ graphics.draw_scanline = function(scanline)
       -- The Window is visible here, so draw that
       local window_index = graphics.getIndexFromTilemap(window_tilemap, tile_data, x - w_x, scanline - w_y)
       scanline_bg_index[x] = window_index
-      --plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.getColorFromIndex(window_index, io.ram[ports.BGP])))
       plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.bg_palette[window_index]))
     else
       -- The background is visible
       if background_enabled then
         local bg_index = graphics.getIndexFromTilemap(background_tilemap, tile_data, bg_x, bg_y)
         scanline_bg_index[x] = bg_index
-        --plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.getColorFromIndex(bg_index, io.ram[ports.BGP])))
         plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.bg_palette[bg_index]))
       end
     end
