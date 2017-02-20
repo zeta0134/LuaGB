@@ -8,6 +8,7 @@ local timers = require("gameboy/timers")
 local graphics = {}
 
 graphics.cache = require("cache")
+graphics.palette = require("palette")
 
 --just for shortening access
 local ports = io.ports
@@ -28,30 +29,6 @@ graphics.clear_screen = function()
 end
 
 graphics.lcd = {}
-
--- TODO: Handle proper color palettes?
-local screen_colors = {}
-screen_colors[0] = {255, 255, 255}
-screen_colors[1] = {192, 192, 192}
-screen_colors[2] = {128, 128, 128}
-screen_colors[3] = {0, 0, 0}
-graphics.screen_colors = screen_colors
-
-graphics.set_bw_palette = function(pal_0, pal_1, pal_2, pal_3)
-  screen_colors[0] = pal_0
-  screen_colors[1] = pal_1
-  screen_colors[2] = pal_2
-  screen_colors[3] = pal_3
-end
-
-graphics.bg_palette =   {}
-graphics.obj0_palette = {}
-graphics.obj1_palette = {}
-for i = 0, 3 do
-  graphics.bg_palette[i] = screen_colors[i]
-  graphics.obj0_palette[i] = screen_colors[i]
-  graphics.obj1_palette[i] = screen_colors[i]
-end
 
 -- Initialize VRAM blocks in main memory
 graphics.vram = memory.generate_block(16 * 2 * 1024, 0x8000)
@@ -173,11 +150,11 @@ graphics.save_state = function()
   state.vblank_count = graphics.vblank_count
   state.last_edge = graphics.last_edge
 
-  state.bg_palette = graphics.bg_palette
-  state.obj0_palette = graphics.obj0_palette
-  state.obj1_palette = graphics.obj1_palette
+  state.palette = {}
+  state.palette.bg   = graphics.palette.bg
+  state.palette.obj0 = graphics.palette.obj0
+  state.palette.obj1 = graphics.palette.obj1
 
-  -- TODO: Do we bother to save the screen?
   return state
 end
 
@@ -194,9 +171,9 @@ graphics.load_state = function(state)
   graphics.cache.reset()
   graphics.cache.refreshAll()
 
-  graphics.bg_palette = state.bg_palette
-  graphics.obj0_palette = state.obj0_palette
-  graphics.obj1_palette = state.obj1_palette
+  graphics.palette.bg   = state.palette.bg
+  graphics.palette.obj0 = state.palette.obj0
+  graphics.palette.obj1 = state.palette.obj1
 end
 
 local LCD_Control = {}
@@ -397,27 +374,6 @@ graphics.getColorFromIndex = function(index, palette)
   return screen_colors[bit32.band(palette, 0x3)]
 end
 
-io.write_logic[ports.BGP] = function(byte)
-  io.ram[ports.BGP] = byte
-  for i = 0, 3 do
-    graphics.bg_palette[i] = graphics.getColorFromIndex(i, byte)
-  end
-end
-
-io.write_logic[ports.OBP0] = function(byte)
-  io.ram[ports.OBP0] = byte
-  for i = 0, 3 do
-    graphics.obj0_palette[i] = graphics.getColorFromIndex(i, byte)
-  end
-end
-
-io.write_logic[ports.OBP1] = function(byte)
-  io.ram[ports.OBP1] = byte
-  for i = 0, 3 do
-    graphics.obj1_palette[i] = graphics.getColorFromIndex(i, byte)
-  end
-end
-
 graphics.getIndexFromTilemap = function(map, tile_data, x, y)
   local tile_x = bit32.rshift(x, 3)
   local tile_y = bit32.rshift(y, 3)
@@ -500,9 +456,9 @@ local function draw_sprites_into_scanline(scanline, bg_index)
 
     local sprite_bg_priority = (bit32.band(0x80, sprite_flags) == 0)
 
-    local sprite_palette = graphics.obj0_palette
+    local sprite_palette = graphics.palette.obj0
     if bit32.band(sprite_flags, 0x10) ~= 0 then
-      sprite_palette = graphics.obj1_palette
+      sprite_palette = graphics.palette.obj1
     end
 
     if sub_y >= 8 then
@@ -574,13 +530,13 @@ graphics.draw_scanline = function(scanline)
       -- The Window is visible here, so draw that
       local window_index = graphics.getIndexFromTilemap(window_tilemap, tile_data, x - w_x, scanline - w_y)
       scanline_bg_index[x] = window_index
-      plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.bg_palette[window_index]))
+      plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.palette.bg[window_index]))
     else
       -- The background is visible
       if background_enabled then
         local bg_index = graphics.getIndexFromTilemap(background_tilemap, tile_data, bg_x, bg_y)
         scanline_bg_index[x] = bg_index
-        plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.bg_palette[bg_index]))
+        plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.palette.bg[bg_index]))
       end
     end
     bg_x = bg_x + 1
