@@ -9,6 +9,7 @@ local graphics = {}
 
 graphics.cache = require("cache")
 graphics.palette = require("palette")
+graphics.registers = require("registers")
 
 --just for shortening access
 local ports = io.ports
@@ -108,7 +109,7 @@ end
 
 graphics.initialize = function(gameboy)
   graphics.gameboy = gameboy
-  graphics.Status.SetMode(2)
+  graphics.registers.Status.SetMode(2)
   graphics.clear_screen()
   graphics.reset()
 end
@@ -129,7 +130,7 @@ graphics.reset = function()
   graphics.vram.bank = 0
 
   graphics.clear_screen()
-  graphics.Status.SetMode(2)
+  graphics.registers.Status.SetMode(2)
 
   graphics.cache.reset()
 end
@@ -176,88 +177,6 @@ graphics.load_state = function(state)
   graphics.palette.obj1 = state.palette.obj1
 end
 
-local LCD_Control = {}
-graphics.LCD_Control = LCD_Control
-LCD_Control.DisplayEnabled = function()
-  return bit32.band(0x80, io.ram[ports.LCDC]) ~= 0
-end
-
-LCD_Control.WindowTilemap = function()
-  if bit32.band(0x40, io.ram[ports.LCDC]) ~= 0 then
-    return 0x9C00
-  else
-    return 0x9800
-  end
-end
-
-LCD_Control.WindowEnabled = function()
-  return bit32.band(0x20, io.ram[ports.LCDC]) ~= 0
-end
-
-LCD_Control.TileData = function()
-  if bit32.band(0x10, io.ram[ports.LCDC]) ~= 0 then
-    return 0x8000
-  else
-    return 0x9000
-  end
-end
-
-LCD_Control.BackgroundTilemap = function()
-  if bit32.band(0x08, io.ram[ports.LCDC]) ~= 0 then
-    return 0x9C00
-  else
-    return 0x9800
-  end
-end
-
-LCD_Control.LargeSprites = function()
-  return bit32.band(0x04, io.ram[ports.LCDC]) ~= 0
-end
-
-LCD_Control.SpritesEnabled = function()
-  return bit32.band(0x02, io.ram[ports.LCDC]) ~= 0
-end
-
-LCD_Control.BackgroundEnabled = function()
-  return bit32.band(0x01, io.ram[ports.LCDC]) ~= 0
-end
-
-local Status = {}
-graphics.Status = Status
-Status.Coincidence_InterruptEnabled = function()
-  return bit32.band(0x20, io.ram[ports.STAT]) ~= 0
-end
-
-Status.OAM_InterruptEnabled = function()
-  return bit32.band(0x10, io.ram[ports.STAT]) ~= 0
-end
-
-Status.VBlank_InterruptEnabled = function()
-  return bit32.band(0x08, io.ram[ports.STAT]) ~= 0
-end
-
-Status.HBlank_InterruptEnabled = function()
-  return bit32.band(0x06, io.ram[ports.STAT]) ~= 0
-end
-
-Status.Mode = function()
-  return bit32.band(0x03, io.ram[ports.STAT])
-end
-
-Status.SetMode = function(mode)
-  io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xFC) + bit32.band(mode, 0x3)
-  if LCD_Control.DisplayEnabled() then
-    if mode == 0 then
-      -- HBlank
-      graphics.draw_scanline(io.ram[ports.LY])
-    end
-    if mode == 1 then
-      -- VBlank
-      graphics.vblank_count = graphics.vblank_count + 1
-    end
-  end
-end
-
 local time_at_this_mode = function()
   return timers.system_clock - graphics.last_edge
 end
@@ -283,7 +202,8 @@ handle_mode[0] = function()
       io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xFB)
     end
     if io.ram[ports.LY] >= 144 then
-      Status.SetMode(1)
+      graphics.registers.Status.SetMode(1)
+      graphics.vblank_count = graphics.vblank_count + 1
       request_interrupt(interrupts.VBlank)
       if bit32.band(io.ram[ports.STAT], 0x10) ~= 0 then
         -- This is weird; LCDStat mirrors VBlank?
@@ -291,7 +211,7 @@ handle_mode[0] = function()
       end
       -- TODO: Draw the real screen here?
     else
-      Status.SetMode(2)
+      graphics.registers.Status.SetMode(2)
       if bit32.band(io.ram[ports.STAT], 0x20) ~= 0 then
         request_interrupt(interrupts.LCDStat)
       end
@@ -307,7 +227,7 @@ handle_mode[1] = function()
   end
   if io.ram[ports.LY] >= 154 then
     io.ram[ports.LY] = 0
-    Status.SetMode(2)
+    graphics.registers.Status.SetMode(2)
     if bit32.band(io.ram[ports.STAT], 0x20) ~= 0 then
       request_interrupt(interrupts.LCDStat)
     end
@@ -328,27 +248,28 @@ end
 handle_mode[2] = function()
   if timers.system_clock - graphics.last_edge > 80 then
     graphics.last_edge = graphics.last_edge + 80
-    Status.SetMode(3)
+    graphics.registers.Status.SetMode(3)
   end
 end
 -- VRAM Read: Neither VRAM, OAM, nor CGB palettes can be read
 handle_mode[3] = function()
   if timers.system_clock - graphics.last_edge > 172 then
     graphics.last_edge = graphics.last_edge + 172
-    Status.SetMode(0)
-    -- TODO: Fire HBlank interrupt here!!
-    -- TODO: Draw one scanline of graphics here!
+    graphics.registers.Status.SetMode(0)
+    if graphics.registers.LCD_Control.DisplayEnabled() then
+      graphics.draw_scanline(io.ram[ports.LY])
+    end
   end
 end
 
 graphics.update = function()
-  if LCD_Control.DisplayEnabled() then
-    handle_mode[Status.Mode()]()
+  if graphics.registers.LCD_Control.DisplayEnabled() then
+    handle_mode[graphics.registers.Status.Mode()]()
   else
     -- erase our clock debt, so we don't do stupid timing things when the
     -- display is enabled again later
     graphics.last_edge = timers.system_clock
-    Status.SetMode(0)
+    graphics.registers.Status.SetMode(0)
     io.ram[ports.LY] = 0
   end
 end
@@ -393,12 +314,12 @@ graphics.getIndexFromTilemap = function(map, tile_data, x, y)
 end
 
 local function draw_sprites_into_scanline(scanline, bg_index)
-  if not LCD_Control.SpritesEnabled() then
+  if not graphics.registers.LCD_Control.SpritesEnabled() then
     return
   end
   local active_sprites = {}
   local sprite_size = 8
-  if LCD_Control.LargeSprites() then
+  if graphics.registers.LCD_Control.LargeSprites() then
     sprite_size = 16
   end
 
@@ -505,11 +426,11 @@ graphics.draw_scanline = function(scanline)
 
   -- Grab this stuff just once, rather than every iteration
   -- through the loop
-  local tile_data = LCD_Control.TileData()
-  local window_tilemap_address = LCD_Control.WindowTilemap()
-  local background_tilemap_address = LCD_Control.BackgroundTilemap()
-  local window_enabled = LCD_Control.WindowEnabled()
-  local background_enabled = LCD_Control.BackgroundEnabled()
+  local tile_data = graphics.registers.LCD_Control.TileData()
+  local window_tilemap_address = graphics.registers.LCD_Control.WindowTilemap()
+  local background_tilemap_address = graphics.registers.LCD_Control.BackgroundTilemap()
+  local window_enabled = graphics.registers.LCD_Control.WindowEnabled()
+  local background_enabled = graphics.registers.LCD_Control.BackgroundEnabled()
 
   local window_tilemap = graphics.cache.map_0
   if window_tilemap_address == 0x9C00 then
