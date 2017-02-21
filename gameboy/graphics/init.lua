@@ -402,20 +402,10 @@ graphics.draw_scanline = function(scanline)
   -- Grab this stuff just once, rather than every iteration
   -- through the loop
   local tile_data = graphics.registers.LCD_Control.TileData()
-  local window_tilemap_address = graphics.registers.LCD_Control.WindowTilemap()
-  local background_tilemap_address = graphics.registers.LCD_Control.BackgroundTilemap()
+  local window_tilemap = graphics.registers.window_tilemap
+  local background_tilemap = graphics.registers.background_tilemap
   local window_enabled = graphics.registers.LCD_Control.WindowEnabled()
   local background_enabled = graphics.registers.LCD_Control.BackgroundEnabled()
-
-  local window_tilemap = graphics.cache.map_0
-  if window_tilemap_address == 0x9C00 then
-    window_tilemap = graphics.cache.map_1
-  end
-
-  local background_tilemap = graphics.cache.map_0
-  if background_tilemap_address == 0x9C00 then
-    background_tilemap = graphics.cache.map_1
-  end
 
   local w_x = io.ram[ports.WX] - 7
   local w_y = io.ram[ports.WY]

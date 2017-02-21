@@ -9,7 +9,7 @@ registers.display_enabled = true
 registers.window_tilemap = cache.map_0
 registers.window_enabled = true
 registers.tile_select = 0x8800
-registers.bg_tilemap = cache.map_0
+registers.background_tilemap = cache.map_0
 registers.large_sprites = false
 registers.sprites_enabled = true
 registers.bg_enabled = true
@@ -17,9 +17,6 @@ registers.bg_enabled = true
 
 local LCD_Control = {}
 registers.LCD_Control = LCD_Control
---LCD_Control.DisplayEnabled = function()
---  return bit32.band(0x80, io.ram[ports.LCDC]) ~= 0
---end
 
 io.write_logic[ports.LCDC] = function(byte)
   io.ram[ports.LCDC] = byte
@@ -32,9 +29,9 @@ io.write_logic[ports.LCDC] = function(byte)
   registers.bg_enabled      = bit32.band(0x01, byte) ~= 0
 
   if bit32.band(0x40, byte) ~= 0 then
-    registers.window_tilemap = cache.map_0
-  else
     registers.window_tilemap = cache.map_1
+  else
+    registers.window_tilemap = cache.map_0
   end
 
   if bit32.band(0x10, byte) ~= 0 then
@@ -44,17 +41,9 @@ io.write_logic[ports.LCDC] = function(byte)
   end
 
   if bit32.band(0x08, byte) ~= 0 then
-    registers.bg_tilemap = cache.map_0
+    registers.background_tilemap = cache.map_1
   else
-    registers.bg_tilemap = cache.map_1
-  end
-end
-
-LCD_Control.WindowTilemap = function()
-  if bit32.band(0x40, io.ram[ports.LCDC]) ~= 0 then
-    return 0x9C00
-  else
-    return 0x9800
+    registers.background_tilemap = cache.map_0
   end
 end
 
@@ -67,14 +56,6 @@ LCD_Control.TileData = function()
     return 0x8000
   else
     return 0x9000
-  end
-end
-
-LCD_Control.BackgroundTilemap = function()
-  if bit32.band(0x08, io.ram[ports.LCDC]) ~= 0 then
-    return 0x9C00
-  else
-    return 0x9800
   end
 end
 
