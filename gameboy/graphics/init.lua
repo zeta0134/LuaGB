@@ -289,12 +289,12 @@ graphics.getIndexFromTilemap = function(map, tile_data, x, y)
 end
 
 local function draw_sprites_into_scanline(scanline, bg_index)
-  if not graphics.registers.LCD_Control.SpritesEnabled() then
+  if not graphics.registers.sprites_enabled then
     return
   end
   local active_sprites = {}
   local sprite_size = 8
-  if graphics.registers.LCD_Control.LargeSprites() then
+  if graphics.registers.large_sprites then
     sprite_size = 16
   end
 
@@ -404,8 +404,8 @@ graphics.draw_scanline = function(scanline)
   local tile_data = graphics.registers.LCD_Control.TileData()
   local window_tilemap = graphics.registers.window_tilemap
   local background_tilemap = graphics.registers.background_tilemap
-  local window_enabled = graphics.registers.LCD_Control.WindowEnabled()
-  local background_enabled = graphics.registers.LCD_Control.BackgroundEnabled()
+  local window_enabled = graphics.registers.window_enabled
+  local background_enabled = graphics.registers.background_enabled
 
   local w_x = io.ram[ports.WX] - 7
   local w_y = io.ram[ports.WY]
