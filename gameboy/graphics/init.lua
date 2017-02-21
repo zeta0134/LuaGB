@@ -52,7 +52,7 @@ graphics.vram_map.mt.__newindex = function(table, address, value)
     if graphics.vram.bank == 0 then
       graphics.cache.map_0[x][y] = value
     else
-      cache.refreshAttributes(graphics.cache.map_0_attr, x, y, address)
+      graphics.cache.refreshAttributes(graphics.cache.map_0_attr, x, y, address)
     end
   end
   if address >= 0x9C00 and address <= 0x9FFF then
@@ -61,7 +61,7 @@ graphics.vram_map.mt.__newindex = function(table, address, value)
     if graphics.vram.bank == 0 then
       graphics.cache.map_1[x][y] = value
     else
-      cache.refreshAttributes(graphics.cache.map_1_attr, x, y, address)
+      graphics.cache.refreshAttributes(graphics.cache.map_1_attr, x, y, address)
     end
   end
 end
@@ -240,14 +240,14 @@ handle_mode[3] = function()
   if timers.system_clock - graphics.last_edge > 172 then
     graphics.last_edge = graphics.last_edge + 172
     graphics.registers.Status.SetMode(0)
-    if graphics.registers.LCD_Control.DisplayEnabled() then
+    if graphics.registers.display_enabled then
       graphics.draw_scanline(io.ram[ports.LY])
     end
   end
 end
 
 graphics.update = function()
-  if graphics.registers.LCD_Control.DisplayEnabled() then
+  if graphics.registers.display_enabled then
     handle_mode[graphics.registers.Status.Mode()]()
   else
     -- erase our clock debt, so we don't do stupid timing things when the
