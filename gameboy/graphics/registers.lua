@@ -1,4 +1,6 @@
+local bit32 = require("bit")
 local io = require("gameboy/io")
+local ports = io.ports
 
 local registers = {}
 

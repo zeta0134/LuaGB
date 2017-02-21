@@ -1,4 +1,6 @@
+local bit32 = require("bit")
 local io = require("gameboy/io")
+local ports = io.ports
 
 local palette = {}
 
@@ -25,24 +27,33 @@ for i = 0, 3 do
   palette.obj1[i] = dmg_colors[i]
 end
 
+local getColorFromIndex = function(index, palette)
+  palette = palette or 0xE4
+  while index > 0 do
+    palette = bit32.rshift(palette, 2)
+    index = index - 1
+  end
+  return dmg_colors[bit32.band(palette, 0x3)]
+end
+
 io.write_logic[ports.BGP] = function(byte)
   io.ram[ports.BGP] = byte
   for i = 0, 3 do
-    graphics.palette.bg[i] = graphics.getColorFromIndex(i, byte)
+    palette.bg[i] = getColorFromIndex(i, byte)
   end
 end
 
 io.write_logic[ports.OBP0] = function(byte)
   io.ram[ports.OBP0] = byte
   for i = 0, 3 do
-    graphics.palette.obj0[i] = graphics.getColorFromIndex(i, byte)
+    palette.obj0[i] = getColorFromIndex(i, byte)
   end
 end
 
 io.write_logic[ports.OBP1] = function(byte)
   io.ram[ports.OBP1] = byte
   for i = 0, 3 do
-    graphics.palette.obj1[i] = graphics.getColorFromIndex(i, byte)
+    palette.obj1[i] = getColorFromIndex(i, byte)
   end
 end
 

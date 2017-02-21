@@ -7,9 +7,11 @@ local timers = require("gameboy/timers")
 
 local graphics = {}
 
-graphics.cache = require("cache")
-graphics.palette = require("palette")
-graphics.registers = require("registers")
+graphics.cache = require("gameboy/graphics/cache")
+graphics.palette = require("gameboy/graphics/palette")
+graphics.registers = require("gameboy/graphics/registers")
+
+graphics.cache.graphics = graphics
 
 --just for shortening access
 local ports = io.ports
@@ -42,17 +44,7 @@ end
 graphics.vram_map.mt.__newindex = function(table, address, value)
   graphics.vram[address + (16 * 1024 * graphics.vram.bank)] = value
   if address >= 0x8000 and address <= 0x97FF then
-    -- Update the cached tile data
-    local tile_index = math.floor((address - 0x8000) / 16) + (384 * graphics.vram.bank)
-    local y = math.floor((address % 16) / 2)
-    -- kill the lower bit
-    address = bit32.band(address, 0xFFFE)
-    local lower_bits = graphics.vram[address]
-    local upper_bits = graphics.vram[address + 1]
-    for x = 0, 7 do
-      local palette_index = bit32.band(bit32.rshift(lower_bits, 7 - x), 0x1) + (bit32.band(bit32.rshift(upper_bits, 7 - x), 0x1) * 2)
-      graphics.cache.tiles[tile_index][x][y] = palette_index
-    end
+    graphics.cache.refreshTile(address, graphics.vram.bank)
   end
   if address >= 0x9800 and address <= 0x9BFF then
     local x = address % 32
@@ -60,11 +52,7 @@ graphics.vram_map.mt.__newindex = function(table, address, value)
     if graphics.vram.bank == 0 then
       graphics.cache.map_0[x][y] = value
     else
-      graphics.cache.map_0_attr[x][y].palette = bit32.band(value, 0x07)
-      graphics.cache.map_0_attr[x][y].bank = bit32.rshift(bit32.band(value, 0x08), 3)
-      graphics.cache.map_0_attr[x][y].horizontal_flip = bit32.rshift(bit32.band(value, 0x20), 5)
-      graphics.cache.map_0_attr[x][y].vertical_flip = bit32.rshift(bit32.band(value, 0x40), 6)
-      graphics.cache.map_0_attr[x][y].priority = bit32.rshift(bit32.band(value, 0x80), 7)
+      cache.refreshAttributes(graphics.cache.map_0_attr, x, y, address)
     end
   end
   if address >= 0x9C00 and address <= 0x9FFF then
@@ -73,11 +61,7 @@ graphics.vram_map.mt.__newindex = function(table, address, value)
     if graphics.vram.bank == 0 then
       graphics.cache.map_1[x][y] = value
     else
-      graphics.cache.map_1_attr[x][y].palette = bit32.band(value, 0x07)
-      graphics.cache.map_1_attr[x][y].bank = bit32.rshift(bit32.band(value, 0x08), 3)
-      graphics.cache.map_1_attr[x][y].horizontal_flip = bit32.rshift(bit32.band(value, 0x20), 5)
-      graphics.cache.map_1_attr[x][y].vertical_flip = bit32.rshift(bit32.band(value, 0x40), 6)
-      graphics.cache.map_1_attr[x][y].priority = bit32.rshift(bit32.band(value, 0x80), 7)
+      cache.refreshAttributes(graphics.cache.map_1_attr, x, y, address)
     end
   end
 end
@@ -284,15 +268,6 @@ local function debug_draw_screen()
   for i = 0, 143 do
     graphics.draw_scanline(i)
   end
-end
-
-graphics.getColorFromIndex = function(index, palette)
-  palette = palette or 0xE4
-  while index > 0 do
-    palette = bit32.rshift(palette, 2)
-    index = index - 1
-  end
-  return screen_colors[bit32.band(palette, 0x3)]
 end
 
 graphics.getIndexFromTilemap = function(map, tile_data, x, y)
