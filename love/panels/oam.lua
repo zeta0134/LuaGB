@@ -24,18 +24,18 @@ oam.draw_sprite = function(sprite_address, sx, sy, sprite_size)
   end
   local sprite_flags = graphics.oam[sprite_address + 3]
 
-  local sprite_palette = graphics.obj0_palette
+  local sprite_palette = graphics.palette.obj0
   if bit32.band(sprite_flags, 0x10) ~= 0 then
-    sprite_palette = graphics.obj1_palette
+    sprite_palette = graphics.palette.obj1
   end
 
   for y = 0, (sprite_size - 1) do
     for x = 0, 7 do
       local color
       if y < 8 then
-        color = sprite_palette[graphics.tiles[sprite_tile][x][y]]
+        color = sprite_palette[graphics.cache.tiles[sprite_tile][x][y]]
       else
-        color = sprite_palette[graphics.tiles[sprite_tile + 1][x][y - 8]]
+        color = sprite_palette[graphics.cache.tiles[sprite_tile + 1][x][y - 8]]
       end
       oam.sprite_imagedata:setPixel(sx + x, sy + y, color[1], color[2], color[3], 255)
     end
@@ -55,7 +55,7 @@ oam.draw_sprites = function()
   local sprite_scaling = 4
 
   local sprite_size = 8
-  if oam.gameboy.graphics.LCD_Control.LargeSprites() then
+  if oam.gameboy.graphics.registers.large_sprites then
     sprite_size = 16
   end
   local x = 0
