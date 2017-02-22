@@ -401,7 +401,7 @@ graphics.draw_scanline = function(scanline)
 
   -- Grab this stuff just once, rather than every iteration
   -- through the loop
-  local tile_data = graphics.registers.LCD_Control.TileData()
+  local tile_data = graphics.registers.tile_select
   local window_tilemap = graphics.registers.window_tilemap
   local background_tilemap = graphics.registers.background_tilemap
   local window_enabled = graphics.registers.window_enabled
