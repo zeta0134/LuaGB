@@ -18,18 +18,10 @@ vram.draw = function(x, y)
   vram.draw_tiles(vram.gameboy, 0, 20, 32, 1)
 
   love.graphics.print("Background", 0, 126)
-  if vram.gameboy.graphics.LCD_Control.BackgroundTilemap() == 0x9800 then
-    vram.draw_background(vram.gameboy, vram.gameboy.graphics.map_0, 0, 146, 1)
-  else
-    vram.draw_background(vram.gameboy, vram.gameboy.graphics.map_1, 0, 146, 1)
-  end
+  vram.draw_background(vram.gameboy, vram.gameboy.graphics.registers.background_tilemap, 0, 146, 1)
 
   love.graphics.print("Window", 0, 412)
-  if vram.gameboy.graphics.LCD_Control.WindowTilemap() == 0x9800 then
-    vram.draw_background(vram.gameboy, vram.gameboy.graphics.map_0, 0, 432, 1)
-  else
-    vram.draw_background(vram.gameboy, vram.gameboy.graphics.map_1, 0, 432, 1)
-  end
+  vram.draw_background(vram.gameboy, vram.gameboy.graphics.registers.window_tilemap, 0, 432, 1)
 
   love.graphics.setCanvas() -- reset to main FB
   love.graphics.setColor(255, 255, 255)
@@ -37,11 +29,11 @@ vram.draw = function(x, y)
 end
 
 vram.draw_tile = function(gameboy, tile_index, sx, sy)
-  local tile = gameboy.graphics.tiles[tile_index]
+  local tile = gameboy.graphics.cache.tiles[tile_index]
   for x = 0, 7 do
     for y = 0, 7 do
       local index = tile[x][y]
-      local color = gameboy.graphics.bg_palette[index]
+      local color = gameboy.graphics.palette.bg[index]
       vram.tile_imagedata:setPixel(sx + x, sy + y, color[1], color[2], color[3], 255)
     end
   end
@@ -76,7 +68,7 @@ function vram.draw_background(gameboy, map, dx, dy, scale)
   vram.tile_imagedata:mapPixel(function()
     return 0, 0, 0, 0
   end)
-  local tile_data = gameboy.graphics.LCD_Control.TileData()
+  local tile_data = gameboy.graphics.registers.tile_select
   for x = 0, 31 do
     for y = 0, 31 do
       local index = map[x][y]
