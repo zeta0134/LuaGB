@@ -491,9 +491,6 @@ audio.tone1.generate_sample = function(clock_cycle)
       end
     end
   else
-    if audio.tone1.active then
-      print("Tone 1 ended!")
-    end
     audio.tone1.active = false
   end
   return 0
@@ -573,6 +570,8 @@ audio.wave3.generate_sample = function(clock_cycle)
     else
       wave3.active = false
     end
+  else
+    wave3.active = false
   end
   return 0
 end
