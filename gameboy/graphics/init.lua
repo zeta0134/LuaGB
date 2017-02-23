@@ -166,6 +166,18 @@ local time_at_this_mode = function()
   return timers.system_clock - graphics.last_edge
 end
 
+local scanline_data = {}
+scanline_data.x = 0
+scanline_data.bg_tile_x = 0
+scanline_data.bg_tile_y = 0
+scanline_data.sub_x = 0
+scanline_data.sub_y = 0
+scanline_data.active_tile = nil
+scanline_data.active_attr = nil
+scanline_data.current_map = nil
+scanline_data.current_map_attr = nil
+scanline_data.window_active = false
+
 -- HBlank: Period between scanlines
 local handle_mode = {}
 handle_mode[0] = function()
@@ -212,6 +224,7 @@ handle_mode[1] = function()
   end
   if io.ram[ports.LY] >= 154 then
     io.ram[ports.LY] = 0
+    graphics.initialize_frame()
     graphics.registers.Status.SetMode(2)
     if bit32.band(io.ram[ports.STAT], 0x20) ~= 0 then
       request_interrupt(interrupts.LCDStat)
@@ -233,17 +246,19 @@ end
 handle_mode[2] = function()
   if timers.system_clock - graphics.last_edge > 80 then
     graphics.last_edge = graphics.last_edge + 80
+    graphics.initialize_scanline()
     graphics.registers.Status.SetMode(3)
   end
 end
 -- VRAM Read: Neither VRAM, OAM, nor CGB palettes can be read
 handle_mode[3] = function()
+  local duration = timers.system_clock - graphics.last_edge
+  while scanline_data.x < duration and scanline_data.x < 160 do
+    graphics.draw_next_pixel()
+  end
   if timers.system_clock - graphics.last_edge > 172 then
     graphics.last_edge = graphics.last_edge + 172
     graphics.registers.Status.SetMode(0)
-    if graphics.registers.display_enabled then
-      graphics.draw_scanline(io.ram[ports.LY])
-    end
   end
 end
 
@@ -265,9 +280,113 @@ local function plot_pixel(buffer, x, y, r, g, b)
   buffer[y][x][3] = b
 end
 
-local function debug_draw_screen()
-  for i = 0, 143 do
-    graphics.draw_scanline(i)
+local frame_data = {}
+frame_data.window_y = 0
+
+graphics.initialize_frame = function()
+  -- latch WY at the beginning of the *frame*
+  frame_data.window_y = io.ram[ports.WY]
+end
+
+graphics.initialize_scanline = function()
+  scanline_data.x = 0
+
+  scanline_data.bg_tile_x = math.floor(io.ram[ports.SCX] / 8)
+  scanline_data.bg_tile_y = math.floor((io.ram[ports.LY] + io.ram[ports.SCY]) / 8)
+  if scanline_data.bg_tile_y >= 32 then
+    scanline_data.bg_tile_y = scanline_data.bg_tile_y - 32
+  end
+
+  scanline_data.sub_x = io.ram[ports.SCX] % 8
+  scanline_data.sub_y = (io.ram[ports.LY] + io.ram[ports.SCY]) % 8
+
+  scanline_data.current_map = graphics.registers.background_tilemap
+  scanline_data.current_map_attr = graphics.registers.background_attr
+
+  local tile_index = scanline_data.current_map[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+  if graphics.registers.tile_select == 0x9000 then
+    if tile_index > 127 then
+      tile_index = tile_index - 256
+    end
+    -- add offset to re-root at tile 256 (so effectively, we read from tile 192 - 384)
+    tile_index = tile_index + 256
+  end
+  scanline_data.active_tile = graphics.cache.tiles[tile_index]
+  scanline_data.active_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+end
+
+graphics.draw_next_pixel = function()
+  local ly = io.ram[ports.LY]
+  if not scanline_data.window_active then
+    local w_x = io.ram[ports.WX] - 7
+    if graphics.registers.window_enabled and scanline_data.x >= w_x and ly >= frame_data.window_y then
+      -- switch to window map
+      scanline_data.current_map = graphics.registers.window_tilemap
+      scanline_data.current_map_attr = graphics.registers.window_attr
+      scanline_data.bg_tile_x = math.floor((scanline_data.x - w_x) / 8)
+      scanline_data.bg_tile_y = math.floor((ly - frame_data.window_y) / 8)
+      scanline_data.sub_x = (io.ram[ports.WX] - 7 + scanline_data.x) % 8
+      scanline_data.sub_y = (io.ram[ports.WY] + ly) % 8
+
+      local tile_index = scanline_data.current_map[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+      if graphics.registers.tile_select == 0x9000 then
+        if tile_index > 127 then
+          tile_index = tile_index - 256
+        end
+        -- add offset to re-root at tile 256 (so effectively, we read from tile 192 - 384)
+        tile_index = tile_index + 256
+      end
+      scanline_data.active_tile = graphics.cache.tiles[tile_index]
+      scanline_data.active_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+    end
+  end
+
+  local bg_index = 0 --default, in case no background is enabled
+  if graphics.registers.background_enabled then
+    -- DRAW BG PIXEL HERE
+    local sub_x = scanline_data.sub_x
+    local sub_y = scanline_data.sub_y
+    if scanline_data.active_attr.horizontal_flip then
+      sub_x = 7 - sub_x
+    end
+    bg_index = scanline_data.active_tile[sub_x][sub_y]
+    plot_pixel(graphics.game_screen, scanline_data.x, ly, unpack(graphics.palette.bg[bg_index]))
+  end
+
+  if graphics.registers.sprites_enabled then
+    -- DRAW OAM PIXEL HERE
+  end
+
+  scanline_data.x = scanline_data.x  + 1
+  scanline_data.sub_x = scanline_data.sub_x  + 1
+  if scanline_data.sub_x % 8 == 0 then
+    -- fetch next tile
+    scanline_data.sub_x = 0
+    scanline_data.bg_tile_x = scanline_data.bg_tile_x + 1
+    if scanline_data.bg_tile_x >= 32 then
+      scanline_data.bg_tile_x = scanline_data.bg_tile_x - 32
+    end
+    scanline_data.sub_y = (ly + io.ram[ports.SCY]) % 8
+    scanline_data.bg_tile_y = math.floor((ly + io.ram[ports.SCY]) / 8)
+    if scanline_data.bg_tile_y >= 32 then
+      scanline_data.bg_tile_y = scanline_data.bg_tile_y - 32
+    end
+
+    local tile_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+    if tile_attr.vertical_flip then
+      scanline_data.sub_y = 7 - scanline_data.sub_y
+    end
+
+    local tile_index = scanline_data.current_map[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+    if graphics.registers.tile_select == 0x9000 then
+      if tile_index > 127 then
+        tile_index = tile_index - 256
+      end
+      -- add offset to re-root at tile 256 (so effectively, we read from tile 192 - 384)
+      tile_index = tile_index + 256
+    end
+    scanline_data.active_tile = graphics.cache.tiles[tile_index]
+    scanline_data.active_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
   end
 end
 

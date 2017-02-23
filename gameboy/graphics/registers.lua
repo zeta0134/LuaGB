@@ -7,9 +7,11 @@ local registers = {}
 
 registers.display_enabled = true
 registers.window_tilemap = cache.map_0
+registers.window_attr = cache.map_0_attr
 registers.window_enabled = true
 registers.tile_select = 0x9000
 registers.background_tilemap = cache.map_0
+registers.background_attr = cache.map_0_attr
 registers.large_sprites = false
 registers.sprites_enabled = true
 registers.background_enabled = true
@@ -26,8 +28,10 @@ io.write_logic[ports.LCDC] = function(byte)
 
   if bit32.band(0x40, byte) ~= 0 then
     registers.window_tilemap = cache.map_1
+    registers.window_attr = cache.map_1_attr
   else
     registers.window_tilemap = cache.map_0
+    registers.window_attr = cache.map_0_attr
   end
 
   if bit32.band(0x10, byte) ~= 0 then
@@ -38,8 +42,10 @@ io.write_logic[ports.LCDC] = function(byte)
 
   if bit32.band(0x08, byte) ~= 0 then
     registers.background_tilemap = cache.map_1
+    registers.background_attr = cache.map_1_attr
   else
     registers.background_tilemap = cache.map_0
+    registers.background_attr = cache.map_0_attr
   end
 end
 
