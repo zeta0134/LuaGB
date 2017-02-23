@@ -21,11 +21,16 @@ end
 palette.bg =   {}
 palette.obj0 = {}
 palette.obj1 = {}
-for i = 0, 3 do
-  palette.bg[i] = dmg_colors[i]
-  palette.obj0[i] = dmg_colors[i]
-  palette.obj1[i] = dmg_colors[i]
+
+palette.reset = function()
+  for i = 0, 3 do
+    palette.bg[i] = dmg_colors[i]
+    palette.obj0[i] = dmg_colors[i]
+    palette.obj1[i] = dmg_colors[i]
+  end
 end
+
+palette.reset()
 
 local getColorFromIndex = function(index, palette)
   palette = palette or 0xE4

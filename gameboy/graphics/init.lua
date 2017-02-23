@@ -117,6 +117,7 @@ graphics.reset = function()
   graphics.registers.Status.SetMode(2)
 
   graphics.cache.reset()
+  graphics.palette.reset()
 end
 
 graphics.save_state = function()

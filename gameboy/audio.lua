@@ -38,7 +38,7 @@ audio.reset = function()
   audio.tone1.frequency_shift_counter = 0 -- should be reset on trigger
   audio.tone1.frequency_shift_direction = 1
   audio.tone1.frequency_shift_amount = 0
-  audio.tone1.disabled = false
+  audio.tone1.active = false
 
   audio.tone2.debug_disabled = false
   audio.tone2.period = 128 -- in cycles
@@ -54,6 +54,7 @@ audio.reset = function()
   audio.tone2.period_counter = 0
   audio.tone2.wave_duty_counter = 0
   audio.tone2.frequency_shadow = 0
+  audio.tone2.active = false
 
   audio.wave3.debug_disabled = false
   audio.wave3.enabled = false
@@ -66,6 +67,7 @@ audio.reset = function()
   audio.wave3.period_counter = 0
   audio.wave3.sample_index = 0
   audio.wave3.frequency_shadow = 0
+  audio.wave3.active = false
 
   audio.noise4.debug_disabled = false
   audio.noise4.volume_initial = 0
@@ -78,6 +80,7 @@ audio.reset = function()
   audio.noise4.polynomial_lfsr = 0x7FFF -- 15 bits
   audio.noise4.polynomial_last_shift = 0 -- in cycles
   audio.noise4.polynomial_wide = true
+  audio.noise4.active = false
 
   next_sample = 0
   next_sample_cycle = 0
@@ -136,6 +139,24 @@ wave_pattern_tables[0] = {0,0,0,0,0,0,0,1}
 wave_pattern_tables[1] = {1,0,0,0,0,0,0,1}
 wave_pattern_tables[2] = {1,0,0,0,0,1,1,1}
 wave_pattern_tables[3] = {0,1,1,1,1,1,1,0}
+
+io.read_logic[0x26] = function()
+  local high_nybble = bit32.band(0xF0, io.ram[0x26])
+  local low_nybble = 0
+  if audio.tone1.active then
+    low_nybble = low_nybble + 0x01
+  end
+  if audio.tone2.active then
+    low_nybble = low_nybble + 0x02
+  end
+  if audio.wave3.active then
+    low_nybble = low_nybble + 0x04
+  end
+  if audio.noise4.active then
+    low_nybble = low_nybble + 0x08
+  end
+  return high_nybble + low_nybble
+end
 
 io.write_logic[ports.NR10] = function(byte)
   audio.generate_pending_samples()
@@ -203,11 +224,11 @@ io.write_logic[ports.NR14] = function(byte)
   audio.tone1.continuous = continuous
   if restart then
     audio.tone1.base_cycle = timers.system_clock
+    audio.tone1.active = true
   end
   audio.tone1.frequency_shadow = freq_value
   audio.tone1.period_conter = (2048 - freq_value)
   audio.tone1.frequency_shift_counter = 0
-  audio.tone1.disabled = false
 end
 
 -- Channel 2 Sound Length / Wave Pattern Duty
@@ -265,6 +286,7 @@ io.write_logic[ports.NR24] = function(byte)
   audio.tone2.continuous = continuous
   if restart then
     audio.tone2.base_cycle = timers.system_clock
+    audio.tone2.active = true
   end
 end
 
@@ -324,6 +346,7 @@ io.write_logic[ports.NR34] = function(byte)
   if restart then
     audio.wave3.base_cycle = timers.system_clock
     audio.wave3.sample_index = 0
+    audio.wave3.active = true
   end
 end
 
@@ -389,11 +412,8 @@ io.write_logic[ports.NR44] = function(byte)
     audio.noise4.base_cycle = timers.system_clock
     -- Reset the LSFR to all 1's
     audio.noise4.polynomial_lfsr = 0x7FFF
+    audio.noise4.active = true
   end
-end
-
-audio.tone1.update_frequency = function(clock_cycle)
-
 end
 
 audio.tone1.update_frequency_shift = function(clock_cycle)
@@ -406,7 +426,7 @@ audio.tone1.update_frequency_shift = function(clock_cycle)
       tone1.frequency_shadow = tone1.frequency_shadow + adjustment
       if tone1.frequency_shadow >= 2048 then
         tone1.frequency_shadow = 2047
-        tone1.disabled = true
+        tone1.active = false
       end
       tone1.period = 32 * (2048 - tone1.frequency_shadow)
       tone1.frequency_shift_counter = tone1.frequency_shift_counter + 1
@@ -470,6 +490,11 @@ audio.tone1.generate_sample = function(clock_cycle)
         return volume / 0xF
       end
     end
+  else
+    if audio.tone1.active then
+      print("Tone 1 ended!")
+    end
+    audio.tone1.active = false
   end
   return 0
 end
@@ -505,6 +530,8 @@ audio.tone2.generate_sample = function(clock_cycle)
         return volume / 0xF
       end
     end
+  else
+    tone2.active = false
   end
   return 0
 end
@@ -543,6 +570,8 @@ audio.wave3.generate_sample = function(clock_cycle)
       -- This sample will be from 0-15, we need to adjust it so that it's from -1  to 1
       sample = (sample - 8) / 8
       return sample
+    else
+      wave3.active = false
     end
   end
   return 0
@@ -568,6 +597,8 @@ audio.noise4.generate_sample = function(clock_cycle)
         return volume / 0xF * -1
       end
     end
+  else
+    noise4.active = false
   end
   return 0
 end
