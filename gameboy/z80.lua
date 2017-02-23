@@ -91,9 +91,18 @@ z80.load_state = function(state)
   z80.halted = state.halted
 end
 
-local add_cycles = function(cycles)
+local add_cycles_normal = function(cycles)
   timers.system_clock = timers.system_clock + cycles
 end
+
+local add_cycles_double = function(cycles)
+  timers.system_clock = timers.system_clock + cycles / 2
+end
+
+local add_cycles = add_cycles_normal
+local double_speed = false
+
+io.write_mask[0x4D] = 0x01
 
 reg.f = function()
   local value = lshift(reg.flags.z, 7) +
@@ -1295,10 +1304,26 @@ opcodes[0x10] = function()
   -- TODO: Research real hardware's behavior in these cases
   local stop_value = read_nn()
   if stop_value == 0x00 then
-    print("Unimplemented STOP instruction, ignoring!")
+    print("STOP instruction not followed by NOP!")
     --halted = 1
   else
     print("Unimplemented WEIRDNESS after 0x10")
+  end
+
+  if band(io.ram[0x4D], 0x01) ~= 0 then
+    --speed switch!
+    print("Switching speeds!")
+    if double_speed then
+      add_cycles = add_cycles_normal
+      double_speed = false
+      io.ram[0x4D] = band(io.ram[0x4D], 0x7E) + 0x00
+      print("Switched to Normal Speed")
+    else
+      add_cycles = add_cycles_double
+      double_speed = true
+      io.ram[0x4D] = band(io.ram[0x4D], 0x7E) + 0x80
+      print("Switched to Double Speed")
+    end
   end
 end
 
