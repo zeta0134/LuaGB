@@ -275,6 +275,10 @@ graphics.getIndexFromTilemap = function(map, tile_data, x, y)
   local tile_x = bit32.rshift(x, 3)
   local tile_y = bit32.rshift(y, 3)
   local tile_index = map[tile_x][tile_y]
+
+  local subpixel_x = x - (tile_x * 8)
+  local subpixel_y = y - (tile_y * 8)
+
   if tile_data == 0x9000 then
     if tile_index > 127 then
       tile_index = tile_index - 256
@@ -283,8 +287,22 @@ graphics.getIndexFromTilemap = function(map, tile_data, x, y)
     tile_index = tile_index + 256
   end
 
-  local subpixel_x = x - (tile_x * 8)
-  local subpixel_y = y - (tile_y * 8)
+  if graphics.gameboy.type == graphics.gameboy.types.color then
+    local map_attr = graphics.cache.map_0_attr
+    if map == graphics.cache.map_1 then
+      map_attr = graphics.cache.map_1_attr
+    end
+    local tile_attributes = map_attr[tile_x][tile_y]
+    tile_index = tile_index + tile_attributes.bank * 384
+
+    if tile_attributes.horizontal_flip == true then
+      subpixel_x = (7 - subpixel_x)
+    end
+
+    if tile_attributes.vertical_flip == true then
+      subpixel_y = (7 - subpixel_y)
+    end
+  end
 
   return graphics.cache.tiles[tile_index][subpixel_x][subpixel_y]
 end
@@ -345,6 +363,13 @@ local function draw_sprites_into_scanline(scanline, bg_index)
 
     local y_flipped = bit32.band(0x40, sprite_flags) ~= 0
     local x_flipped = bit32.band(0x20, sprite_flags) ~= 0
+
+    -- handle color mode vram bank
+    if graphics.gameboy.type == graphics.gameboy.types.color then
+      if bit32.band(0x08, sprite_flags) ~= 0 then
+        sprite_tile = sprite_tile + 384
+      end
+    end
 
     local sub_y = 16 - (sprite_y - scanline)
     if y_flipped then

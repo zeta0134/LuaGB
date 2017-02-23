@@ -4,6 +4,7 @@ local gameboy = {}
 
 gameboy.audio = require("gameboy/audio")
 gameboy.cartridge = require("gameboy/cartridge")
+gameboy.dma = require("gameboy/dma")
 gameboy.graphics = require("gameboy/graphics")
 gameboy.input = require("gameboy/input")
 gameboy.interrupts = require("gameboy/interrupts")

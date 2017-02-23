@@ -52,7 +52,7 @@ memory.map_block(0, 0xFF, memory.unmapped)
 -- Main Memory
 memory.work_ram_0 = memory.generate_block(4 * 1024, 0xC000)
 memory.work_ram_1 = memory.generate_block(4 * 8 * 1024, 0xD000)
-memory.work_ram_1.bank = 0
+memory.work_ram_1.bank = 1
 memory.work_ram_1.mt = {}
 memory.work_ram_1.mt.__index = function(table, address)
   return memory.work_ram_1[address + (memory.work_ram_1.bank * 4 * 1024)]
@@ -99,7 +99,7 @@ memory.reset = function()
     memory.work_ram_1[i] = 0
   end
 
-  memory.work_ram_1.bank = 0
+  memory.work_ram_1.bank = 1
 end
 
 memory.save_state = function()

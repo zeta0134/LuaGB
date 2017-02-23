@@ -49,9 +49,9 @@ cache.refreshAttributes = function(map_attr, x, y, address)
   local data = cache.graphics.vram[address + (16 * 1024)]
   cache.map_0_attr[x][y].palette = bit32.band(data, 0x07)
   cache.map_0_attr[x][y].bank = bit32.rshift(bit32.band(data, 0x08), 3)
-  cache.map_0_attr[x][y].horizontal_flip = bit32.rshift(bit32.band(data, 0x20), 5)
-  cache.map_0_attr[x][y].vertical_flip = bit32.rshift(bit32.band(data, 0x40), 6)
-  cache.map_0_attr[x][y].priority = bit32.rshift(bit32.band(data, 0x80), 7)
+  cache.map_0_attr[x][y].horizontal_flip = bit32.rshift(bit32.band(data, 0x20), 5) ~= 0
+  cache.map_0_attr[x][y].vertical_flip = bit32.rshift(bit32.band(data, 0x40), 6) ~= 0
+  cache.map_0_attr[x][y].priority = bit32.rshift(bit32.band(data, 0x80), 7) ~= 0
 end
 
 cache.refreshTile = function(address, bank)

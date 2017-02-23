@@ -112,24 +112,13 @@ io.write_logic[ports.LY] = function(byte)
   io.ram[ports.LY] = 0
 end
 
-io.write_logic[ports.DMA] = function(byte)
-  -- DMA Transfer. Copies data from 0x0000 + 0x100 * byte, into OAM data
-  local source = 0x0000 + 0x100 * byte
-  local destination = 0xFE00
-  while destination <= 0xFE9F do
-    memory.write_byte(destination, memory.read_byte(source))
-    destination = destination + 1
-    source = source + 1
-  end
-  -- TODO: Implement memory access cooldown; real hardware requires
-  -- programs to call DMA transfer from High RAM and then wait there
-  -- for several clocks while it finishes.
-end
-
 io.write_logic[0x70] = function(byte)
   if io.gameboy.type == io.gameboy.types.color then
     io.ram[0x70] = bit32.band(0x7, byte)
     memory.work_ram_1.bank = bit32.band(0x7, byte)
+    if memory.work_ram_1.bank == 0 then
+      memory.work_ram_1.bank = 1
+    end
   else
     -- Not sure if the write mask should apply in DMG / SGB mode
     io.ram[0x70] = byte
