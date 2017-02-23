@@ -10,10 +10,20 @@ local system_clocks_per_second = 4194304
 timers.system_clock = 0
 
 timers.clock_rates = {}
-timers.clock_rates[0] = math.floor(system_clocks_per_second / 4096)
-timers.clock_rates[1] = math.floor(system_clocks_per_second / 262144)
-timers.clock_rates[2] = math.floor(system_clocks_per_second / 65536)
-timers.clock_rates[3] = math.floor(system_clocks_per_second / 16384)
+
+timers.set_normal_speed = function()
+  timers.clock_rates[0] = math.floor(system_clocks_per_second / 4096)
+  timers.clock_rates[1] = math.floor(system_clocks_per_second / 262144)
+  timers.clock_rates[2] = math.floor(system_clocks_per_second / 65536)
+  timers.clock_rates[3] = math.floor(system_clocks_per_second / 16384)
+end
+
+timers.set_double_speed = function()
+  timers.clock_rates[0] = math.floor(system_clocks_per_second / 4096 / 2)
+  timers.clock_rates[1] = math.floor(system_clocks_per_second / 262144 / 2)
+  timers.clock_rates[2] = math.floor(system_clocks_per_second / 65536 / 2)
+  timers.clock_rates[3] = math.floor(system_clocks_per_second / 16384 / 2)
+end
 
 timers.div_base = 0
 timers.timer_offset = 0

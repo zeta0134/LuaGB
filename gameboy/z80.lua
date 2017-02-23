@@ -40,6 +40,17 @@ reg.sp = 0
 
 z80.halted = 0
 
+local add_cycles_normal = function(cycles)
+  timers.system_clock = timers.system_clock + cycles
+end
+
+local add_cycles_double = function(cycles)
+  timers.system_clock = timers.system_clock + cycles / 2
+end
+
+local add_cycles = add_cycles_normal
+local double_speed = false
+
 z80.reset = function(gameboy)
   reg.flags.z = 1
   reg.flags.n = 0
@@ -61,6 +72,10 @@ z80.reset = function(gameboy)
   reg.sp = 0xFFFE
 
   z80.halted = 0
+
+  double_speed = false
+  add_cycles = add_cycles_normal
+  timers.set_normal_speed()
 end
 
 z80.save_state = function()
@@ -90,17 +105,6 @@ z80.load_state = function(state)
 
   z80.halted = state.halted
 end
-
-local add_cycles_normal = function(cycles)
-  timers.system_clock = timers.system_clock + cycles
-end
-
-local add_cycles_double = function(cycles)
-  timers.system_clock = timers.system_clock + cycles / 2
-end
-
-local add_cycles = add_cycles_normal
-local double_speed = false
 
 io.write_mask[0x4D] = 0x01
 
@@ -1317,11 +1321,13 @@ opcodes[0x10] = function()
       add_cycles = add_cycles_normal
       double_speed = false
       io.ram[0x4D] = band(io.ram[0x4D], 0x7E) + 0x00
+      timers.set_normal_speed()
       print("Switched to Normal Speed")
     else
       add_cycles = add_cycles_double
       double_speed = true
       io.ram[0x4D] = band(io.ram[0x4D], 0x7E) + 0x80
+      timers.set_double_speed()
       print("Switched to Double Speed")
     end
   end
