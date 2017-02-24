@@ -30,13 +30,13 @@ cache.reset = function()
       cache.map_0_attr[x][y] = {}
       cache.map_1_attr[x][y] = {}
 
-      cache.map_0_attr[x][y].palette = 0
+      cache.map_0_attr[x][y].palette = cache.graphics.palette.color_bg[0]
       cache.map_0_attr[x][y].bank = 0
       cache.map_0_attr[x][y].horizontal_flip = false
       cache.map_0_attr[x][y].vertical_flip = false
       cache.map_0_attr[x][y].priority = false
 
-      cache.map_1_attr[x][y].palette = 0
+      cache.map_1_attr[x][y].palette = cache.graphics.palette.color_bg[0]
       cache.map_1_attr[x][y].bank = 0
       cache.map_1_attr[x][y].horizontal_flip = false
       cache.map_1_attr[x][y].vertical_flip = false
@@ -47,11 +47,12 @@ end
 
 cache.refreshAttributes = function(map_attr, x, y, address)
   local data = cache.graphics.vram[address + (16 * 1024)]
-  cache.map_0_attr[x][y].palette = bit32.band(data, 0x07)
-  cache.map_0_attr[x][y].bank = bit32.rshift(bit32.band(data, 0x08), 3)
-  cache.map_0_attr[x][y].horizontal_flip = bit32.rshift(bit32.band(data, 0x20), 5) ~= 0
-  cache.map_0_attr[x][y].vertical_flip = bit32.rshift(bit32.band(data, 0x40), 6) ~= 0
-  cache.map_0_attr[x][y].priority = bit32.rshift(bit32.band(data, 0x80), 7) ~= 0
+  --map_attr[x][y].palette = bit32.band(data, 0x07)
+  map_attr[x][y].palette = cache.graphics.palette.color_bg[bit32.band(data, 0x07)]
+  map_attr[x][y].bank = bit32.rshift(bit32.band(data, 0x08), 3)
+  map_attr[x][y].horizontal_flip = bit32.rshift(bit32.band(data, 0x20), 5) ~= 0
+  map_attr[x][y].vertical_flip = bit32.rshift(bit32.band(data, 0x40), 6) ~= 0
+  map_attr[x][y].priority = bit32.rshift(bit32.band(data, 0x80), 7) ~= 0
 end
 
 cache.refreshTile = function(address, bank)
@@ -68,20 +69,54 @@ cache.refreshTile = function(address, bank)
   end
 end
 
-cache.refreshAll = function()
+cache.refreshTiles = function()
   for i = 0, 384 - 1 do
     cache.refreshTile(0x8000 + i * 2, 0)
     cache.refreshTile(0x8000 + i * 2, 1)
   end
+end
 
+cache.refreshTileIndex = function(x, y, address, map, attr)
+  local tile_index = cache.graphics.vram[address + (y * 32) + x]
+  if cache.graphics.registers.tile_select == 0x9000 then
+    if tile_index > 127 then
+      tile_index = tile_index - 256
+    end
+    -- add offset to re-root at tile 256 (so effectively, we read from tile 192 - 384)
+    tile_index = tile_index + 256
+  end
+  if attr[x][y].bank == 1 then
+    tile_index = tile_index + 384
+  end
+  map[x][y] = tile_index
+end
+
+cache.refreshTileMap = function(address, map, attr)
   for x = 0, 31 do
     for y = 0, 31 do
-      cache.map_0[x][y] = cache.graphics.vram[0x9800 + (y * 32) + x]
-      cache.map_1[x][y] = cache.graphics.vram[0x9C00 + (y * 32) + x]
+      cache.refreshTileIndex(x, y, address, map, attr)
+    end
+  end
+end
+
+cache.refreshTileMaps = function()
+  cache.refreshTileMap(0x9800, cache.map_0, cache.map_0_attr)
+  cache.refreshTileMap(0x9C00, cache.map_1, cache.map_1_attr)
+end
+
+cache.refreshTileAttributes = function()
+  for x = 0, 31 do
+    for y = 0, 31 do
       cache.refreshAttributes(cache.map_0_attr, x, y, 0x9800 + (y * 32) + x)
       cache.refreshAttributes(cache.map_1_attr, x, y, 0x9C00 + (y * 32) + x)
     end
   end
+end
+
+cache.refreshAll = function()
+  cache.refreshTiles()
+  cache.refreshTileMaps()
+  cache.refreshTileAttributes()
 end
 
 return cache

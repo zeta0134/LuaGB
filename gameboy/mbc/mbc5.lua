@@ -43,6 +43,7 @@ mbc5.mt.__newindex = function(table, address, value)
   if address >= 0x3000 and address <= 0x3FFF then
     -- Write the upper 1 bits of the ROM bank
     mbc5.rom_bank = bit32.band(mbc5.rom_bank, 0xFF) + bit32.lshift(bit32.band(value, 0x01), 8)
+    print("Switched (high) to rom bank: ", mbc5.rom_bank)
     return
   end
   if address >= 0x4000 and address <= 0x5FFF then

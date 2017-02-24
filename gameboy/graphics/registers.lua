@@ -35,9 +35,17 @@ io.write_logic[ports.LCDC] = function(byte)
   end
 
   if bit32.band(0x10, byte) ~= 0 then
-    registers.tile_select = 0x8000
+    if registers.tile_select == 0x9000 then
+      -- refresh our tile indices, they'll all need recalculating for the new offset
+      registers.tile_select = 0x8000
+      cache.refreshTileMaps()
+    end
   else
-    registers.tile_select = 0x9000
+    if registers.tile_select == 0x8000 then
+      -- refresh our tile indices, they'll all need recalculating for the new offset
+      registers.tile_select = 0x9000
+      cache.refreshTileMaps()
+    end
   end
 
   if bit32.band(0x08, byte) ~= 0 then

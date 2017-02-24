@@ -49,20 +49,18 @@ graphics.vram_map.mt.__newindex = function(table, address, value)
   if address >= 0x9800 and address <= 0x9BFF then
     local x = address % 32
     local y = math.floor((address - 0x9800) / 32)
-    if graphics.vram.bank == 0 then
-      graphics.cache.map_0[x][y] = value
-    else
+    if graphics.vram.bank == 1 then
       graphics.cache.refreshAttributes(graphics.cache.map_0_attr, x, y, address)
     end
+    graphics.cache.refreshTileIndex(x, y, 0x9800, graphics.cache.map_0, graphics.cache.map_0_attr)
   end
   if address >= 0x9C00 and address <= 0x9FFF then
     local x = address % 32
     local y = math.floor((address - 0x9C00) / 32)
-    if graphics.vram.bank == 0 then
-      graphics.cache.map_1[x][y] = value
-    else
+    if graphics.vram.bank == 1 then
       graphics.cache.refreshAttributes(graphics.cache.map_1_attr, x, y, address)
     end
+    graphics.cache.refreshTileIndex(x, y, 0x9C00, graphics.cache.map_1, graphics.cache.map_1_attr)
   end
 end
 setmetatable(graphics.vram_map, graphics.vram_map.mt)
@@ -178,6 +176,7 @@ scanline_data.current_map = nil
 scanline_data.current_map_attr = nil
 scanline_data.window_active = false
 scanline_data.bg_index = {}
+scanline_data.active_palette = nil
 
 -- HBlank: Period between scanlines
 local handle_mode = {}
@@ -291,13 +290,6 @@ end
 
 graphics.set_active_tile = function()
   local tile_index = scanline_data.current_map[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
-  if graphics.registers.tile_select == 0x9000 then
-    if tile_index > 127 then
-      tile_index = tile_index - 256
-    end
-    -- add offset to re-root at tile 256 (so effectively, we read from tile 192 - 384)
-    tile_index = tile_index + 256
-  end
   scanline_data.active_tile = graphics.cache.tiles[tile_index]
   scanline_data.active_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
 end
@@ -330,7 +322,7 @@ graphics.switch_to_window = function()
     scanline_data.bg_tile_x = math.floor((scanline_data.x - w_x) / 8)
     scanline_data.bg_tile_y = math.floor((ly - frame_data.window_y) / 8)
     scanline_data.sub_x = (scanline_data.x - (io.ram[ports.WX] - 7)) % 8
-    scanline_data.sub_y = (io.ram[ports.WY] + ly) % 8
+    scanline_data.sub_y = (ly - io.ram[ports.WY]) % 8
 
     graphics.set_active_tile()
   end
@@ -351,7 +343,8 @@ graphics.draw_next_pixel = function()
       sub_x = 7 - sub_x
     end
     bg_index = scanline_data.active_tile[sub_x][sub_y]
-    plot_pixel(graphics.game_screen, scanline_data.x, ly, unpack(graphics.palette.bg[bg_index]))
+    --plot_pixel(graphics.game_screen, scanline_data.x, ly, unpack(graphics.palette.bg[bg_index]))
+    plot_pixel(graphics.game_screen, scanline_data.x, ly, unpack(scanline_data.active_attr.palette[bg_index]))
   end
 
   scanline_data.bg_index[scanline_data.x] = bg_index
@@ -477,11 +470,19 @@ graphics.draw_sprites_into_scanline = function(scanline, bg_index)
     local y_flipped = bit32.band(0x40, sprite_flags) ~= 0
     local x_flipped = bit32.band(0x20, sprite_flags) ~= 0
 
+    local sprite_palette = graphics.palette.obj0
+    if bit32.band(sprite_flags, 0x10) ~= 0 then
+      sprite_palette = graphics.palette.obj1
+    end
+
     -- handle color mode vram bank
     if graphics.gameboy.type == graphics.gameboy.types.color then
       if bit32.band(0x08, sprite_flags) ~= 0 then
         sprite_tile = sprite_tile + 384
       end
+
+      local sprite_palette_index = bit32.band(0x07, sprite_flags)
+      sprite_palette = graphics.palette.color_obj[sprite_palette_index]
     end
 
     local sub_y = 16 - (sprite_y - scanline)
@@ -490,11 +491,6 @@ graphics.draw_sprites_into_scanline = function(scanline, bg_index)
     end
 
     local sprite_bg_priority = (bit32.band(0x80, sprite_flags) == 0)
-
-    local sprite_palette = graphics.palette.obj0
-    if bit32.band(sprite_flags, 0x10) ~= 0 then
-      sprite_palette = graphics.palette.obj1
-    end
 
     if sub_y >= 8 then
       sprite_tile = sprite_tile + 1
