@@ -177,6 +177,7 @@ scanline_data.active_attr = nil
 scanline_data.current_map = nil
 scanline_data.current_map_attr = nil
 scanline_data.window_active = false
+scanline_data.bg_index = {}
 
 -- HBlank: Period between scanlines
 local handle_mode = {}
@@ -206,7 +207,6 @@ handle_mode[0] = function()
         -- This is weird; LCDStat mirrors VBlank?
         request_interrupt(interrupts.LCDStat)
       end
-      -- TODO: Draw the real screen here?
     else
       graphics.registers.Status.SetMode(2)
       if bit32.band(io.ram[ports.STAT], 0x20) ~= 0 then
@@ -258,6 +258,7 @@ handle_mode[3] = function()
   end
   if timers.system_clock - graphics.last_edge > 172 then
     graphics.last_edge = graphics.last_edge + 172
+    graphics.draw_sprites_into_scanline(io.ram[ports.LY], scanline_data.bg_index)
     graphics.registers.Status.SetMode(0)
   end
 end
@@ -353,9 +354,11 @@ graphics.draw_next_pixel = function()
     plot_pixel(graphics.game_screen, scanline_data.x, ly, unpack(graphics.palette.bg[bg_index]))
   end
 
-  if graphics.registers.sprites_enabled then
+  scanline_data.bg_index[scanline_data.x] = bg_index
+
+  --if graphics.registers.sprites_enabled then
     -- DRAW OAM PIXEL HERE
-  end
+  --end
 
   scanline_data.x = scanline_data.x  + 1
   scanline_data.sub_x = scanline_data.sub_x  + 1
@@ -417,7 +420,7 @@ graphics.getIndexFromTilemap = function(map, tile_data, x, y)
   return graphics.cache.tiles[tile_index][subpixel_x][subpixel_y]
 end
 
-local function draw_sprites_into_scanline(scanline, bg_index)
+graphics.draw_sprites_into_scanline = function(scanline, bg_index)
   if not graphics.registers.sprites_enabled then
     return
   end
