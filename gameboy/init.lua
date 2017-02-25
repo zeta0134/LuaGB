@@ -1,127 +1,128 @@
 local bit32 = require("bit")
 
-local gameboy = {}
+local Gameboy = {}
 
-gameboy.audio = require("gameboy/audio")
-gameboy.cartridge = require("gameboy/cartridge")
-gameboy.dma = require("gameboy/dma")
-gameboy.graphics = require("gameboy/graphics")
-gameboy.input = require("gameboy/input")
-gameboy.interrupts = require("gameboy/interrupts")
-gameboy.io = require("gameboy/io")
-gameboy.memory = require("gameboy/memory")
-gameboy.timers = require("gameboy/timers")
-gameboy.z80 = require("gameboy/z80")
+Gameboy.audio = require("gameboy/audio")
+Gameboy.cartridge = require("gameboy/cartridge")
+Gameboy.dma = require("gameboy/dma")
+Gameboy.graphics = require("gameboy/graphics")
+Gameboy.input = require("gameboy/input")
+Gameboy.interrupts = require("gameboy/interrupts")
+Gameboy.io = require("gameboy/io")
+Gameboy.memory = require("gameboy/memory")
+Gameboy.timers = require("gameboy/timers")
+Gameboy.z80 = require("gameboy/z80")
 
-gameboy.initialize = function()
-  gameboy.audio.initialize()
-  gameboy.graphics.initialize(gameboy)
-  gameboy.cartridge.initialize(gameboy)
+function Gameboy:initialize()
+  self.audio.initialize()
+  self.graphics.initialize(self)
+  self.cartridge.initialize(self)
 
-  gameboy.reset()
+  self:reset()
 end
 
-gameboy.types = {}
-gameboy.types.dmg = 0
-gameboy.types.sgb = 1
-gameboy.types.color = 2
+Gameboy.types = {}
+Gameboy.types.dmg = 0
+Gameboy.types.sgb = 1
+Gameboy.types.color = 2
 
-gameboy.type = gameboy.types.color
+Gameboy.type = Gameboy.types.color
 
-gameboy.reset = function()
+function Gameboy:reset()
   -- Resets the gameboy's internal state to just after the power-on and boot sequence
   -- (Does NOT unload the cartridge)
 
   -- Note: IO needs to come first here, as some subsequent modules
   -- manipulate IO registers during reset / initialization
-  gameboy.audio.reset()
-  gameboy.io.reset(gameboy)
-  gameboy.memory.reset()
-  gameboy.cartridge.reset()
-  gameboy.graphics.reset() -- Note to self: this needs to come AFTER resetting IO
-  gameboy.timers.reset()
-  gameboy.z80.reset(gameboy)
+  self.audio.reset()
+  self.io.reset(self)
+  self.memory.reset()
+  self.cartridge.reset()
+  self.graphics.reset() -- Note to self: this needs to come AFTER resetting IO
+  self.timers.reset()
+  self.z80.reset(self)
 
-  gameboy.interrupts.enabled = 1
+  self.interrupts.enabled = 1
 end
 
-gameboy.save_state = function()
+function Gameboy:save_state()
   local state = {}
-  state.audio = gameboy.audio.save_state()
-  state.io = gameboy.io.save_state()
-  state.memory = gameboy.memory.save_state()
-  state.cartridge = gameboy.cartridge.save_state()
-  state.graphics = gameboy.graphics.save_state()
-  state.timers = gameboy.timers.save_state()
-  state.z80 = gameboy.z80.save_state()
+  state.audio = self.audio.save_state()
+  state.io = self.io.save_state()
+  state.memory = self.memory.save_state()
+  state.cartridge = self.cartridge.save_state()
+  state.graphics = self.graphics.save_state()
+  state.timers = self.timers.save_state()
+  state.z80 = self.z80.save_state()
 
   -- Note: the underscore
-  state.interrupts_enabled = gameboy.interrupts.enabled
+  state.interrupts_enabled = self.interrupts.enabled
   return state
 end
 
-gameboy.load_state = function(state)
-  gameboy.audio.load_state(state.audio)
-  gameboy.io.load_state(state.io)
-  gameboy.memory.load_state(state.memory)
-  gameboy.cartridge.load_state(state.cartridge)
-  gameboy.graphics.load_state(state.graphics)
-  gameboy.timers.load_state(state.timers)
-  gameboy.z80.load_state(state.z80)
+function Gameboy:load_state(state)
+  self.audio.load_state(state.audio)
+  self.io.load_state(state.io)
+  self.memory.load_state(state.memory)
+  self.cartridge.load_state(state.cartridge)
+  self.graphics.load_state(state.graphics)
+  self.timers.load_state(state.timers)
+  self.z80.load_state(state.z80)
 
   -- Note: the underscore
-  gameboy.interrupts.enabled = state.interrupts_enabled
+  self.interrupts.enabled = state.interrupts_enabled
 end
 
-gameboy.step = function()
-  gameboy.timers.update()
-  gameboy.graphics.update()
-  gameboy.z80.process_instruction()
+function Gameboy:step()
+  self.timers.update()
+  self.graphics.update()
+  self.z80.process_instruction()
   return
 end
 
-gameboy.run_until_vblank = function()
+function Gameboy:run_until_vblank()
   local instructions = 0
-  while gameboy.io.ram[gameboy.io.ports.LY] == 144 and instructions < 100000 do
-    gameboy.step()
+  while self.io.ram[self.io.ports.LY] == 144 and instructions < 100000 do
+    self:step()
     instructions = instructions + 1
   end
-  while gameboy.io.ram[gameboy.io.ports.LY] ~= 144 and instructions < 100000  do
-    gameboy.step()
+  while self.io.ram[self.io.ports.LY] ~= 144 and instructions < 100000  do
+    self:step()
     instructions = instructions + 1
   end
-  gameboy.audio.update()
+  self.audio.update()
 end
 
-gameboy.run_until_hblank = function()
-  local old_scanline = gameboy.io.ram[gameboy.io.ports.LY]
+function Gameboy:run_until_hblank()
+  local old_scanline = self.io.ram[self.io.ports.LY]
   local instructions = 0
-  while old_scanline == gameboy.io.ram[gameboy.io.ports.LY] and instructions < 100000 do
-    gameboy.step()
+  while old_scanline == self.io.ram[self.io.ports.LY] and instructions < 100000 do
+    self:step()
     instructions = instructions + 1
   end
-  gameboy.audio.update()
+  self.audio.update()
 end
 
 local call_opcodes = {[0xCD]=true, [0xC4]=true, [0xD4]=true, [0xCC]=true, [0xDC]=true}
 local rst_opcodes = {[0xC7]=true, [0xCF]=true, [0xD7]=true, [0xDF]=true, [0xE7]=true, [0xEF]=true, [0xF7]=true, [0xFF]=true}
-gameboy.step_over = function()
+
+function Gameboy:step_over()
   -- Make sure the *current* opcode is a CALL / RST
   local instructions = 0
-  local pc = gameboy.z80.registers.pc
-  local opcode = gameboy.memory[pc]
+  local pc = self.z80.registers.pc
+  local opcode = self.memory[pc]
   if call_opcodes[opcode] then
     local return_address = bit32.band(pc + 3, 0xFFFF)
-    while gameboy.z80.registers.pc ~= return_address and instructions < 10000000 do
-      gameboy.step()
+    while self.z80.registers.pc ~= return_address and instructions < 10000000 do
+      self:step()
       instructions = instructions + 1
     end
     return
   end
   if rst_opcodes[opcode] then
     local return_address = bit32.band(pc + 1, 0xFFFF)
-    while gameboy.z80.registers.pc ~= return_address and instructions < 10000000 do
-      gameboy.step()
+    while self.z80.registers.pc ~= return_address and instructions < 10000000 do
+      self:step()
       instructions = instructions + 1
     end
     return
@@ -130,12 +131,35 @@ gameboy.step_over = function()
 end
 
 local ret_opcodes = {[0xC9]=true, [0xC0]=true, [0xD0]=true, [0xC8]=true, [0xD8]=true, [0xD9]=true}
-gameboy.run_until_ret = function()
+
+function Gameboy:run_until_ret()
   local instructions = 0
-  while ret_opcodes[gameboy.memory[gameboy.z80.registers.pc]] ~= true and instructions < 10000000 do
-    gameboy.step()
+  while ret_opcodes[self.memory[self.z80.registers.pc]] ~= true and instructions < 10000000 do
+    self:step()
     instructions = instructions + 1
   end
 end
 
-return gameboy
+local gameboy_defaults = {}
+for k, v in pairs(Gameboy) do
+  gameboy_defaults[k] = v
+end
+
+Gameboy.new = function(overrides)
+  local new_gameboy = {}
+  for k, v in pairs(gameboy_defaults) do
+    if overrides[k] then
+      new_gameboy[k] = overrides[k]
+    else
+      new_gameboy[k] = gameboy_defaults[k]
+    end
+  end
+
+  new_gameboy.audio = new_gameboy.audio.new(new_gameboy)
+
+  new_gameboy:initialize()
+
+  return new_gameboy
+end
+
+return Gameboy

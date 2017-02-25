@@ -1,6 +1,6 @@
 local bit32 = require("bit")
 local filebrowser = require("filebrowser")
-local gameboy = require("gameboy")
+local Gameboy = require("gameboy")
 local binser = require("vendor/binser")
 
 local panels = {}
@@ -28,6 +28,8 @@ local menu_active = true
 local game_loaded = false
 
 local screen_scale = 3
+
+local gameboy = Gameboy.new{}
 
 local resize_window = function()
   local scale = screen_scale
@@ -160,7 +162,7 @@ function dump_audio(buffer)
 end
 
 local function load_game(game_path)
-  gameboy.reset()
+  gameboy:reset()
 
   game_filename = game_path
   while string.find(game_filename, "/") do
@@ -171,7 +173,7 @@ local function load_game(game_path)
   if file_data then
     gameboy.cartridge.load(file_data, size)
     load_ram()
-    gameboy.reset()
+    gameboy:reset()
   else
     print("Couldn't open ", game_path, " bailing.")
     love.event.quit()
@@ -203,7 +205,7 @@ function love.load(args)
   love.filesystem.createDirectory("states")
   love.filesystem.createDirectory("saves")
 
-  gameboy.initialize()
+  gameboy:initialize()
 
   if #args >= 2 then
     local game_path = args[2]
@@ -266,22 +268,22 @@ end
 
 local function run_n_cycles(n)
   for i = 1, n do
-    gameboy.step()
+    gameboy:step()
   end
 end
 
 local action_keys = {}
-action_keys.space = function() gameboy.step() end
+action_keys.space = function() gameboy:step() end
 
 action_keys.k = function() run_n_cycles(100) end
 action_keys.l = function() run_n_cycles(1000) end
-action_keys.r = gameboy.reset
+action_keys.r = function() gameboy:reset() end
 action_keys.p = function() emulator_running = not emulator_running end
-action_keys.h = gameboy.run_until_hblank
-action_keys.v = gameboy.run_until_vblank
+action_keys.h = function() gameboy:run_until_hblank() end
+action_keys.v = function() gameboy:run_until_vblank() end
 
-action_keys.o = gameboy.step_over
-action_keys.i = gameboy.run_until_ret
+action_keys.o = function() gameboy:step_over() end
+action_keys.i = function() gameboy:run_until_ret() end
 
 action_keys.d = function()
   debug_mode = not debug_mode
@@ -391,7 +393,7 @@ function love.update()
     filebrowser.update()
   else
     if emulator_running then
-      gameboy.run_until_vblank()
+      gameboy:run_until_vblank()
     end
   end
   if gameboy.cartridge.external_ram.dirty then
