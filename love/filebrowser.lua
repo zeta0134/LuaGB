@@ -241,7 +241,7 @@ filebrowser.switch_palette = function(button)
   if palette_index > #palettes then
     palette_index = 1
   end
-  filebrowser.gameboy.graphics.set_bw_palette(unpack(palettes[palette_index]))
+  filebrowser.gameboy.graphics.palette.set_dmg_colors(unpack(palettes[palette_index]))
 end
 
 local dango_index = 0
