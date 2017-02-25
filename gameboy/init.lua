@@ -11,7 +11,7 @@ Gameboy.interrupts = require("gameboy/interrupts")
 Gameboy.io = require("gameboy/io")
 Gameboy.memory = require("gameboy/memory")
 Gameboy.timers = require("gameboy/timers")
-Gameboy.z80 = require("gameboy/z80")
+Gameboy.processor = require("gameboy/z80")
 
 function Gameboy:initialize()
   self.audio.initialize()
@@ -40,7 +40,7 @@ function Gameboy:reset()
   self.cartridge.reset()
   self.graphics.reset() -- Note to self: this needs to come AFTER resetting IO
   self.timers.reset()
-  self.z80.reset(self)
+  self.processor.reset(self)
 
   self.interrupts.enabled = 1
 end
@@ -53,7 +53,7 @@ function Gameboy:save_state()
   state.cartridge = self.cartridge.save_state()
   state.graphics = self.graphics.save_state()
   state.timers = self.timers.save_state()
-  state.z80 = self.z80.save_state()
+  state.processor = self.processor.save_state()
 
   -- Note: the underscore
   state.interrupts_enabled = self.interrupts.enabled
@@ -67,7 +67,7 @@ function Gameboy:load_state(state)
   self.cartridge.load_state(state.cartridge)
   self.graphics.load_state(state.graphics)
   self.timers.load_state(state.timers)
-  self.z80.load_state(state.z80)
+  self.processor.load_state(state.processor)
 
   -- Note: the underscore
   self.interrupts.enabled = state.interrupts_enabled
@@ -76,7 +76,7 @@ end
 function Gameboy:step()
   self.timers.update()
   self.graphics.update()
-  self.z80.process_instruction()
+  self.processor.process_instruction()
   return
 end
 
@@ -109,11 +109,11 @@ local rst_opcodes = {[0xC7]=true, [0xCF]=true, [0xD7]=true, [0xDF]=true, [0xE7]=
 function Gameboy:step_over()
   -- Make sure the *current* opcode is a CALL / RST
   local instructions = 0
-  local pc = self.z80.registers.pc
+  local pc = self.processor.registers.pc
   local opcode = self.memory[pc]
   if call_opcodes[opcode] then
     local return_address = bit32.band(pc + 3, 0xFFFF)
-    while self.z80.registers.pc ~= return_address and instructions < 10000000 do
+    while self.processor.registers.pc ~= return_address and instructions < 10000000 do
       self:step()
       instructions = instructions + 1
     end
@@ -121,7 +121,7 @@ function Gameboy:step_over()
   end
   if rst_opcodes[opcode] then
     local return_address = bit32.band(pc + 1, 0xFFFF)
-    while self.z80.registers.pc ~= return_address and instructions < 10000000 do
+    while self.processor.registers.pc ~= return_address and instructions < 10000000 do
       self:step()
       instructions = instructions + 1
     end
@@ -134,7 +134,7 @@ local ret_opcodes = {[0xC9]=true, [0xC0]=true, [0xD0]=true, [0xC8]=true, [0xD8]=
 
 function Gameboy:run_until_ret()
   local instructions = 0
-  while ret_opcodes[self.memory[self.z80.registers.pc]] ~= true and instructions < 10000000 do
+  while ret_opcodes[self.memory[self.processor.registers.pc]] ~= true and instructions < 10000000 do
     self:step()
     instructions = instructions + 1
   end
@@ -156,6 +156,7 @@ Gameboy.new = function(overrides)
   end
 
   new_gameboy.audio = new_gameboy.audio.new(new_gameboy)
+  new_gameboy.processor = new_gameboy.processor.new(new_gameboy)
 
   new_gameboy:initialize()
 

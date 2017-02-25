@@ -1,9 +1,5 @@
 local bit32 = require("bit")
 
---local io = require("gameboy/io")
---local timers = require("gameboy/timers")
---local ports = io.ports
-
 local Audio = {}
 
 function Audio.new(modules)
