@@ -226,7 +226,7 @@ function love.load(args)
 
   resize_window()
   gameboy.audio.on_buffer_full(play_gameboy_audio)
-  love.audio.setVolume(0.1)
+  --love.audio.setVolume(1)
 end
 
 function print_instructions()
