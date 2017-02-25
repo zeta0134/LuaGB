@@ -58,7 +58,7 @@ end
 
 disassembler.print_opcodes = function(gameboy)
   local y = 30
-  local pc = gameboy.z80.registers.pc
+  local pc = gameboy.processor.registers.pc
   local darken_rows = 0
   for i = 1, math.floor(700 / 20) do
     local name, data_values = opcode_string(gameboy.memory[pc], gameboy.memory[pc + 1], gameboy.memory[pc + 2])

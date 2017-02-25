@@ -20,12 +20,12 @@ end
 
 registers.print_registers = function(gameboy, x, y)
   local function get_register(name)
-    return function() return gameboy.z80.registers[name] end
+    return function() return gameboy.processor.registers[name] end
   end
 
   local registers = {
     {255, 255, 64, "A", get_register("a"), 0, 0},
-    {64, 128, 64, "F", gameboy.z80.registers.f, 1, 0},
+    {64, 128, 64, "F", gameboy.processor.registers.f, 1, 0},
     {108, 108, 255, "B", get_register("b"), 0, 1},
     {152, 80, 32, "C", get_register("c"), 1, 1},
     {192, 128, 64, "D", get_register("d"), 0, 2},
@@ -56,7 +56,7 @@ registers.print_wide_registers = function(gameboy, x, y)
   for _, register in ipairs(wide_registers) do
     local r, g, b = register[1], register[2], register[3]
     local name, accessor = register[4], register[5]
-    local value = gameboy.z80.registers[accessor]()
+    local value = gameboy.processor.registers[accessor]()
     local indirect_value = gameboy.memory.read_byte(value)
 
     love.graphics.setColor(r, g, b)
@@ -67,7 +67,7 @@ registers.print_wide_registers = function(gameboy, x, y)
 end
 
 registers.print_flags = function(gameboy, x, y)
-  local function flag_string(flag) return gameboy.z80.registers.flags[flag] == 1 and flag or "" end
+  local function flag_string(flag) return gameboy.processor.registers.flags[flag] == 1 and flag or "" end
   love.graphics.setColor(192, 192, 192)
   love.graphics.print(string.format("Flags: [%1s %1s %1s %1s]", flag_string("c"), flag_string("n"), flag_string("h"), flag_string("z")), x, y)
   love.graphics.setColor(255, 255, 255)
@@ -83,7 +83,7 @@ registers.print_pointer_registers = function(gameboy, x, y)
   for _, register in ipairs(pointer_registers) do
     local r, g, b = register[1], register[2], register[3]
     local name, accessor = register[4], register[5]
-    local value = gameboy.z80.registers[accessor]
+    local value = gameboy.processor.registers[accessor]
 
     love.graphics.setColor(r, g, b)
     love.graphics.print(string.format("%s: %04X (%s): %02X %02X %02X %02X", name, value, name,
@@ -110,7 +110,7 @@ registers.print_status_block = function(gameboy, x, y)
   end
 
   love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X",
-    gameboy.z80.halted,
+    gameboy.processor.halted,
     gameboy.interrupts.enabled,
     gameboy.memory.read_byte(0xFFFF),
     gameboy.memory.read_byte(0xFF0F)), x, y + vertical_spacing)
