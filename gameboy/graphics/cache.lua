@@ -30,13 +30,21 @@ cache.reset = function()
       cache.map_0_attr[x][y] = {}
       cache.map_1_attr[x][y] = {}
 
-      cache.map_0_attr[x][y].palette = cache.graphics.palette.color_bg[0]
+      if cache.graphics.gameboy.type == cache.graphics.gameboy.types.color then
+        cache.map_0_attr[x][y].palette = cache.graphics.palette.color_bg[0]
+      else
+        cache.map_0_attr[x][y].palette = cache.graphics.palette.bg
+      end
       cache.map_0_attr[x][y].bank = 0
       cache.map_0_attr[x][y].horizontal_flip = false
       cache.map_0_attr[x][y].vertical_flip = false
       cache.map_0_attr[x][y].priority = false
 
-      cache.map_1_attr[x][y].palette = cache.graphics.palette.color_bg[0]
+      if cache.graphics.gameboy.type == cache.graphics.gameboy.types.color then
+        cache.map_1_attr[x][y].palette = cache.graphics.palette.color_bg[0]
+      else
+        cache.map_1_attr[x][y].palette = cache.graphics.palette.bg
+      end
       cache.map_1_attr[x][y].bank = 0
       cache.map_1_attr[x][y].horizontal_flip = false
       cache.map_1_attr[x][y].vertical_flip = false
@@ -48,7 +56,11 @@ end
 cache.refreshAttributes = function(map_attr, x, y, address)
   local data = cache.graphics.vram[address + (16 * 1024)]
   --map_attr[x][y].palette = bit32.band(data, 0x07)
-  map_attr[x][y].palette = cache.graphics.palette.color_bg[bit32.band(data, 0x07)]
+  if cache.graphics.gameboy.type == cache.graphics.gameboy.types.color then
+    map_attr[x][y].palette = cache.graphics.palette.color_bg[bit32.band(data, 0x07)]
+  else
+    map_attr[x][y].palette = cache.gameboy.palette.bg
+  end
   map_attr[x][y].bank = bit32.rshift(bit32.band(data, 0x08), 3)
   map_attr[x][y].horizontal_flip = bit32.rshift(bit32.band(data, 0x20), 5) ~= 0
   map_attr[x][y].vertical_flip = bit32.rshift(bit32.band(data, 0x40), 6) ~= 0

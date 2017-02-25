@@ -16,6 +16,7 @@ gameboy.z80 = require("gameboy/z80")
 gameboy.initialize = function()
   gameboy.audio.initialize()
   gameboy.graphics.initialize(gameboy)
+  gameboy.cartridge.initialize(gameboy)
 
   gameboy.reset()
 end

@@ -34,6 +34,10 @@ mbc_mappings[0x1C] = {mbc=mbc5, options={rumble_pak=true}}
 mbc_mappings[0x1D] = {mbc=mbc5, options={rumble_pak=true}}
 mbc_mappings[0x1E] = {mbc=mbc5, options={rumble_pak=true}}
 
+cartridge.initialize = function(gameboy)
+  cartridge.gameboy = gameboy
+end
+
 cartridge.load = function(file_data, size)
   print("Reading cartridge into memory...")
   cartridge.raw_data = {}
@@ -65,12 +69,20 @@ cartridge.load = function(file_data, size)
     memory.map_block(0xA0, 0xBF, MBC, 0x0000)
   end
 
+  -- select a gameboy type based on the cart header
+  if cartridge.header.color then
+    cartridge.gameboy.type = cartridge.gameboy.types.color
+  else
+    cartridge.gameboy.type = cartridge.gameboy.types.dmg
+  end
+
   -- Add a guard to cartridge.raw_data, such that any out-of-bounds reads return 0x00
   cartridge.raw_data.mt = {}
   cartridge.raw_data.mt.__index = function(table, address)
     -- Data doesn't exist? Tough luck; return 0x00
     return 0x00
   end
+
   setmetatable(cartridge.raw_data, cartridge.raw_data.mt)
 end
 

@@ -171,6 +171,7 @@ local function load_game(game_path)
   if file_data then
     gameboy.cartridge.load(file_data, size)
     load_ram()
+    gameboy.reset()
   else
     print("Couldn't open ", game_path, " bailing.")
     love.event.quit()
