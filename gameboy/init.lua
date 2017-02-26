@@ -156,6 +156,7 @@ Gameboy.new = function(overrides)
   end
 
   new_gameboy.audio = new_gameboy.audio.new(new_gameboy)
+  new_gameboy.dma = new_gameboy.dma.new(new_gameboy)
   new_gameboy.processor = new_gameboy.processor.new(new_gameboy)
 
   new_gameboy:initialize()
