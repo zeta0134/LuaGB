@@ -1,86 +1,92 @@
 local bit32 = require("bit")
-local io = require("gameboy/io")
-local cache = require("gameboy/graphics/cache")
-local ports = io.ports
 
-local registers = {}
+local Registers = {}
 
-registers.display_enabled = true
-registers.window_tilemap = cache.map_0
-registers.window_attr = cache.map_0_attr
-registers.window_enabled = true
-registers.tile_select = 0x9000
-registers.background_tilemap = cache.map_0
-registers.background_attr = cache.map_0_attr
-registers.large_sprites = false
-registers.sprites_enabled = true
-registers.background_enabled = true
+function Registers.new(modules, cache)
+  local io = modules.io
+  local ports = io.ports
 
-io.write_logic[ports.LCDC] = function(byte)
-  io.ram[ports.LCDC] = byte
+  local registers = {}
 
-  -- Unpack all the bit flags into lua variables, for great sanity
-  registers.display_enabled = bit32.band(0x80, byte) ~= 0
-  registers.window_enabled  = bit32.band(0x20, byte) ~= 0
-  registers.large_sprites   = bit32.band(0x04, byte) ~= 0
-  registers.sprites_enabled = bit32.band(0x02, byte) ~= 0
-  registers.background_enabled      = bit32.band(0x01, byte) ~= 0
+  registers.display_enabled = true
+  registers.window_tilemap = cache.map_0
+  registers.window_attr = cache.map_0_attr
+  registers.window_enabled = true
+  registers.tile_select = 0x9000
+  registers.background_tilemap = cache.map_0
+  registers.background_attr = cache.map_0_attr
+  registers.large_sprites = false
+  registers.sprites_enabled = true
+  registers.background_enabled = true
 
-  if bit32.band(0x40, byte) ~= 0 then
-    registers.window_tilemap = cache.map_1
-    registers.window_attr = cache.map_1_attr
-  else
-    registers.window_tilemap = cache.map_0
-    registers.window_attr = cache.map_0_attr
-  end
+  io.write_logic[ports.LCDC] = function(byte)
+    io.ram[ports.LCDC] = byte
 
-  if bit32.band(0x10, byte) ~= 0 then
-    if registers.tile_select == 0x9000 then
-      -- refresh our tile indices, they'll all need recalculating for the new offset
-      registers.tile_select = 0x8000
-      cache.refreshTileMaps()
+    -- Unpack all the bit flags into lua variables, for great sanity
+    registers.display_enabled = bit32.band(0x80, byte) ~= 0
+    registers.window_enabled  = bit32.band(0x20, byte) ~= 0
+    registers.large_sprites   = bit32.band(0x04, byte) ~= 0
+    registers.sprites_enabled = bit32.band(0x02, byte) ~= 0
+    registers.background_enabled      = bit32.band(0x01, byte) ~= 0
+
+    if bit32.band(0x40, byte) ~= 0 then
+      registers.window_tilemap = cache.map_1
+      registers.window_attr = cache.map_1_attr
+    else
+      registers.window_tilemap = cache.map_0
+      registers.window_attr = cache.map_0_attr
     end
-  else
-    if registers.tile_select == 0x8000 then
-      -- refresh our tile indices, they'll all need recalculating for the new offset
-      registers.tile_select = 0x9000
-      cache.refreshTileMaps()
+
+    if bit32.band(0x10, byte) ~= 0 then
+      if registers.tile_select == 0x9000 then
+        -- refresh our tile indices, they'll all need recalculating for the new offset
+        registers.tile_select = 0x8000
+        cache.refreshTileMaps()
+      end
+    else
+      if registers.tile_select == 0x8000 then
+        -- refresh our tile indices, they'll all need recalculating for the new offset
+        registers.tile_select = 0x9000
+        cache.refreshTileMaps()
+      end
+    end
+
+    if bit32.band(0x08, byte) ~= 0 then
+      registers.background_tilemap = cache.map_1
+      registers.background_attr = cache.map_1_attr
+    else
+      registers.background_tilemap = cache.map_0
+      registers.background_attr = cache.map_0_attr
     end
   end
 
-  if bit32.band(0x08, byte) ~= 0 then
-    registers.background_tilemap = cache.map_1
-    registers.background_attr = cache.map_1_attr
-  else
-    registers.background_tilemap = cache.map_0
-    registers.background_attr = cache.map_0_attr
+  local Status = {}
+  registers.Status = Status
+  Status.Coincidence_InterruptEnabled = function()
+    return bit32.band(0x20, io.ram[ports.STAT]) ~= 0
   end
+
+  Status.OAM_InterruptEnabled = function()
+    return bit32.band(0x10, io.ram[ports.STAT]) ~= 0
+  end
+
+  Status.VBlank_InterruptEnabled = function()
+    return bit32.band(0x08, io.ram[ports.STAT]) ~= 0
+  end
+
+  Status.HBlank_InterruptEnabled = function()
+    return bit32.band(0x06, io.ram[ports.STAT]) ~= 0
+  end
+
+  Status.Mode = function()
+    return bit32.band(0x03, io.ram[ports.STAT])
+  end
+
+  Status.SetMode = function(mode)
+    io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xFC) + bit32.band(mode, 0x3)
+  end
+
+  return registers
 end
 
-local Status = {}
-registers.Status = Status
-Status.Coincidence_InterruptEnabled = function()
-  return bit32.band(0x20, io.ram[ports.STAT]) ~= 0
-end
-
-Status.OAM_InterruptEnabled = function()
-  return bit32.band(0x10, io.ram[ports.STAT]) ~= 0
-end
-
-Status.VBlank_InterruptEnabled = function()
-  return bit32.band(0x08, io.ram[ports.STAT]) ~= 0
-end
-
-Status.HBlank_InterruptEnabled = function()
-  return bit32.band(0x06, io.ram[ports.STAT]) ~= 0
-end
-
-Status.Mode = function()
-  return bit32.band(0x03, io.ram[ports.STAT])
-end
-
-Status.SetMode = function(mode)
-  io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xFC) + bit32.band(mode, 0x3)
-end
-
-return registers
+return Registers
