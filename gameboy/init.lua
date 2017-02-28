@@ -155,6 +155,10 @@ Gameboy.new = function(overrides)
     end
   end
 
+  new_gameboy.interrupts = new_gameboy.interrupts.new(new_gameboy)
+
+  new_gameboy.timers = new_gameboy.timers.new(new_gameboy)
+
   new_gameboy.audio = new_gameboy.audio.new(new_gameboy)
   new_gameboy.cartridge = new_gameboy.cartridge.new(new_gameboy)
   new_gameboy.dma = new_gameboy.dma.new(new_gameboy)
