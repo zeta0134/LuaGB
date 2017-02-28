@@ -12,6 +12,7 @@ function Cartridge.new(modules)
   local cartridge = {}
 
   local io = modules.io
+  local memory = modules.memory
   local ports = io.ports
 
   local mbc_none = MbcNone.new()
