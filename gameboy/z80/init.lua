@@ -1,5 +1,7 @@
 local bit32 = require("bit")
 
+local apply_ld = require("gameboy/z80/ld")
+
 local Z80 = {}
 
 function Z80.new(modules)
@@ -179,107 +181,30 @@ function Z80.new(modules)
   local opcodes = {}
   local opcode_names = {}
 
-  function read_at_hl()
+  function z80.read_at_hl()
     add_cycles(4)
     return read_byte(reg.hl())
   end
 
-  function set_at_hl(value)
+  function z80.set_at_hl(value)
     add_cycles(4)
     write_byte(reg.hl(), value)
   end
 
   -- ====== GMB 8-bit load commands ======
 
-  -- ld r, r
-  opcodes[0x40] = function() reg.b = reg.b end
-  opcodes[0x41] = function() reg.b = reg.c end
-  opcodes[0x42] = function() reg.b = reg.d end
-  opcodes[0x43] = function() reg.b = reg.e end
-  opcodes[0x44] = function() reg.b = reg.h end
-  opcodes[0x45] = function() reg.b = reg.l end
-  opcodes[0x46] = function() reg.b = read_at_hl() end
-  opcodes[0x47] = function() reg.b = reg.a end
-
-  opcodes[0x48] = function() reg.c = reg.b end
-  opcodes[0x49] = function() reg.c = reg.c end
-  opcodes[0x4A] = function() reg.c = reg.d end
-  opcodes[0x4B] = function() reg.c = reg.e end
-  opcodes[0x4C] = function() reg.c = reg.h end
-  opcodes[0x4D] = function() reg.c = reg.l end
-  opcodes[0x4E] = function() reg.c = read_at_hl() end
-  opcodes[0x4F] = function() reg.c = reg.a end
-
-  opcodes[0x50] = function() reg.d = reg.b end
-  opcodes[0x51] = function() reg.d = reg.c end
-  opcodes[0x52] = function() reg.d = reg.d end
-  opcodes[0x53] = function() reg.d = reg.e end
-  opcodes[0x54] = function() reg.d = reg.h end
-  opcodes[0x55] = function() reg.d = reg.l end
-  opcodes[0x56] = function() reg.d = read_at_hl() end
-  opcodes[0x57] = function() reg.d = reg.a end
-
-  opcodes[0x58] = function() reg.e = reg.b end
-  opcodes[0x59] = function() reg.e = reg.c end
-  opcodes[0x5A] = function() reg.e = reg.d end
-  opcodes[0x5B] = function() reg.e = reg.e end
-  opcodes[0x5C] = function() reg.e = reg.h end
-  opcodes[0x5D] = function() reg.e = reg.l end
-  opcodes[0x5E] = function() reg.e = read_at_hl() end
-  opcodes[0x5F] = function() reg.e = reg.a end
-
-  opcodes[0x60] = function() reg.h = reg.b end
-  opcodes[0x61] = function() reg.h = reg.c end
-  opcodes[0x62] = function() reg.h = reg.d end
-  opcodes[0x63] = function() reg.h = reg.e end
-  opcodes[0x64] = function() reg.h = reg.h end
-  opcodes[0x65] = function() reg.h = reg.l end
-  opcodes[0x66] = function() reg.h = read_at_hl() end
-  opcodes[0x67] = function() reg.h = reg.a end
-
-  opcodes[0x68] = function() reg.l = reg.b end
-  opcodes[0x69] = function() reg.l = reg.c end
-  opcodes[0x6A] = function() reg.l = reg.d end
-  opcodes[0x6B] = function() reg.l = reg.e end
-  opcodes[0x6C] = function() reg.l = reg.h end
-  opcodes[0x6D] = function() reg.l = reg.l end
-  opcodes[0x6E] = function() reg.l = read_at_hl() end
-  opcodes[0x6F] = function() reg.l = reg.a end
-
-  opcodes[0x70] = function() set_at_hl(reg.b) end
-  opcodes[0x71] = function() set_at_hl(reg.c) end
-  opcodes[0x72] = function() set_at_hl(reg.d) end
-  opcodes[0x73] = function() set_at_hl(reg.e) end
-  opcodes[0x74] = function() set_at_hl(reg.h) end
-  opcodes[0x75] = function() set_at_hl(reg.l) end
-  -- 0x76 is HALT, we implement that later
-  opcodes[0x77] = function() set_at_hl(reg.a) end
-
-  opcodes[0x78] = function() reg.a = reg.b end
-  opcodes[0x79] = function() reg.a = reg.c end
-  opcodes[0x7A] = function() reg.a = reg.d end
-  opcodes[0x7B] = function() reg.a = reg.e end
-  opcodes[0x7C] = function() reg.a = reg.h end
-  opcodes[0x7D] = function() reg.a = reg.l end
-  opcodes[0x7E] = function() reg.a = read_at_hl() end
-  opcodes[0x7F] = function() reg.a = reg.a end
-
-  function read_nn()
+  function z80.read_nn()
     local nn = read_byte(reg.pc)
     reg.pc = reg.pc + 1
     add_cycles(4)
     return nn
   end
 
-  -- ld r, n
-  opcodes[0x06] = function() reg.b = read_nn() end
-  opcodes[0x0E] = function() reg.c = read_nn() end
-  opcodes[0x16] = function() reg.d = read_nn() end
-  opcodes[0x1E] = function() reg.e = read_nn() end
-  opcodes[0x26] = function() reg.h = read_nn() end
-  opcodes[0x2E] = function() reg.l = read_nn() end
-  opcodes[0x36] = function() set_at_hl(read_nn()) end
-  opcodes[0x3E] = function() reg.a = read_nn() end
+  local read_at_hl = z80.read_at_hl
+  local set_at_hl = z80.set_at_hl
+  local read_nn = z80.read_nn
+
+  apply_ld(opcodes, z80)
 
   -- ld A, (xx)
   opcodes[0x0A] = function()
@@ -707,7 +632,6 @@ function Z80.new(modules)
 
   cp_with_a = function(value)
     -- half-carry
-    --if band(reg.a, 0xF) - band(value, 0xF) < 0 then
     if (reg.a % 0x10) - (value % 0x10) < 0 then
       reg.flags.h = 1
     else
@@ -718,7 +642,6 @@ function Z80.new(modules)
 
     -- carry (and overflow correction)
     if temp < 0 or temp > 0xFF then
-      --temp  = band(temp, 0xFF)
       temp  = (temp + 0x100) % 0x100
       reg.flags.c = 1
     else
