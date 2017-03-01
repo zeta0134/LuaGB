@@ -1466,13 +1466,14 @@ function Z80.new(modules)
 
   call_nnnn = function()
     local lower = read_nn()
-    local upper = lshift(read_nn(), 8)
+    local upper = read_nn() * 256
     -- at this point, reg.pc points at the next instruction after the call,
     -- so store the current PC to the stack
-    reg.sp = band(0xFFFF, reg.sp - 1)
-    write_byte(reg.sp, rshift(band(reg.pc, 0xFF00), 8))
-    reg.sp = band(0xFFFF, reg.sp - 1)
-    write_byte(reg.sp, band(reg.pc, 0xFF))
+
+    reg.sp = (reg.sp + 0xFFFF) % 0x10000
+    write_byte(reg.sp, rshift(reg.pc, 8))
+    reg.sp = (reg.sp + 0xFFFF) % 0x10000
+    write_byte(reg.sp, reg.pc % 0x100)
 
     reg.pc = upper + lower
   end
