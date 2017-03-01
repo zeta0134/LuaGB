@@ -754,7 +754,7 @@ function Z80.new(modules)
     end
 
     -- half-carry
-    if band(value, 0xF) == 0x0 then
+    if value % 0x10 == 0x0 then
       reg.flags.h = 1
     else
       reg.flags.h = 0
@@ -772,7 +772,7 @@ function Z80.new(modules)
     end
 
     -- half-carry
-    if band(value, 0xF) == 0xF then
+    if value % 0x10 == 0xF then
       reg.flags.h = 1
     else
       reg.flags.h = 0
