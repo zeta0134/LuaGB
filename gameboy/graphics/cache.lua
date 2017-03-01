@@ -6,6 +6,7 @@ function Cache.new()
   local cache = {}
 
   cache.tiles = {}
+  cache.tiles_h_flipped = {}
   cache.map_0 = {}
   cache.map_1 = {}
   cache.map_0_attr = {}
@@ -14,10 +15,13 @@ function Cache.new()
   cache.reset = function()
     for i = 0, 768 - 1 do
       cache.tiles[i] = {}
+      cache.tiles_h_flipped[i] = {}
       for x = 0, 7 do
         cache.tiles[i][x] = {}
+        cache.tiles_h_flipped[i][x] = {}
         for y = 0, 7 do
           cache.tiles[i][x][y] = 0
+          cache.tiles_h_flipped[i][x][y] = 0
         end
       end
     end
@@ -28,8 +32,8 @@ function Cache.new()
       cache.map_0_attr[x] = {}
       cache.map_1_attr[x] = {}
       for y = 0, 31 do
-        cache.map_0[x][y] = 0
-        cache.map_1[x][y] = 0
+        cache.map_0[x][y] = cache.tiles[0]
+        cache.map_1[x][y] = cache.tiles[0]
         cache.map_0_attr[x][y] = {}
         cache.map_1_attr[x][y] = {}
 
@@ -81,6 +85,7 @@ function Cache.new()
     for x = 0, 7 do
       local palette_index = bit32.band(bit32.rshift(lower_bits, 7 - x), 0x1) + (bit32.band(bit32.rshift(upper_bits, 7 - x), 0x1) * 2)
       cache.tiles[tile_index][x][y] = palette_index
+      cache.tiles_h_flipped[tile_index][7 - x][y] = palette_index
     end
   end
 
@@ -103,7 +108,11 @@ function Cache.new()
     if attr[x][y].bank == 1 then
       tile_index = tile_index + 384
     end
-    map[x][y] = tile_index
+    if attr[x][y].horizontal_flip then
+      map[x][y] = cache.tiles_h_flipped[tile_index]
+    else
+      map[x][y] = cache.tiles[tile_index]
+    end
   end
 
   cache.refreshTileMap = function(address, map, attr)

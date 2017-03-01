@@ -259,9 +259,7 @@ function Graphics.new(modules)
   -- VRAM Read: Neither VRAM, OAM, nor CGB palettes can be read
   handle_mode[3] = function()
     local duration = timers.system_clock - graphics.last_edge
-    while scanline_data.x < duration and scanline_data.x < 160 do
-      graphics.draw_next_pixel()
-    end
+    graphics.draw_next_pixels(duration)
     if timers.system_clock - graphics.last_edge > 172 then
       graphics.last_edge = graphics.last_edge + 172
       graphics.draw_sprites_into_scanline(io.ram[ports.LY], scanline_data.bg_index)
@@ -295,12 +293,6 @@ function Graphics.new(modules)
     frame_data.window_y = io.ram[ports.WY]
   end
 
-  graphics.set_active_tile = function()
-    local tile_index = scanline_data.current_map[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
-    scanline_data.active_tile = graphics.cache.tiles[tile_index]
-    scanline_data.active_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
-  end
-
   graphics.initialize_scanline = function()
     scanline_data.x = 0
 
@@ -316,7 +308,8 @@ function Graphics.new(modules)
     scanline_data.current_map = graphics.registers.background_tilemap
     scanline_data.current_map_attr = graphics.registers.background_attr
 
-    graphics.set_active_tile()
+    scanline_data.active_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+    scanline_data.active_tile = scanline_data.current_map[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
   end
 
   graphics.switch_to_window = function()
@@ -331,56 +324,57 @@ function Graphics.new(modules)
       scanline_data.sub_x = (scanline_data.x - (io.ram[ports.WX] - 7)) % 8
       scanline_data.sub_y = (ly - io.ram[ports.WY]) % 8
 
-      graphics.set_active_tile()
+      scanline_data.active_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+      scanline_data.active_tile = scanline_data.current_map[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
     end
   end
 
-  graphics.draw_next_pixel = function()
+  graphics.draw_next_pixels = function(duration)
     local ly = io.ram[ports.LY]
-    if not scanline_data.window_active then
-      graphics.switch_to_window()
-    end
 
-    local bg_index = 0 --default, in case no background is enabled
-    if graphics.registers.background_enabled then
-      -- DRAW BG PIXEL HERE
-      local sub_x = scanline_data.sub_x
-      local sub_y = scanline_data.sub_y
-      if scanline_data.active_attr.horizontal_flip then
-        sub_x = 7 - sub_x
-      end
-      bg_index = scanline_data.active_tile[sub_x][sub_y]
-      --plot_pixel(graphics.game_screen, scanline_data.x, ly, unpack(graphics.palette.bg[bg_index]))
-      plot_pixel(graphics.game_screen, scanline_data.x, ly, unpack(scanline_data.active_attr.palette[bg_index]))
-    end
-
-    scanline_data.bg_index[scanline_data.x] = bg_index
-
-    --if graphics.registers.sprites_enabled then
-      -- DRAW OAM PIXEL HERE
-    --end
-
-    scanline_data.x = scanline_data.x  + 1
-    scanline_data.sub_x = scanline_data.sub_x  + 1
-    if scanline_data.sub_x > 7 then
-      -- fetch next tile
-      scanline_data.sub_x = 0
-      scanline_data.bg_tile_x = scanline_data.bg_tile_x + 1
-      if scanline_data.bg_tile_x >= 32 then
-        scanline_data.bg_tile_x = scanline_data.bg_tile_x - 32
-      end
-      scanline_data.sub_y = (ly + io.ram[ports.SCY]) % 8
-      scanline_data.bg_tile_y = math.floor((ly + io.ram[ports.SCY]) / 8)
-      if scanline_data.bg_tile_y >= 32 then
-        scanline_data.bg_tile_y = scanline_data.bg_tile_y - 32
+    while scanline_data.x < duration and scanline_data.x < 160 do
+      if not scanline_data.window_active then
+        graphics.switch_to_window()
       end
 
-      local tile_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
-      if tile_attr.vertical_flip then
-        scanline_data.sub_y = 7 - scanline_data.sub_y
+      local bg_index = 0 --default, in case no background is enabled
+      if graphics.registers.background_enabled then
+        -- DRAW BG PIXEL HERE
+        local sub_x = scanline_data.sub_x
+        local sub_y = scanline_data.sub_y
+        bg_index = scanline_data.active_tile[sub_x][sub_y]
+        plot_pixel(graphics.game_screen, scanline_data.x, ly, unpack(scanline_data.active_attr.palette[bg_index]))
       end
 
-      graphics.set_active_tile()
+      scanline_data.bg_index[scanline_data.x] = bg_index
+
+      --if graphics.registers.sprites_enabled then
+        -- DRAW OAM PIXEL HERE
+      --end
+
+      scanline_data.x = scanline_data.x  + 1
+      scanline_data.sub_x = scanline_data.sub_x  + 1
+      if scanline_data.sub_x > 7 then
+        -- fetch next tile
+        scanline_data.sub_x = 0
+        scanline_data.bg_tile_x = scanline_data.bg_tile_x + 1
+        if scanline_data.bg_tile_x >= 32 then
+          scanline_data.bg_tile_x = scanline_data.bg_tile_x - 32
+        end
+        scanline_data.sub_y = (ly + io.ram[ports.SCY]) % 8
+        scanline_data.bg_tile_y = math.floor((ly + io.ram[ports.SCY]) / 8)
+        if scanline_data.bg_tile_y >= 32 then
+          scanline_data.bg_tile_y = scanline_data.bg_tile_y - 32
+        end
+
+        local tile_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+        if tile_attr.vertical_flip then
+          scanline_data.sub_y = 7 - scanline_data.sub_y
+        end
+
+        scanline_data.active_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+        scanline_data.active_tile = scanline_data.current_map[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+      end
     end
   end
 
