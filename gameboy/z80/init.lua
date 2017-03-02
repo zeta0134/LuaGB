@@ -1312,7 +1312,7 @@ function Z80.new(modules)
     if offset > 127 then
       offset = offset - 256
     end
-    reg.pc = band(reg.pc + offset, 0xFFFF)
+    reg.pc = (reg.pc + offset) % 0x10000
   end
 
   -- jr nn
