@@ -1,7 +1,11 @@
 local bit32 = require("bit")
 
 local lshift = bit32.lshift
+local rshift = bit32.rshift
 local band = bit32.band
+local bxor = bit32.bxor
+local bor = bit32.bor
+local bnor = bit32.bnor
 
 function apply(opcodes, opcode_cycles, z80, memory)
   local read_at_hl = z80.read_at_hl
@@ -171,6 +175,145 @@ function apply(opcodes, opcode_cycles, z80, memory)
 
   -- sbc A, nn
   opcodes[0xDE] = function() sbc_from_a(read_nn()) end
+
+  -- daa
+  -- BCD adjustment, correct implementation details located here:
+  -- http://www.z80.info/z80syntx.htm#DAA
+  opcodes[0x27] = function()
+    local a = reg.a
+    if reg.flags.n == 0 then
+      -- Addition Mode, adjust BCD for previous addition-like instruction
+      if band(0xF, a) > 0x9 or reg.flags.h == 1 then
+        a = a + 0x6
+      end
+      if a > 0x9F or reg.flags.c == 1 then
+        a = a + 0x60
+      end
+    else
+      -- Subtraction mode! Adjust BCD for previous subtraction-like instruction
+      if reg.flags.h == 1 then
+        a = band(a - 0x6, 0xFF)
+      end
+      if reg.flags.c == 1 then
+        a = a - 0x60
+      end
+    end
+    -- Always reset H and Z
+    reg.flags.h = 0
+    reg.flags.z = 0
+
+    -- If a is greater than 0xFF, set the carry flag
+    if band(0x100, a) == 0x100 then
+      reg.flags.c = 1
+    end
+    reg.a = band(a, 0xFF)
+    -- Update zero flag based on A's contents
+    if reg.a == 0 then
+      reg.flags.z = 1
+    end
+  end
+
+  add_to_hl = function(value)
+    -- half carry
+    if band(reg.hl(), 0xFFF) + band(value, 0xFFF) > 0xFFF then
+      reg.flags.h = 1
+    else
+      reg.flags.h = 0
+    end
+
+    local sum = reg.hl() + value
+
+    -- carry
+    if sum > 0xFFFF or sum < 0x0000 then
+      reg.flags.c = 1
+    else
+      reg.flags.c = 0
+    end
+    reg.set_hl(band(sum, 0xFFFF))
+    reg.flags.n = 0
+  end
+
+  -- add HL, rr
+  opcode_cycles[0x09] = 8
+  opcode_cycles[0x19] = 8
+  opcode_cycles[0x29] = 8
+  opcode_cycles[0x39] = 8
+  opcodes[0x09] = function() add_to_hl(reg.bc()) end
+  opcodes[0x19] = function() add_to_hl(reg.de()) end
+  opcodes[0x29] = function() add_to_hl(reg.hl()) end
+  opcodes[0x39] = function() add_to_hl(reg.sp) end
+
+  -- inc rr
+  opcode_cycles[0x03] = 8
+  opcodes[0x03] = function()
+    reg.set_bc(band(reg.bc() + 1, 0xFFFF))
+  end
+
+  opcode_cycles[0x13] = 8
+  opcodes[0x13] = function()
+    reg.set_de(band(reg.de() + 1, 0xFFFF))
+  end
+
+  opcode_cycles[0x23] = 8
+  opcodes[0x23] = function()
+    reg.set_hl(band(reg.hl() + 1, 0xFFFF))
+  end
+
+  opcode_cycles[0x33] = 8
+  opcodes[0x33] = function()
+    reg.sp = band(reg.sp + 1, 0xFFFF)
+  end
+
+  -- dec rr
+  opcode_cycles[0x0B] = 8
+  opcodes[0x0B] = function()
+    reg.set_bc(band(reg.bc() - 1, 0xFFFF))
+  end
+
+  opcode_cycles[0x1B] = 8
+  opcodes[0x1B] = function()
+    reg.set_de(band(reg.de() - 1, 0xFFFF))
+  end
+
+  opcode_cycles[0x2B] = 8
+  opcodes[0x2B] = function()
+    reg.set_hl(band(reg.hl() - 1, 0xFFFF))
+  end
+
+  opcode_cycles[0x3B] = 8
+  opcodes[0x3B] = function()
+    reg.sp = band(reg.sp - 1, 0xFFFF)
+  end
+
+  -- add SP, dd
+  opcode_cycles[0xE8] = 12
+  opcodes[0xE8] = function()
+    local offset = read_nn()
+    -- offset comes in as unsigned 0-255, so convert it to signed -128 - 127
+    if band(offset, 0x80) ~= 0 then
+      offset = offset + 0xFF00
+    end
+
+    -- half carry
+    --if band(reg.sp, 0xFFF) + offset > 0xFFF or band(reg.sp, 0xFFF) + offset < 0 then
+    if band(reg.sp, 0xF) + band(offset, 0xF) > 0xF then
+      reg.flags.h = 1
+    else
+      reg.flags.h = 0
+    end
+    -- carry
+    if band(reg.sp, 0xFF) + band(offset, 0xFF) > 0xFF then
+      reg.flags.c = 1
+    else
+      reg.flags.c = 0
+    end
+
+    reg.sp = reg.sp + offset
+    reg.sp = band(reg.sp, 0xFFFF)
+
+    reg.flags.z = 0
+    reg.flags.n = 0
+  end
 end
 
 return apply

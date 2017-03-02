@@ -211,6 +211,16 @@ function apply(opcodes, opcode_cycles, z80, memory)
     reg.sp = reg.hl()
   end
 
+  -- ld HL, SP + dd
+  opcode_cycles[0xF8] = 8
+  opcodes[0xF8] = function()
+    -- cheat
+    local old_sp = reg.sp
+    opcodes[0xE8]()
+    reg.set_hl(reg.sp)
+    reg.sp = old_sp
+  end
+
   --local hl_opcodes = {0x46, 0x4E, 0x56, 0x5E, 0x66, 0x6E, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x77, 0x7E}
   --for _, opcode in pairs(hl_opcodes) do
   --  opcode_cycles[opcode] = opcode_cycles[opcode] + 4
