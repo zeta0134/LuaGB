@@ -1,8 +1,20 @@
-function apply(opcodes, z80)
+local bit32 = require("bit")
+
+local lshift = bit32.lshift
+local rshift = bit32.rshift
+local band = bit32.band
+local bxor = bit32.bxor
+local bor = bit32.bor
+local bnot = bit32.bnot
+
+function apply(opcodes, opcode_cycles, z80, memory)
   local read_at_hl = z80.read_at_hl
   local set_at_hl = z80.set_at_hl
   local read_nn = z80.read_nn
   local reg = z80.registers
+
+  local read_byte = memory.read_byte
+  local write_byte = memory.write_byte
 
   -- ld r, r
   opcodes[0x40] = function() reg.b = reg.b end
@@ -86,6 +98,47 @@ function apply(opcodes, z80)
   opcodes[0x2E] = function() reg.l = read_nn() end
   opcodes[0x36] = function() set_at_hl(read_nn()) end
   opcodes[0x3E] = function() reg.a = read_nn() end
+
+  -- ld A, (xx)
+  opcode_cycles[0x0A] = 8
+  opcodes[0x0A] = function()
+    reg.a = read_byte(reg.bc())
+  end
+
+  opcode_cycles[0x1A] = 8
+  opcodes[0x1A] = function()
+    reg.a = read_byte(reg.de())
+  end
+
+  opcode_cycles[0xFA] = 8
+  opcodes[0xFA] = function()
+    local lower = read_nn()
+    local upper = lshift(read_nn(), 8)
+    reg.a = read_byte(upper + lower)
+  end
+
+  -- ld (xx), A
+  opcode_cycles[0x02] = 8
+  opcodes[0x02] = function()
+    write_byte(reg.bc(), reg.a)
+  end
+
+  opcode_cycles[0x12] = 8
+  opcodes[0x12] = function()
+    write_byte(reg.de(), reg.a)
+  end
+
+  opcode_cycles[0xEA] = 8
+  opcodes[0xEA] = function()
+    local lower = read_nn()
+    local upper = lshift(read_nn(), 8)
+    write_byte(upper + lower, reg.a)
+  end
+
+  --local hl_opcodes = {0x46, 0x4E, 0x56, 0x5E, 0x66, 0x6E, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x77, 0x7E}
+  --for _, opcode in pairs(hl_opcodes) do
+  --  opcode_cycles[opcode] = opcode_cycles[opcode] + 4
+  --end
 end
 
 return apply

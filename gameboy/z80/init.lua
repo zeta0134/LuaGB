@@ -1,5 +1,12 @@
 local bit32 = require("bit")
 
+local lshift = bit32.lshift
+local rshift = bit32.rshift
+local band = bit32.band
+local bxor = bit32.bxor
+local bor = bit32.bor
+local bnot = bit32.bnot
+
 local apply_ld = require("gameboy/z80/ld")
 
 local Z80 = {}
@@ -16,13 +23,6 @@ function Z80.new(modules)
   local read_byte = memory.read_byte
   local write_byte = memory.write_byte
 
-  local lshift = bit32.lshift
-  local rshift = bit32.rshift
-  local band = bit32.band
-  local bxor = bit32.bxor
-  local bor = bit32.bor
-  local bnot = bit32.bnot
-
   -- Initialize registers to what the GB's
   -- iternal state would be after executing
   -- BIOS code
@@ -32,6 +32,7 @@ function Z80.new(modules)
   -- reasonable compromise.
   z80.registers = {}
   local reg = z80.registers
+
   reg.a = 0
   reg.b = 0
   reg.c = 0
@@ -179,7 +180,14 @@ function Z80.new(modules)
   end
 
   local opcodes = {}
+  local opcode_cycles = {}
   local opcode_names = {}
+
+  -- Initialize the opcode_cycles table with 4 as a base cycle, so we only
+  -- need to care about variations going forward
+  for i = 0x00, 0xFF do
+    opcode_cycles[i] = 4
+  end
 
   function z80.read_at_hl()
     add_cycles(4)
@@ -204,43 +212,7 @@ function Z80.new(modules)
   local set_at_hl = z80.set_at_hl
   local read_nn = z80.read_nn
 
-  apply_ld(opcodes, z80)
-
-  -- ld A, (xx)
-  opcodes[0x0A] = function()
-    reg.a = read_byte(reg.bc())
-    add_cycles(4)
-  end
-
-  opcodes[0x1A] = function()
-    reg.a = read_byte(reg.de())
-    add_cycles(4)
-  end
-
-  opcodes[0xFA] = function()
-    local lower = read_nn()
-    local upper = lshift(read_nn(), 8)
-    reg.a = read_byte(upper + lower)
-    add_cycles(4)
-  end
-
-  -- ld (xx), A
-  opcodes[0x02] = function()
-    write_byte(reg.bc(), reg.a)
-    add_cycles(4)
-  end
-
-  opcodes[0x12] = function()
-    write_byte(reg.de(), reg.a)
-    add_cycles(4)
-  end
-
-  opcodes[0xEA] = function()
-    local lower = read_nn()
-    local upper = lshift(read_nn(), 8)
-    write_byte(upper + lower, reg.a)
-    add_cycles(4)
-  end
+  apply_ld(opcodes, opcode_cycles, z80, memory)
 
   -- ld a, (FF00 + nn)
   opcodes[0xF0] = function()
@@ -1573,10 +1545,6 @@ function Z80.new(modules)
   end
 
   z80.process_instruction = function()
-    --if profile_enabled then
-    --  Pie:attach()
-    --end
-
     --  If the processor is currently halted, then do nothing.
     if z80.halted == 0 then
       local opcode = read_byte(reg.pc)
@@ -1584,13 +1552,16 @@ function Z80.new(modules)
       reg.pc = band(reg.pc + 1, 0xFFFF)
       -- Run the instruction
       opcodes[opcode]()
-    end
-    -- add a base clock of 4 to every instruction
-    add_cycles(4)
 
-    --if profile_enabled then
-    --  Pie:detach()
-    --end
+      -- add a base clock of 4 to every instruction
+      -- NOPE, working on removing add_cycles, pull from the opcode_cycles
+      -- table instead
+      add_cycles(opcode_cycles[opcode])
+    else
+      -- Base cycles of 4 when halted, for sanity
+      add_cycles(4)
+    end
+
     return true
   end
 
