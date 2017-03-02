@@ -1,11 +1,7 @@
 local bit32 = require("bit")
 
 local lshift = bit32.lshift
-local rshift = bit32.rshift
 local band = bit32.band
-local bxor = bit32.bxor
-local bor = bit32.bor
-local bnot = bit32.bnot
 
 function apply(opcodes, opcode_cycles, z80, memory)
   local read_at_hl = z80.read_at_hl
@@ -133,6 +129,86 @@ function apply(opcodes, opcode_cycles, z80, memory)
     local lower = read_nn()
     local upper = lshift(read_nn(), 8)
     write_byte(upper + lower, reg.a)
+  end
+
+  -- ld a, (FF00 + nn)
+  opcode_cycles[0xF0] = 8
+  opcodes[0xF0] = function()
+    reg.a = read_byte(0xFF00 + read_nn())
+  end
+
+  -- ld (FF00 + nn), a
+  opcode_cycles[0xE0] = 8
+  opcodes[0xE0] = function()
+    write_byte(0xFF00 + read_nn(), reg.a)
+  end
+
+  -- ld a, (FF00 + C)
+  opcode_cycles[0xF2] = 8
+  opcodes[0xF2] = function()
+    reg.a = read_byte(0xFF00 + reg.c)
+  end
+
+  -- ld (FF00 + C), a
+  opcode_cycles[0xE2] = 8
+  opcodes[0xE2] = function()
+    write_byte(0xFF00 + reg.c, reg.a)
+  end
+
+  -- ldi (HL), a
+  opcodes[0x22] = function()
+    set_at_hl(reg.a)
+    reg.set_hl(band(reg.hl() + 1, 0xFFFF))
+  end
+
+  -- ldi a, (HL)
+  opcodes[0x2A] = function()
+    reg.a = read_at_hl()
+    reg.set_hl(band(reg.hl() + 1, 0xFFFF))
+  end
+
+  -- ldd (HL), a
+  opcodes[0x32] = function()
+    set_at_hl(reg.a)
+    reg.set_hl(band(reg.hl() - 1, 0xFFFF))
+  end
+
+  -- ldd a, (HL)
+  opcodes[0x3A] = function()
+    reg.a = read_at_hl()
+    reg.set_hl(band(reg.hl() - 1, 0xFFFF))
+  end
+
+  -- ====== GMB 16-bit load commands ======
+  -- ld BC, nnnn
+  opcodes[0x01] = function()
+    reg.c = read_nn()
+    reg.b = read_nn()
+  end
+
+  -- ld DE, nnnn
+  opcodes[0x11] = function()
+    reg.e = read_nn()
+    reg.d = read_nn()
+  end
+
+  -- ld HL, nnnn
+  opcodes[0x21] = function()
+    reg.l = read_nn()
+    reg.h = read_nn()
+  end
+
+  -- ld SP, nnnn
+  opcodes[0x31] = function()
+    local lower = read_nn()
+    local upper = lshift(read_nn(), 8)
+    reg.sp = band(0xFFFF, upper + lower)
+  end
+
+  -- ld SP, HL
+  opcode_cycles[0xF9] = 8
+  opcodes[0xF9] = function()
+    reg.sp = reg.hl()
   end
 
   --local hl_opcodes = {0x46, 0x4E, 0x56, 0x5E, 0x66, 0x6E, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x77, 0x7E}

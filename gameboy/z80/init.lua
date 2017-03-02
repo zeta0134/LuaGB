@@ -8,6 +8,7 @@ local bor = bit32.bor
 local bnot = bit32.bnot
 
 local apply_ld = require("gameboy/z80/ld")
+local apply_stack = require("gameboy/z80/stack")
 
 local Z80 = {}
 
@@ -22,10 +23,6 @@ function Z80.new(modules)
   -- local references, for shorter code
   local read_byte = memory.read_byte
   local write_byte = memory.write_byte
-
-  -- Initialize registers to what the GB's
-  -- iternal state would be after executing
-  -- BIOS code
 
   -- Intentionally bad naming convention: I am NOT typing "registers"
   -- a bazillion times. The exported symbol uses the full name as a
@@ -58,6 +55,10 @@ function Z80.new(modules)
   local double_speed = false
 
   z80.reset = function(gameboy)
+    -- Initialize registers to what the GB's
+    -- iternal state would be after executing
+    -- BIOS code
+
     reg.flags.z = 1
     reg.flags.n = 0
     reg.flags.h = 1
@@ -68,6 +69,7 @@ function Z80.new(modules)
     else
       reg.a = 0x01
     end
+
     reg.b = 0x00
     reg.c = 0x13
     reg.d = 0x00
@@ -213,158 +215,7 @@ function Z80.new(modules)
   local read_nn = z80.read_nn
 
   apply_ld(opcodes, opcode_cycles, z80, memory)
-
-  -- ld a, (FF00 + nn)
-  opcodes[0xF0] = function()
-    reg.a = read_byte(0xFF00 + read_nn())
-    add_cycles(4)
-  end
-
-  -- ld (FF00 + nn), a
-  opcodes[0xE0] = function()
-    write_byte(0xFF00 + read_nn(), reg.a)
-    add_cycles(4)
-  end
-
-  -- ld a, (FF00 + C)
-  opcodes[0xF2] = function()
-    reg.a = read_byte(0xFF00 + reg.c)
-    add_cycles(4)
-  end
-
-  -- ld (FF00 + C), a
-  opcodes[0xE2] = function()
-    write_byte(0xFF00 + reg.c, reg.a)
-    add_cycles(4)
-  end
-
-  -- ldi (HL), a
-  opcodes[0x22] = function()
-    set_at_hl(reg.a)
-    reg.set_hl(band(reg.hl() + 1, 0xFFFF))
-  end
-
-  -- ldi a, (HL)
-  opcodes[0x2A] = function()
-    reg.a = read_at_hl()
-    reg.set_hl(band(reg.hl() + 1, 0xFFFF))
-  end
-
-  -- ldd (HL), a
-  opcodes[0x32] = function()
-    set_at_hl(reg.a)
-    reg.set_hl(band(reg.hl() - 1, 0xFFFF))
-  end
-
-  -- ldd a, (HL)
-  opcodes[0x3A] = function()
-    reg.a = read_at_hl()
-    reg.set_hl(band(reg.hl() - 1, 0xFFFF))
-  end
-
-  -- ====== GMB 16-bit load commands ======
-  -- ld BC, nnnn
-  opcodes[0x01] = function()
-    reg.c = read_nn()
-    reg.b = read_nn()
-  end
-
-  -- ld DE, nnnn
-  opcodes[0x11] = function()
-    reg.e = read_nn()
-    reg.d = read_nn()
-  end
-
-  -- ld HL, nnnn
-  opcodes[0x21] = function()
-    reg.l = read_nn()
-    reg.h = read_nn()
-  end
-
-  -- ld SP, nnnn
-  opcodes[0x31] = function()
-    local lower = read_nn()
-    local upper = lshift(read_nn(), 8)
-    reg.sp = band(0xFFFF, upper + lower)
-  end
-
-  -- ld SP, HL
-  opcodes[0xF9] = function()
-    reg.sp = reg.hl()
-    add_cycles(4)
-  end
-
-  -- push BC
-  opcodes[0xC5] = function()
-    reg.sp = band(0xFFFF, reg.sp - 1)
-    write_byte(reg.sp, reg.b)
-    reg.sp = band(0xFFFF, reg.sp - 1)
-    write_byte(reg.sp, reg.c)
-    add_cycles(12)
-  end
-
-  -- push DE
-  opcodes[0xD5] = function()
-    reg.sp = band(0xFFFF, reg.sp - 1)
-    write_byte(reg.sp, reg.d)
-    reg.sp = band(0xFFFF, reg.sp - 1)
-    write_byte(reg.sp, reg.e)
-    add_cycles(12)
-  end
-
-  -- push HL
-  opcodes[0xE5] = function()
-    reg.sp = band(0xFFFF, reg.sp - 1)
-    write_byte(reg.sp, reg.h)
-    reg.sp = band(0xFFFF, reg.sp - 1)
-    write_byte(reg.sp, reg.l)
-    add_cycles(12)
-  end
-
-  -- push AF
-  opcodes[0xF5] = function()
-    reg.sp = band(0xFFFF, reg.sp - 1)
-    write_byte(reg.sp, reg.a)
-    reg.sp = band(0xFFFF, reg.sp - 1)
-    write_byte(reg.sp, reg.f())
-    add_cycles(12)
-  end
-
-  -- pop BC
-  opcodes[0xC1] = function()
-    reg.c = read_byte(reg.sp)
-    reg.sp = band(0xFFFF, reg.sp + 1)
-    reg.b = read_byte(reg.sp)
-    reg.sp = band(0xFFFF, reg.sp + 1)
-    add_cycles(8)
-  end
-
-  -- pop DE
-  opcodes[0xD1] = function()
-    reg.e = read_byte(reg.sp)
-    reg.sp = band(0xFFFF, reg.sp + 1)
-    reg.d = read_byte(reg.sp)
-    reg.sp = band(0xFFFF, reg.sp + 1)
-    add_cycles(8)
-  end
-
-  -- pop HL
-  opcodes[0xE1] = function()
-    reg.l = read_byte(reg.sp)
-    reg.sp = band(0xFFFF, reg.sp + 1)
-    reg.h = read_byte(reg.sp)
-    reg.sp = band(0xFFFF, reg.sp + 1)
-    add_cycles(8)
-  end
-
-  -- pop AF
-  opcodes[0xF1] = function()
-    reg.set_f(read_byte(reg.sp))
-    reg.sp = band(0xFFFF, reg.sp + 1)
-    reg.a = read_byte(reg.sp)
-    reg.sp = band(0xFFFF, reg.sp + 1)
-    add_cycles(8)
-  end
+  apply_stack(opcodes, opcode_cycles, z80, memory)
 
   -- ====== GMB 8bit-Arithmetic/logical Commands ======
   add_to_a = function(value)
