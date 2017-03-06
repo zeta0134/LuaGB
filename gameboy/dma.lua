@@ -41,7 +41,7 @@ function Dma.new(modules)
     else
       dma.hblank = false
       -- process the DMA now, adjust clock too. (cheat, basically.)
-      for i = 1, dma.length do
+      for i = 0, dma.length - 1 do
         memory[dma.destination + i] = memory[dma.source + i]
       end
       timers.system_clock = timers.system_clock + dma.length / 2
