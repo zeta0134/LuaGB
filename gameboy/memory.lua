@@ -54,14 +54,15 @@ function Memory.new(modules)
 
   -- Main Memory
   memory.work_ram_0 = memory.generate_block(4 * 1024, 0xC000)
-  memory.work_ram_1 = memory.generate_block(4 * 7 * 1024, 0xD000)
+  memory.work_ram_1_raw = memory.generate_block(4 * 7 * 1024, 0xD000)
+  memory.work_ram_1 = {}
   memory.work_ram_1.bank = 1
   memory.work_ram_1.mt = {}
   memory.work_ram_1.mt.__index = function(table, address)
-    return memory.work_ram_1[address + ((memory.work_ram_1.bank - 1) * 4 * 1024)]
+    return memory.work_ram_1_raw[address + ((memory.work_ram_1.bank - 1) * 4 * 1024)]
   end
   memory.work_ram_1.mt.__newindex = function(table, address, value)
-    memory.work_ram_1[address + ((memory.work_ram_1.bank - 1) * 4 * 1024)] = value
+    memory.work_ram_1_raw[address + ((memory.work_ram_1.bank - 1) * 4 * 1024)] = value
   end
   setmetatable(memory.work_ram_1, memory.work_ram_1.mt)
   memory.map_block(0xC0, 0xCF, memory.work_ram_0, 0)
