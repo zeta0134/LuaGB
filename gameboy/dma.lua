@@ -41,11 +41,12 @@ function Dma.new(modules)
     else
       dma.hblank = false
       -- process the DMA now, adjust clock too. (cheat, basically.)
-      for i = 0, dma.length do
+      for i = 1, dma.length do
         memory[dma.destination + i] = memory[dma.source + i]
       end
       timers.system_clock = timers.system_clock + dma.length / 2
-      print("General Purpose DMA from ", dma.source, " to ", dma.destination)
+      --print("General Purpose DMA from ", dma.source, " to ", dma.destination)
+      print(string.format("General Purpose DMA From: %04X -> %04X Length: %04X", dma.source, dma.destination, dma.length))
     end
   end
 
