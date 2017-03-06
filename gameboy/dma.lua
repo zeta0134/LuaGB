@@ -46,7 +46,7 @@ function Dma.new(modules)
       end
       timers.system_clock = timers.system_clock + dma.length / 2
       io.ram[0x55] = 0xFF
-      print(string.format("General Purpose DMA From: %04X -> %04X Length: %04X", dma.source, dma.destination, dma.length))
+      --print(string.format("General Purpose DMA From: %04X -> %04X Length: %04X", dma.source, dma.destination, dma.length))
     end
   end
 
