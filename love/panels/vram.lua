@@ -1,32 +1,44 @@
 local vram = {}
 
-vram.width = 256
+vram.width = 264 * 2
 
 vram.init = function(gameboy)
-  vram.canvas = love.graphics.newCanvas(256, 800)
+  vram.canvas = love.graphics.newCanvas(264, 400)
   vram.tile_imagedata = love.image.newImageData(256, 256)
   vram.tile_image = love.graphics.newImage(vram.tile_imagedata)
 
+  vram.active_bg = 0
+  vram.active_bank = 0
+
   vram.gameboy = gameboy
+
+  vram.background_image = love.graphics.newImage("images/debug_vram_background.png")
 end
 
 vram.draw = function(x, y)
   love.graphics.setCanvas(vram.canvas)
   love.graphics.clear()
+  love.graphics.draw(vram.background_image, 0, 0)
   local registers = vram.gameboy.graphics.registers
 
-  love.graphics.print("Tile Data", 0, 0)
-  vram.draw_tiles(vram.gameboy, 0, 20, 32, 1)
 
-  love.graphics.print("Background", 0, 126)
-  vram.draw_background(vram.gameboy, registers.background_tilemap, registers.background_attr, 0, 146, 1)
+  --love.graphics.print("Tile Data", 0, 0)
+  vram.draw_tiles(vram.gameboy, 4, 12, 32, vram.active_bank)
 
-  love.graphics.print("Window", 0, 412)
-  vram.draw_background(vram.gameboy, registers.window_tilemap, registers.window_attr, 0, 432, 1)
+  if vram.active_bg == 0 then
+    --love.graphics.print("Background", 4, 140)
+    vram.draw_background(vram.gameboy, registers.background_tilemap, registers.background_attr, 4, 140, 1)
+  else
+    --love.graphics.print("Window", 4, 412)
+    vram.draw_background(vram.gameboy, registers.window_tilemap, registers.window_attr, 4, 140, 1)
+  end
 
   love.graphics.setCanvas() -- reset to main FB
   love.graphics.setColor(255, 255, 255)
-  love.graphics.draw(vram.canvas, x, y)
+  love.graphics.push()
+  love.graphics.scale(2, 2)
+  love.graphics.draw(vram.canvas, x / 2, y / 2)
+  love.graphics.pop()
 end
 
 vram.draw_tile = function(gameboy, tile, attr, sx, sy)
@@ -37,14 +49,18 @@ vram.draw_tile = function(gameboy, tile, attr, sx, sy)
 
   for x = 0, 7 do
     for y = 0, 7 do
-      local index = tile[x][y]
+      local ty = y
+      if attr ~= nil and attr.vertical_flip then
+        ty = 7 - y
+      end
+      local index = tile[x][ty]
       local color = palette[index]
       vram.tile_imagedata:setPixel(sx + x, sy + y, color[1], color[2], color[3], 255)
     end
   end
 end
 
-vram.draw_tiles = function(gameboy, dx, dy, tiles_across, scale, bank)
+vram.draw_tiles = function(gameboy, dx, dy, tiles_across, bank)
   bank = bank or 0
   -- Clear out the tile image
   vram.tile_imagedata:mapPixel(function()
@@ -54,7 +70,7 @@ vram.draw_tiles = function(gameboy, dx, dy, tiles_across, scale, bank)
   local y = 0
   local tiles = vram.gameboy.graphics.cache.tiles
   for i = 0, 384 - 1 do
-    vram.draw_tile(gameboy, tiles[i], nil, x, y)
+    vram.draw_tile(gameboy, tiles[bank * 384 + i], nil, x, y)
     x = x + 8
     if x >= tiles_across * 8 then
       x = 0
@@ -63,11 +79,8 @@ vram.draw_tiles = function(gameboy, dx, dy, tiles_across, scale, bank)
   end
   love.graphics.setColor(255, 255, 255)
   love.graphics.setCanvas(vram.canvas)
-  love.graphics.push()
-  love.graphics.scale(scale, scale)
   vram.tile_image:refresh()
-  love.graphics.draw(vram.tile_image, dx / scale, dy / scale)
-  love.graphics.pop()
+  love.graphics.draw(vram.tile_image, dx, dy)
 end
 
 function vram.draw_background(gameboy, map, attrs, dx, dy, scale)
