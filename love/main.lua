@@ -383,6 +383,15 @@ function love.mousepressed(x, y, button)
   if menu_active then
     filebrowser.mousepressed(x / screen_scale, y / screen_scale, button)
   end
+  if debug_mode then
+    local panel_x = 160 * 2 + 10 --width of the gameboy canvas in debug mode
+    for _, panel in pairs(active_panels) do
+      if panel.mousepressed then
+        panel.mousepressed(x - panel_x, y, button)
+      end
+      panel_x = panel_x + panel.width + 10
+    end
+  end
 end
 
 function love.update()

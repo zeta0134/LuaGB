@@ -13,6 +13,29 @@ vram.init = function(gameboy)
   vram.gameboy = gameboy
 
   vram.background_image = love.graphics.newImage("images/debug_vram_background.png")
+  vram.bank_1_image = love.graphics.newImage("images/debug_tiles_1.png")
+  vram.map_wx_image = love.graphics.newImage("images/debug_maps_wx.png")
+end
+
+vram.set_bank_0 = function() vram.active_bank = 0 end
+vram.set_bank_1 = function() vram.active_bank = 1 end
+vram.set_map_bg = function() vram.active_bg = 0 end
+vram.set_map_wx = function() vram.active_bg = 1 end
+
+local regions = {}
+regions.bank_0 = {x=33,y=17,width=9,height=10,action=vram.set_bank_0}
+regions.bank_1 = {x=43,y=17,width=9,height=10,action=vram.set_bank_1}
+regions.map_bg = {x=30,y=129,width=13,height=10,action=vram.set_map_bg}
+regions.map_wx = {x=44,y=129,width=13,height=10,action=vram.set_map_wx}
+
+vram.mousepressed = function(x, y, button)
+  x = x / 2
+  y = y / 2
+  for _, region in pairs(regions) do
+    if x >= region.x and x < region.x + region.width and y >= region.y and y < region.y + region.height then
+      region.action(button)
+    end
+  end
 end
 
 vram.draw = function(x, y)
@@ -22,10 +45,14 @@ vram.draw = function(x, y)
   local registers = vram.gameboy.graphics.registers
 
   vram.draw_tiles(vram.gameboy, 4, 28, 32, vram.active_bank)
+  if vram.active_bank == 1 then
+    love.graphics.draw(vram.bank_1_image, 2, 16)
+  end
 
   if vram.active_bg == 0 then
     vram.draw_background(vram.gameboy, registers.background_tilemap, registers.background_attr, 4, 140, 1)
   else
+    love.graphics.draw(vram.map_wx_image, 2, 128)
     vram.draw_background(vram.gameboy, registers.window_tilemap, registers.window_attr, 4, 140, 1)
   end
 
