@@ -127,11 +127,11 @@ registers.print_values = function(gameboy)
     y = {0, 24, 48, 72, 120, 144, 168}
   }
 
-  registers.print_registers(gameboy, 0, 0)
-  registers.print_wide_registers(gameboy, 64, 0)
-  registers.print_flags(gameboy, 64, vertical_spacing * 3)
-  registers.print_pointer_registers(gameboy, 0, vertical_spacing * 5)
-  registers.print_status_block(gameboy, 0, vertical_spacing * 7)
+  registers.print_registers(gameboy, 4, 4)
+  registers.print_wide_registers(gameboy, 64, 4)
+  registers.print_flags(gameboy, 64, vertical_spacing * 3 + 4)
+  registers.print_pointer_registers(gameboy, 4, vertical_spacing * 5 + 4)
+  registers.print_status_block(gameboy, 4, vertical_spacing * 8 + 4)
 end
 
 return registers

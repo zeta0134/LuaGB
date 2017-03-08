@@ -192,7 +192,7 @@ function love.load(args)
   window_title = "LuaGB"
   sound_buffer = love.sound.newSoundData(32768, 32768, 16, 2)
   love.graphics.setDefaultFilter("nearest", "nearest")
-  local small_font = love.graphics.newImageFont("images/5x3font_bm.png", " !\"#$%'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ ", 1)
+  local small_font = love.graphics.newImageFont("images/5x3font_bm.png", "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ ", 1)
   love.graphics.setFont(small_font)
   game_screen_imagedata = love.image.newImageData(256, 256)
   game_screen_image = love.graphics.newImage(game_screen_imagedata)
@@ -230,7 +230,7 @@ function love.load(args)
 end
 
 function print_instructions()
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(0, 0, 0)
   local shortcuts = {
     "[P] = Play/Pause",
     "[R] = Reset",
@@ -246,9 +246,12 @@ function print_instructions()
     "[1-9]   = Load State",
     "[Numpad] = Debug Panels"
   }
+  love.graphics.push()
+  love.graphics.scale(2, 2)
   for i = 1, #shortcuts do
-    love.graphics.print(shortcuts[i], 0, 500 + i * 20)
+    love.graphics.print(shortcuts[i], 4, (500 + i * 14) / 2)
   end
+  love.graphics.pop()
 end
 
 function draw_game_screen(dx, dy, scale)
