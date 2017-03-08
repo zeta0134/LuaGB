@@ -365,7 +365,7 @@ function Z80.new(modules)
   cb[0x1E] = function() write_byte(reg.hl(), reg_rr(read_byte(reg.hl()))); add_cycles(12) end
   cb[0x1F] = function() reg.a = reg_rr(reg.a); add_cycles(4) end
 
-  reg_sla = function(value)
+  local reg_sla = function(value)
     -- copy bit 7 into carry
     if band(value, 0x80) == 0x80 then
       reg.flags.c = 1
@@ -384,7 +384,7 @@ function Z80.new(modules)
     return value
   end
 
-  reg_srl = function(value)
+  local reg_srl = function(value)
     -- copy bit 0 into carry
     if band(value, 0x1) == 1 then
       reg.flags.c = 1
@@ -403,7 +403,7 @@ function Z80.new(modules)
     return value
   end
 
-  reg_sra = function(value)
+  local reg_sra = function(value)
     local arith_value = reg_srl(value)
     -- if bit 6 is set, copy it to bit 7
     if band(arith_value, 0x40) ~= 0 then
@@ -413,7 +413,7 @@ function Z80.new(modules)
     return arith_value
   end
 
-  reg_swap = function(value)
+  local reg_swap = function(value)
     value = rshift(band(value, 0xF0), 4) + lshift(band(value, 0xF), 4)
     if value == 0 then
       reg.flags.z = 1
@@ -479,7 +479,7 @@ function Z80.new(modules)
   end
 
   -- ====== GMB Singlebit Operation Commands ======
-  reg_bit = function(value, bit)
+  local reg_bit = function(value, bit)
     if band(value, lshift(0x1, bit)) ~= 0 then
       reg.flags.z = 0
     else
@@ -615,7 +615,7 @@ function Z80.new(modules)
   end
 
   -- ====== GMB Jumpcommands ======
-  jump_to_nnnn = function()
+  local jump_to_nnnn = function()
     local lower = read_nn()
     local upper = lshift(read_nn(), 8)
     reg.pc = upper + lower
@@ -676,7 +676,7 @@ function Z80.new(modules)
     end
   end
 
-  function jump_relative_to_nn()
+  local function jump_relative_to_nn()
     local offset = read_nn()
     if offset > 127 then
       offset = offset - 256
@@ -730,7 +730,7 @@ function Z80.new(modules)
     add_cycles(4)
   end
 
-  call_nnnn = function()
+  local call_nnnn = function()
     local lower = read_nn()
     local upper = read_nn() * 256
     -- at this point, reg.pc points at the next instruction after the call,
@@ -846,7 +846,7 @@ function Z80.new(modules)
   end
 
   -- note: used only for the RST instructions below
-  function call_address(address)
+  local function call_address(address)
     -- reg.pc points at the next instruction after the call,
     -- so store the current PC to the stack
     reg.sp = band(0xFFFF, reg.sp - 1)
@@ -869,17 +869,12 @@ function Z80.new(modules)
   opcodes[0xFF] = function() call_address(0x38) end
 
   z80.process_interrupts = function()
-    if interrupts.enabled ~= 0 then
-      --local fired = band(memory[0xFFFF], memory[0xFF0F])
-      local fired = band(io.ram[0xFF], io.ram[0x0F])
-      if fired ~= 0 then
-        -- an interrupt happened that we care about! How thoughtful
-
-        -- First, disable interrupts so we don't have to pay royalties to Christopher Nolan
+    local fired = band(io.ram[0xFF], io.ram[0x0F])
+    if fired ~= 0 then
+      z80.halted = 0
+      if interrupts.enabled ~= 0 then
+        -- First, disable interrupts to prevent nesting routines (unless the program explicitly re-enables them later)
         interrupts.disable()
-
-        -- If the processor is halted / stopped, re-start it
-        z80.halted = 0
 
         -- Now, figure out which interrupt this is, and call the corresponding
         -- interrupt vector
@@ -899,10 +894,13 @@ function Z80.new(modules)
     return false
   end
 
+  -- register this as a callback with the interrupts module
+  interrupts.request_callback = z80.process_interrupts
+
   -- For any opcodes that at this point are undefined,
   -- go ahead and "define" them with the following panic
   -- function
-  function undefined_opcode()
+  local function undefined_opcode()
     local opcode = read_byte(band(reg.pc - 1, 0xFFFF))
     print(string.format("Unhandled opcode!: %x", opcode))
   end
@@ -932,28 +930,6 @@ function Z80.new(modules)
     end
 
     return true
-  end
-
-  function request_interrupt(bitmask)
-    io.ram[0x0F] = band(bor(io.ram[0x0F], bitmask), 0x1F)
-    if band(io.ram[0xFF], bitmask) ~= 0 then
-      z80.halted = 0
-    end
-    z80.process_interrupts()
-  end
-
-  io.write_logic[io.ports.IF] = function(byte)
-    io.ram[io.ports.IF] = byte
-    if byte ~= 0 then
-      z80.process_interrupts()
-    end
-  end
-
-  io.write_logic[io.ports.IE] = function(byte)
-    io.ram[io.ports.IE] = byte
-    if byte ~= 0 then
-      z80.process_interrupts()
-    end
   end
 
   return z80

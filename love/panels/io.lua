@@ -1,20 +1,26 @@
 local io = {}
 
-io.width = 140
+io.width = 64 * 2
 
 io.init = function(gameboy)
-  io.canvas = love.graphics.newCanvas(256, 800)
+  io.canvas = love.graphics.newCanvas(64, 400)
   io.gameboy = gameboy
 end
 
 io.draw = function(x, y)
   love.graphics.setCanvas(io.canvas)
   love.graphics.clear()
-  love.graphics.print("IO Registers", 0, 0)
+  love.graphics.setColor(192, 192, 192)
+  love.graphics.rectangle("fill", 0, 0, 70, 400)
+  love.graphics.setColor(255, 255, 255)
+  love.graphics.print("IO Registers", 2, 6)
   io.print_values(io.gameboy)
   love.graphics.setCanvas() -- reset to main FB
   love.graphics.setColor(255, 255, 255)
-  love.graphics.draw(io.canvas, x, y)
+  love.graphics.push()
+  love.graphics.scale(2, 2)
+  love.graphics.draw(io.canvas, x / 2, y / 2)
+  love.graphics.pop()
 end
 
 local io_values = {
@@ -81,11 +87,11 @@ function io.print_value(gameboy, name, address, x, y)
 end
 
 function io.print_values(gameboy)
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(0, 0, 0)
   for x, column in pairs(io_values) do
     for i, io_value in ipairs(column) do
       if #io_value == 2 then
-        io.print_value(gameboy, io_value[2], io_value[1], x, 18 * (i) + 10)
+        io.print_value(gameboy, io_value[2], io_value[1], 4 + x, 7 * (i) + 10)
       end
     end
   end

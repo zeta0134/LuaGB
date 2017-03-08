@@ -62,7 +62,8 @@ function Timers.new(modules)
           --overflow happened, first reset TIMA to TMA
           io.ram[io.ports.TIMA] = io.ram[io.ports.TMA]
           --then, fire off the timer interrupt
-          request_interrupt(interrupts.Timer)
+          --request_interrupt(interrupts.Timer)
+          interrupts.request(interrupts.Timer)
         end
       end
     end
