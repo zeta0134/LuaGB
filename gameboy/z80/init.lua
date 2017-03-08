@@ -611,7 +611,7 @@ function Z80.new(modules)
   opcodes[0xFB] = function()
     interrupts.enable()
     --print("Enabled interrupts with EI")
-    z80.process_interrupts()
+    z80.service_interrupt()
   end
 
   -- ====== GMB Jumpcommands ======
@@ -842,7 +842,7 @@ function Z80.new(modules)
   opcodes[0xD9] = function()
     ret()
     interrupts.enable()
-    z80.process_interrupts()
+    z80.service_interrupt()
   end
 
   -- note: used only for the RST instructions below
@@ -868,7 +868,7 @@ function Z80.new(modules)
   opcodes[0xF7] = function() call_address(0x30) end
   opcodes[0xFF] = function() call_address(0x38) end
 
-  z80.process_interrupts = function()
+  z80.service_interrupt = function()
     local fired = band(io.ram[0xFF], io.ram[0x0F])
     if fired ~= 0 then
       z80.halted = 0
@@ -895,7 +895,7 @@ function Z80.new(modules)
   end
 
   -- register this as a callback with the interrupts module
-  interrupts.request_callback = z80.process_interrupts
+  interrupts.service_handler = z80.service_interrupt
 
   -- For any opcodes that at this point are undefined,
   -- go ahead and "define" them with the following panic

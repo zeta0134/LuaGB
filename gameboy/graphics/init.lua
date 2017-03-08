@@ -194,13 +194,13 @@ function Graphics.new(modules)
       io.ram[ports.LY] = io.ram[ports.LY] + 1
       -- If enabled, fire an HBlank interrupt
       if bit32.band(io.ram[ports.STAT], 0x08) ~= 0 then
-        interrupts.request(interrupts.LCDStat)
+        interrupts.raise(interrupts.LCDStat)
       end
       if io.ram[ports.LY] == io.ram[ports.LYC] then
         -- set the LY compare bit
         io.ram[ports.STAT] = bit32.bor(io.ram[ports.STAT], 0x4)
         if bit32.band(io.ram[ports.STAT], 0x40) ~= 0 then
-          interrupts.request(interrupts.LCDStat)
+          interrupts.raise(interrupts.LCDStat)
         end
       else
         -- clear the LY compare bit
@@ -209,15 +209,15 @@ function Graphics.new(modules)
       if io.ram[ports.LY] >= 144 then
         graphics.registers.Status.SetMode(1)
         graphics.vblank_count = graphics.vblank_count + 1
-        interrupts.request(interrupts.VBlank)
+        interrupts.raise(interrupts.VBlank)
         if bit32.band(io.ram[ports.STAT], 0x10) ~= 0 then
           -- This is weird; LCDStat mirrors VBlank?
-          interrupts.request(interrupts.LCDStat)
+          interrupts.raise(interrupts.LCDStat)
         end
       else
         graphics.registers.Status.SetMode(2)
         if bit32.band(io.ram[ports.STAT], 0x20) ~= 0 then
-          interrupts.request(interrupts.LCDStat)
+          interrupts.raise(interrupts.LCDStat)
         end
       end
     end
@@ -234,14 +234,14 @@ function Graphics.new(modules)
       graphics.initialize_frame()
       graphics.registers.Status.SetMode(2)
       if bit32.band(io.ram[ports.STAT], 0x20) ~= 0 then
-        interrupts.request(interrupts.LCDStat)
+        interrupts.raise(interrupts.LCDStat)
       end
     end
     if io.ram[ports.LY] == io.ram[ports.LYC] then
       -- set the LY compare bit
       io.ram[ports.STAT] = bit32.bor(io.ram[ports.STAT], 0x4)
       if bit32.band(io.ram[ports.STAT], 0x40) ~= 0 then
-        interrupts.request(interrupts.LCDStat)
+        interrupts.raise(interrupts.LCDStat)
       end
     else
       -- clear the LY compare bit

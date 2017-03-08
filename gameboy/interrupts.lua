@@ -15,7 +15,7 @@ function Interrupts.new(modules)
 
   interrupts.enabled = 1
 
-  interrupts.request_callback = function() end
+  interrupts.service_handler = function() end
 
   interrupts.enable = function()
     interrupts.enabled = 1
@@ -25,22 +25,22 @@ function Interrupts.new(modules)
     interrupts.enabled = 0
   end
 
-  function interrupts.request(bitmask)
+  function interrupts.raise(bitmask)
     io.ram[0x0F] = bit32.band(bit32.bor(io.ram[0x0F], bitmask), 0x1F)
-    interrupts.request_callback()
+    interrupts.service_handler()
   end
 
   io.write_logic[io.ports.IF] = function(byte)
     io.ram[io.ports.IF] = byte
     if byte ~= 0 then
-      interrupts.request_callback()
+      interrupts.service_handler()
     end
   end
 
   io.write_logic[io.ports.IE] = function(byte)
     io.ram[io.ports.IE] = byte
     if byte ~= 0 then
-      interrupts.request_callback()
+      interrupts.service_handler()
     end
   end
 
