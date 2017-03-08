@@ -21,15 +21,11 @@ vram.draw = function(x, y)
   love.graphics.draw(vram.background_image, 0, 0)
   local registers = vram.gameboy.graphics.registers
 
-
-  --love.graphics.print("Tile Data", 0, 0)
-  vram.draw_tiles(vram.gameboy, 4, 12, 32, vram.active_bank)
+  vram.draw_tiles(vram.gameboy, 4, 28, 32, vram.active_bank)
 
   if vram.active_bg == 0 then
-    --love.graphics.print("Background", 4, 140)
     vram.draw_background(vram.gameboy, registers.background_tilemap, registers.background_attr, 4, 140, 1)
   else
-    --love.graphics.print("Window", 4, 412)
     vram.draw_background(vram.gameboy, registers.window_tilemap, registers.window_attr, 4, 140, 1)
   end
 
