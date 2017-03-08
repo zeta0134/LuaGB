@@ -8,7 +8,6 @@ audio.init = function(gameboy)
   audio.canvas = love.graphics.newCanvas(audio.width / 2, 400)
   audio.gameboy = gameboy
   audio.graph_canvas = love.graphics.newCanvas(136, 64)
-  audio.font = love.graphics.newImageFont("images/5x3font_bm.png", " !\"#$%'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ ", 1)
 end
 
 audio.draw_graph = function(x, y, table, start, size, disabled)
@@ -47,7 +46,6 @@ audio.draw = function(x, y)
   love.graphics.setColor(255, 255, 255)
 
   local debug = audio.gameboy.audio.debug
-  love.graphics.setFont(audio.font)
   love.graphics.print("Tone 1", 2, 4)
   audio.draw_graph(0, 10, debug.tone1, debug.current_sample, debug.max_samples, audio.gameboy.audio.tone1.debug_disabled)
   love.graphics.print("Tone 2", 2, 49)

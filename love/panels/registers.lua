@@ -2,10 +2,10 @@ local registers = {}
 
 registers.width = 256
 
-local vertical_spacing = 18
+local vertical_spacing = 9
 
 registers.init = function(gameboy)
-  registers.canvas = love.graphics.newCanvas(512, 800)
+  registers.canvas = love.graphics.newCanvas(256, 800)
   registers.gameboy = gameboy
 end
 
@@ -15,7 +15,10 @@ registers.draw = function(x, y)
   registers.print_values(registers.gameboy)
   love.graphics.setCanvas() -- reset to main FB
   love.graphics.setColor(255, 255, 255)
-  love.graphics.draw(registers.canvas, x, y)
+  love.graphics.push()
+  love.graphics.scale(2, 2)
+  love.graphics.draw(registers.canvas, x / 2, y / 2)
+  love.graphics.pop()
 end
 
 registers.print_registers = function(gameboy, x, y)
@@ -40,7 +43,7 @@ registers.print_registers = function(gameboy, x, y)
     local rx, ry = register[6], register[7]
 
     love.graphics.setColor(r, g, b)
-    love.graphics.print(string.format("%s: %02X", name, accessor()), x + rx * 60, y + ry * vertical_spacing)
+    love.graphics.print(string.format("%s: %02X", name, accessor()), x + rx * 30, y + ry * vertical_spacing)
   end
   love.graphics.setColor(255, 255, 255)
 end
@@ -106,7 +109,7 @@ registers.print_status_block = function(gameboy, x, y)
     local name, accessor = state[1], state[2]
 
     love.graphics.print(string.format("%s: %d", name, accessor()), x + rx, y)
-    rx = rx + 128
+    rx = rx + 64
   end
 
   love.graphics.print(string.format("Halted: %d  IME: %d  IE: %02X  IF: %02X",
@@ -123,8 +126,8 @@ registers.print_values = function(gameboy)
   }
 
   registers.print_registers(gameboy, 0, 0)
-  registers.print_wide_registers(gameboy, 128, 0)
-  registers.print_flags(gameboy, 128, vertical_spacing * 3)
+  registers.print_wide_registers(gameboy, 64, 0)
+  registers.print_flags(gameboy, 64, vertical_spacing * 3)
   registers.print_pointer_registers(gameboy, 0, vertical_spacing * 5)
   registers.print_status_block(gameboy, 0, vertical_spacing * 7)
 end

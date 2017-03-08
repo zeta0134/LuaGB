@@ -192,8 +192,8 @@ function love.load(args)
   window_title = "LuaGB"
   sound_buffer = love.sound.newSoundData(32768, 32768, 16, 2)
   love.graphics.setDefaultFilter("nearest", "nearest")
-  ubuntu_font = love.graphics.newFont("UbuntuMono-R.ttf", 18)
-  love.graphics.setFont(ubuntu_font)
+  local small_font = love.graphics.newImageFont("images/5x3font_bm.png", " !\"#$%'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ ", 1)
+  love.graphics.setFont(small_font)
   game_screen_imagedata = love.image.newImageData(256, 256)
   game_screen_image = love.graphics.newImage(game_screen_imagedata)
 
