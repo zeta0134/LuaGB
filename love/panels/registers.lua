@@ -1,17 +1,19 @@
 local registers = {}
 
-registers.width = 256
+registers.width = 160 * 2
 
-local vertical_spacing = 9
+local vertical_spacing = 7
 
 registers.init = function(gameboy)
-  registers.canvas = love.graphics.newCanvas(256, 800)
+  registers.canvas = love.graphics.newCanvas(160, 400)
   registers.gameboy = gameboy
 end
 
 registers.draw = function(x, y)
   love.graphics.setCanvas(registers.canvas)
   love.graphics.clear()
+  love.graphics.setColor(192, 192, 192)
+  love.graphics.rectangle("fill", 0, 0, 160, 400)
   registers.print_values(registers.gameboy)
   love.graphics.setCanvas() -- reset to main FB
   love.graphics.setColor(255, 255, 255)
@@ -27,14 +29,14 @@ registers.print_registers = function(gameboy, x, y)
   end
 
   local registers = {
-    {255, 255, 64, "A", get_register("a"), 0, 0},
-    {64, 128, 64, "F", gameboy.processor.registers.f, 1, 0},
-    {108, 108, 255, "B", get_register("b"), 0, 1},
-    {152, 80, 32, "C", get_register("c"), 1, 1},
-    {192, 128, 64, "D", get_register("d"), 0, 2},
-    {64, 255, 64, "E", get_register("e"), 1, 2},
-    {224, 196, 128, "H", get_register("h"), 0, 3},
-    {255, 255, 255, "L", get_register("l"), 1, 3}
+    {0, 0, 0, "A", get_register("a"), 0, 0},
+    {0, 0, 0, "F", gameboy.processor.registers.f, 1, 0},
+    {0, 0, 0, "B", get_register("b"), 0, 1},
+    {0, 0, 0, "C", get_register("c"), 1, 1},
+    {0, 0, 0, "D", get_register("d"), 0, 2},
+    {0, 0, 0, "E", get_register("e"), 1, 2},
+    {0, 0, 0, "H", get_register("h"), 0, 3},
+    {0, 0, 0, "L", get_register("l"), 1, 3}
   }
 
   for _, register in ipairs(registers) do
@@ -50,9 +52,9 @@ end
 
 registers.print_wide_registers = function(gameboy, x, y)
   local wide_registers = {
-    {108, 108, 255, "BC", "bc"},
-    {192, 128, 64, "DE", "de"},
-    {224, 196, 128, "HL", "hl"}
+    {0, 0, 0, "BC", "bc"},
+    {0, 0, 0, "DE", "de"},
+    {0, 0, 0, "HL", "hl"}
   }
 
   local ry = 0
@@ -71,15 +73,15 @@ end
 
 registers.print_flags = function(gameboy, x, y)
   local function flag_string(flag) return gameboy.processor.registers.flags[flag] == 1 and flag or "" end
-  love.graphics.setColor(192, 192, 192)
+  love.graphics.setColor(0, 0, 0)
   love.graphics.print(string.format("Flags: [%1s %1s %1s %1s]", flag_string("c"), flag_string("n"), flag_string("h"), flag_string("z")), x, y)
   love.graphics.setColor(255, 255, 255)
 end
 
 registers.print_pointer_registers = function(gameboy, x, y)
   local pointer_registers = {
-    {192, 192, 255, "SP", "sp"},
-    {255, 192, 192, "PC", "pc"}
+    {0, 0, 0, "SP", "sp"},
+    {0, 0, 0, "PC", "pc"}
   }
 
   local ry = 0
@@ -103,7 +105,7 @@ registers.print_status_block = function(gameboy, x, y)
     {"Frame", function() return gameboy.graphics.vblank_count end},
     {"Clock", function() return gameboy.timers.system_clock end}
   }
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(0, 0, 0)
   local rx = 0
   for _, state in ipairs(status) do
     local name, accessor = state[1], state[2]
