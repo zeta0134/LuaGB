@@ -78,7 +78,7 @@ oam.draw_sprites = function()
     love.graphics.scale(sprite_scaling, sprite_scaling)
     love.graphics.setColor(255, 255, 255)
     oam.sprite_image:refresh()
-    love.graphics.draw(oam.sprite_image, 1 + (x * cell_width + sprite_scaling) / sprite_scaling, 1 + (y * cell_height + sprite_scaling) / sprite_scaling)
+    love.graphics.draw(oam.sprite_image, ((3 + x * cell_width) / sprite_scaling), ((3 + y * cell_height) / sprite_scaling))
     love.graphics.pop()
     -- draw info about this sprite
     love.graphics.setColor(0, 0, 0)
