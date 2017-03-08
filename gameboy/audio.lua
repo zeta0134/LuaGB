@@ -609,7 +609,7 @@ function Audio.new(modules)
 
   audio.debug = {}
   audio.debug.current_sample = 0
-  audio.debug.max_samples = 256
+  audio.debug.max_samples = 128
   audio.debug.tone1 = {}
   audio.debug.tone2 = {}
   audio.debug.wave3 = {}

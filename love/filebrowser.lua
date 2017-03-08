@@ -68,8 +68,8 @@ filebrowser.draw_string = function(str, dx, dy, color, max_x)
     local char = string.byte(str, i)
     if 31 < char and char < 128 then
       char = char - 32
-      local font_x = (char % 32) * 4
-      local font_y = math.floor(char / 32) * 6
+      local font_x = char * 4
+      local font_y = 0
       for x = 0, 3 do
         if i * 4 - 4 + x + dx < max_x then
           for y = 0, 5 do
