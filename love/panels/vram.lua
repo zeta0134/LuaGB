@@ -56,12 +56,25 @@ vram.draw = function(x, y)
     vram.draw_background(vram.gameboy, registers.window_tilemap, registers.window_attr, 4, 140, 1)
   end
 
+  vram.draw_palettes(vram.gameboy)
+
   love.graphics.setCanvas() -- reset to main FB
   love.graphics.setColor(255, 255, 255)
   love.graphics.push()
   love.graphics.scale(2, 2)
   love.graphics.draw(vram.canvas, x / 2, y / 2)
   love.graphics.pop()
+end
+
+vram.draw_palettes = function(gameboy)
+  local bg_palettes = gameboy.graphics.palette.color_bg
+  for index, palette in pairs(bg_palettes) do
+    for i = 0, 3 do
+      love.graphics.setColor(unpack(palette[i]))
+      love.graphics.rectangle("fill", 76 + (index * 24) + (i * 4), 130, 4, 4)
+    end
+  end
+  love.graphics.setColor(255, 255, 255)
 end
 
 vram.draw_tile = function(gameboy, tile, attr, sx, sy)
