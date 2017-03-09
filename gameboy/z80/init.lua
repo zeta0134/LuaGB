@@ -11,6 +11,7 @@ local apply_arithmetic = require("gameboy/z80/arithmetic")
 local apply_bitwise = require("gameboy/z80/bitwise")
 local apply_cp = require("gameboy/z80/cp")
 local apply_inc_dec = require("gameboy/z80/inc_dec")
+local apply_jp = require("gameboy/z80/jp")
 local apply_ld = require("gameboy/z80/ld")
 local apply_rl_rr_cb = require("gameboy/z80/rl_rr_cb")
 local apply_stack = require("gameboy/z80/stack")
@@ -47,8 +48,8 @@ function Z80.new(modules)
     timers.system_clock = timers.system_clock + cycles / 2
   end
 
-  z80.add_cycles = add_cycles_normal
   local add_cycles = add_cycles_normal
+  z80.add_cycles = function(cycles) add_cycles(cycles) end
 
   local double_speed = false
 
@@ -80,7 +81,6 @@ function Z80.new(modules)
     z80.halted = 0
 
     double_speed = false
-    z80.add_cycles = add_cycles_normal
     add_cycles = add_cycles_normal
     timers.set_normal_speed()
   end
@@ -150,26 +150,14 @@ function Z80.new(modules)
   apply_bitwise(opcodes, opcode_cycles, z80, memory)
   apply_cp(opcodes, opcode_cycles, z80, memory)
   apply_inc_dec(opcodes, opcode_cycles, z80, memory)
+  apply_jp(opcodes, opcode_cycles, z80, memory)
   apply_ld(opcodes, opcode_cycles, z80, memory)
   apply_rl_rr_cb(opcodes, opcode_cycles, z80, memory)
   apply_stack(opcodes, opcode_cycles, z80, memory)
 
-
-  -- ====== GMB Special Purpose / Relocated Commands ======
-  -- ld (nnnn), SP
-  opcodes[0x08] = function()
-    local lower = read_nn()
-    local upper = lshift(read_nn(), 8)
-    local address = upper + lower
-    write_byte(address, band(reg.sp, 0xFF))
-    write_byte(band(address + 1, 0xFFFF), rshift(band(reg.sp, 0xFF00), 8))
-    add_cycles(8)
-  end
-
   -- ====== GMB CPU-Controlcommands ======
   -- ccf
   opcodes[0x3F] = function()
-    --reg.flags.c = bnot(reg.flags.c)
     reg.flags.c = band(0x1, bnot(reg.flags.c))
     reg.flags.n = 0
     reg.flags.h = 0
@@ -215,14 +203,12 @@ function Z80.new(modules)
       print("Switching speeds!")
       if double_speed then
         add_cycles = add_cycles_normal
-        z80.add_cycles = add_cycles_normal
         double_speed = false
         io.ram[0x4D] = band(io.ram[0x4D], 0x7E) + 0x00
         timers.set_normal_speed()
         print("Switched to Normal Speed")
       else
         add_cycles = add_cycles_double
-        z80.add_cycles = add_cycles_double
         double_speed = true
         io.ram[0x4D] = band(io.ram[0x4D], 0x7E) + 0x80
         timers.set_double_speed()
@@ -241,122 +227,6 @@ function Z80.new(modules)
     interrupts.enable()
     --print("Enabled interrupts with EI")
     z80.service_interrupt()
-  end
-
-  -- ====== GMB Jumpcommands ======
-  local jump_to_nnnn = function()
-    local lower = read_nn()
-    local upper = lshift(read_nn(), 8)
-    reg.pc = upper + lower
-  end
-
-  -- jp nnnn
-  opcodes[0xC3] = function()
-    jump_to_nnnn()
-    add_cycles(4)
-  end
-
-  -- jp HL
-  opcodes[0xE9] = function()
-    reg.pc = reg.hl()
-  end
-
-  -- jp nz, nnnn
-  opcodes[0xC2] = function()
-    if reg.flags.z == 0 then
-      jump_to_nnnn()
-      add_cycles(4)
-    else
-      reg.pc = reg.pc + 2
-      add_cycles(8)
-    end
-  end
-
-  -- jp nc, nnnn
-  opcodes[0xD2] = function()
-    if reg.flags.c == 0 then
-      jump_to_nnnn()
-      add_cycles(4)
-    else
-      reg.pc = reg.pc + 2
-      add_cycles(8)
-    end
-  end
-
-  -- jp z, nnnn
-  opcodes[0xCA] = function()
-    if reg.flags.z == 1 then
-      jump_to_nnnn()
-      add_cycles(4)
-    else
-      reg.pc = reg.pc + 2
-      add_cycles(8)
-    end
-  end
-
-  -- jp c, nnnn
-  opcodes[0xDA] = function()
-    if reg.flags.c == 1 then
-      jump_to_nnnn()
-      add_cycles(4)
-    else
-      reg.pc = reg.pc + 2
-      add_cycles(8)
-    end
-  end
-
-  local function jump_relative_to_nn()
-    local offset = read_nn()
-    if offset > 127 then
-      offset = offset - 256
-    end
-    reg.pc = (reg.pc + offset) % 0x10000
-  end
-
-  -- jr nn
-  opcodes[0x18] = function()
-    jump_relative_to_nn()
-    add_cycles(4)
-  end
-
-  -- jr nz, nn
-  opcodes[0x20] = function()
-    if reg.flags.z == 0 then
-      jump_relative_to_nn()
-    else
-      reg.pc = reg.pc + 1
-    end
-    add_cycles(4)
-  end
-
-  -- jr nc, nn
-  opcodes[0x30] = function()
-    if reg.flags.c == 0 then
-      jump_relative_to_nn()
-    else
-      reg.pc = reg.pc + 1
-    end
-    add_cycles(4)
-  end
-
-  -- jr z, nn
-  opcodes[0x28] = function()
-    if reg.flags.z == 1 then
-      jump_relative_to_nn()
-    else
-      reg.pc = reg.pc + 1
-    end
-    add_cycles(4)
-  end
-
-  -- jr c, nn
-  opcodes[0x38] = function()
-    if reg.flags.c == 1 then
-      jump_relative_to_nn()
-    else
-      reg.pc = reg.pc + 1
-    end
-    add_cycles(4)
   end
 
   local call_nnnn = function()

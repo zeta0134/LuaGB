@@ -1,6 +1,7 @@
 local bit32 = require("bit")
 
 local lshift = bit32.lshift
+local rshift = bit32.rshift
 local band = bit32.band
 
 function apply(opcodes, opcode_cycles, z80, memory)
@@ -219,6 +220,17 @@ function apply(opcodes, opcode_cycles, z80, memory)
     opcodes[0xE8]()
     reg.set_hl(reg.sp)
     reg.sp = old_sp
+  end
+
+  -- ====== GMB Special Purpose / Relocated Commands ======
+  -- ld (nnnn), SP
+  opcode_cycles[0x08] = 12
+  opcodes[0x08] = function()
+    local lower = read_nn()
+    local upper = lshift(read_nn(), 8)
+    local address = upper + lower
+    write_byte(address, band(reg.sp, 0xFF))
+    write_byte(band(address + 1, 0xFFFF), rshift(band(reg.sp, 0xFF00), 8))
   end
 
   --local hl_opcodes = {0x46, 0x4E, 0x56, 0x5E, 0x66, 0x6E, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x77, 0x7E}
