@@ -23,8 +23,8 @@ vram.set_map_bg = function() vram.active_bg = 0 end
 vram.set_map_wx = function() vram.active_bg = 1 end
 
 local regions = {}
-regions.bank_0 = {x=33,y=17,width=9,height=10,action=vram.set_bank_0}
-regions.bank_1 = {x=43,y=17,width=9,height=10,action=vram.set_bank_1}
+regions.bank_0 = {x=33,y=10,width=9,height=10,action=vram.set_bank_0}
+regions.bank_1 = {x=43,y=10,width=9,height=10,action=vram.set_bank_1}
 regions.map_bg = {x=30,y=129,width=13,height=10,action=vram.set_map_bg}
 regions.map_wx = {x=44,y=129,width=13,height=10,action=vram.set_map_wx}
 
@@ -44,9 +44,9 @@ vram.draw = function(x, y)
   love.graphics.draw(vram.background_image, 0, 0)
   local registers = vram.gameboy.graphics.registers
 
-  vram.draw_tiles(vram.gameboy, 4, 28, 32, vram.active_bank)
+  vram.draw_tiles(vram.gameboy, 4, 21, 32, vram.active_bank)
   if vram.active_bank == 1 then
-    love.graphics.draw(vram.bank_1_image, 2, 16)
+    love.graphics.draw(vram.bank_1_image, 2, 9)
   end
 
   if vram.active_bg == 0 then
@@ -71,7 +71,15 @@ vram.draw_palettes = function(gameboy)
   for index, palette in pairs(bg_palettes) do
     for i = 0, 3 do
       love.graphics.setColor(unpack(palette[i]))
-      love.graphics.rectangle("fill", 76 + (index * 24) + (i * 4), 130, 4, 4)
+      love.graphics.rectangle("fill", 76 + (index * 24) + (i * 4), 131, 4, 4)
+    end
+  end
+
+  local obj_palettes = gameboy.graphics.palette.color_obj
+  for index, palette in pairs(obj_palettes) do
+    for i = 0, 3 do
+      love.graphics.setColor(unpack(palette[i]))
+      love.graphics.rectangle("fill", 76 + (index * 24) + (i * 4), 122, 4, 4)
     end
   end
   love.graphics.setColor(255, 255, 255)
