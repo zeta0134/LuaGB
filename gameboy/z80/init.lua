@@ -9,6 +9,7 @@ local bnot = bit32.bnot
 
 local apply_arithmetic = require("gameboy/z80/arithmetic")
 local apply_bitwise = require("gameboy/z80/bitwise")
+local apply_call = require("gameboy/z80/call")
 local apply_cp = require("gameboy/z80/cp")
 local apply_inc_dec = require("gameboy/z80/inc_dec")
 local apply_jp = require("gameboy/z80/jp")
@@ -148,6 +149,7 @@ function Z80.new(modules)
 
   apply_arithmetic(opcodes, opcode_cycles, z80, memory)
   apply_bitwise(opcodes, opcode_cycles, z80, memory)
+  apply_call(opcodes, opcode_cycles, z80, memory, interrupts)
   apply_cp(opcodes, opcode_cycles, z80, memory)
   apply_inc_dec(opcodes, opcode_cycles, z80, memory)
   apply_jp(opcodes, opcode_cycles, z80, memory)
@@ -229,144 +231,6 @@ function Z80.new(modules)
     z80.service_interrupt()
   end
 
-  local call_nnnn = function()
-    local lower = read_nn()
-    local upper = read_nn() * 256
-    -- at this point, reg.pc points at the next instruction after the call,
-    -- so store the current PC to the stack
-
-    reg.sp = (reg.sp + 0xFFFF) % 0x10000
-    write_byte(reg.sp, rshift(reg.pc, 8))
-    reg.sp = (reg.sp + 0xFFFF) % 0x10000
-    write_byte(reg.sp, reg.pc % 0x100)
-
-    reg.pc = upper + lower
-  end
-
-  -- call nn
-  opcodes[0xCD] = function()
-    call_nnnn()
-    add_cycles(12)
-  end
-
-  -- call nz, nnnn
-  opcodes[0xC4] = function()
-    if reg.flags.z == 0 then
-      call_nnnn()
-      add_cycles(12)
-    else
-      reg.pc = reg.pc + 2
-      add_cycles(8)
-    end
-  end
-
-  -- call nc, nnnn
-  opcodes[0xD4] = function()
-    if reg.flags.c == 0 then
-      call_nnnn()
-      add_cycles(12)
-    else
-      reg.pc = reg.pc + 2
-      add_cycles(8)
-    end
-  end
-
-  -- call z, nnnn
-  opcodes[0xCC] = function()
-    if reg.flags.z == 1 then
-      call_nnnn()
-      add_cycles(12)
-    else
-      reg.pc = reg.pc + 2
-      add_cycles(8)
-    end
-  end
-
-  -- call c, nnnn
-  opcodes[0xDC] = function()
-    if reg.flags.c == 1 then
-      call_nnnn()
-      add_cycles(12)
-    else
-      reg.pc = reg.pc + 2
-      add_cycles(8)
-    end
-  end
-
-  local ret = function()
-    local lower = read_byte(reg.sp)
-    reg.sp = band(0xFFFF, reg.sp + 1)
-    local upper = lshift(read_byte(reg.sp), 8)
-    reg.sp = band(0xFFFF, reg.sp + 1)
-    reg.pc = upper + lower
-    add_cycles(12)
-  end
-
-  -- ret
-  opcodes[0xC9] = function() ret() end
-
-  -- ret nz
-  opcodes[0xC0] = function()
-    if reg.flags.z == 0 then
-      ret()
-    end
-    add_cycles(4)
-  end
-
-  -- ret nc
-  opcodes[0xD0] = function()
-    if reg.flags.c == 0 then
-      ret()
-    end
-    add_cycles(4)
-  end
-
-  -- ret nz
-  opcodes[0xC8] = function()
-    if reg.flags.z == 1 then
-      ret()
-    end
-    add_cycles(4)
-  end
-
-  -- ret nz
-  opcodes[0xD8] = function()
-    if reg.flags.c == 1 then
-      ret()
-    end
-    add_cycles(4)
-  end
-
-  -- reti
-  opcodes[0xD9] = function()
-    ret()
-    interrupts.enable()
-    z80.service_interrupt()
-  end
-
-  -- note: used only for the RST instructions below
-  local function call_address(address)
-    -- reg.pc points at the next instruction after the call,
-    -- so store the current PC to the stack
-    reg.sp = band(0xFFFF, reg.sp - 1)
-    write_byte(reg.sp, rshift(band(reg.pc, 0xFF00), 8))
-    reg.sp = band(0xFFFF, reg.sp - 1)
-    write_byte(reg.sp, band(reg.pc, 0xFF))
-
-    reg.pc = address
-    add_cycles(12)
-  end
-
-  -- rst N
-  opcodes[0xC7] = function() call_address(0x00) end
-  opcodes[0xCF] = function() call_address(0x08) end
-  opcodes[0xD7] = function() call_address(0x10) end
-  opcodes[0xDF] = function() call_address(0x18) end
-  opcodes[0xE7] = function() call_address(0x20) end
-  opcodes[0xEF] = function() call_address(0x28) end
-  opcodes[0xF7] = function() call_address(0x30) end
-  opcodes[0xFF] = function() call_address(0x38) end
-
   z80.service_interrupt = function()
     local fired = band(io.ram[0xFF], io.ram[0x0F])
     if fired ~= 0 then
@@ -386,7 +250,15 @@ function Z80.new(modules)
         end
         -- we need to clear the corresponding bit first, to avoid infinite loops
         io.ram[0x0F] = bxor(lshift(0x1, count), io.ram[0x0F])
-        call_address(vector)
+
+        reg.sp = band(0xFFFF, reg.sp - 1)
+        write_byte(reg.sp, rshift(band(reg.pc, 0xFF00), 8))
+        reg.sp = band(0xFFFF, reg.sp - 1)
+        write_byte(reg.sp, band(reg.pc, 0xFF))
+
+        reg.pc = vector
+
+        z80.add_cycles(12)
         return true
       end
     end
