@@ -49,8 +49,7 @@ function Z80.new(modules)
     timers.system_clock = timers.system_clock + cycles / 2
   end
 
-  local add_cycles = add_cycles_normal
-  z80.add_cycles = function(cycles) add_cycles(cycles) end
+  z80.add_cycles = add_cycles_normal
 
   local double_speed = false
 
@@ -82,7 +81,7 @@ function Z80.new(modules)
     z80.halted = 0
 
     double_speed = false
-    add_cycles = add_cycles_normal
+    z80.add_cycles = add_cycles_normal
     timers.set_normal_speed()
   end
 
@@ -127,19 +126,19 @@ function Z80.new(modules)
   end
 
   function z80.read_at_hl()
-    add_cycles(4)
+    z80.add_cycles(4)
     return read_byte(reg.hl())
   end
 
   function z80.set_at_hl(value)
-    add_cycles(4)
+    z80.add_cycles(4)
     write_byte(reg.hl(), value)
   end
 
   function z80.read_nn()
     local nn = read_byte(reg.pc)
     reg.pc = reg.pc + 1
-    add_cycles(4)
+    z80.add_cycles(4)
     return nn
   end
 
@@ -204,13 +203,13 @@ function Z80.new(modules)
       --speed switch!
       print("Switching speeds!")
       if double_speed then
-        add_cycles = add_cycles_normal
+        z80.add_cycles = add_cycles_normal
         double_speed = false
         io.ram[0x4D] = band(io.ram[0x4D], 0x7E) + 0x00
         timers.set_normal_speed()
         print("Switched to Normal Speed")
       else
-        add_cycles = add_cycles_double
+        z80.add_cycles = add_cycles_double
         double_speed = true
         io.ram[0x4D] = band(io.ram[0x4D], 0x7E) + 0x80
         timers.set_double_speed()
@@ -294,10 +293,10 @@ function Z80.new(modules)
       -- add a base clock of 4 to every instruction
       -- NOPE, working on removing add_cycles, pull from the opcode_cycles
       -- table instead
-      add_cycles(opcode_cycles[opcode])
+      z80.add_cycles(opcode_cycles[opcode])
     else
       -- Base cycles of 4 when halted, for sanity
-      add_cycles(4)
+      z80.add_cycles(4)
     end
 
     return true

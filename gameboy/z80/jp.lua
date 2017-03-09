@@ -16,8 +16,6 @@ function apply(opcodes, opcode_cycles, z80, memory)
   local read_byte = memory.read_byte
   local write_byte = memory.write_byte
 
-  local add_cycles = z80.add_cycles
-
   -- ====== GMB Jumpcommands ======
   local jump_to_nnnn = function()
     local lower = read_nn()
@@ -43,7 +41,7 @@ function apply(opcodes, opcode_cycles, z80, memory)
       jump_to_nnnn()
     else
       reg.pc = reg.pc + 2
-      add_cycles(4)
+      z80.add_cycles(4)
     end
   end
 
@@ -54,7 +52,7 @@ function apply(opcodes, opcode_cycles, z80, memory)
       jump_to_nnnn()
     else
       reg.pc = reg.pc + 2
-      add_cycles(4)
+      z80.add_cycles(4)
     end
   end
 
@@ -65,7 +63,7 @@ function apply(opcodes, opcode_cycles, z80, memory)
       jump_to_nnnn()
     else
       reg.pc = reg.pc + 2
-      add_cycles(4)
+      z80.add_cycles(4)
     end
   end
 
@@ -76,7 +74,7 @@ function apply(opcodes, opcode_cycles, z80, memory)
       jump_to_nnnn()
     else
       reg.pc = reg.pc + 2
-      add_cycles(4)
+      z80.add_cycles(4)
     end
   end
 
