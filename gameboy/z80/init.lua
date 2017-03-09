@@ -14,6 +14,7 @@ local apply_inc_dec = require("gameboy/z80/inc_dec")
 local apply_ld = require("gameboy/z80/ld")
 local apply_stack = require("gameboy/z80/stack")
 
+local Registers = require("gameboy/z80/registers")
 
 local Z80 = {}
 
@@ -29,23 +30,12 @@ function Z80.new(modules)
   local read_byte = memory.read_byte
   local write_byte = memory.write_byte
 
+  z80.registers = Registers.new()
+  local reg = z80.registers
+
   -- Intentionally bad naming convention: I am NOT typing "registers"
   -- a bazillion times. The exported symbol uses the full name as a
   -- reasonable compromise.
-  z80.registers = {}
-  local reg = z80.registers
-
-  reg.a = 0
-  reg.b = 0
-  reg.c = 0
-  reg.d = 0
-  reg.e = 0
-  reg.flags = {z=0,n=0,h=0,c=0}
-  reg.h = 0
-  reg.l = 0
-  reg.pc = 0
-  reg.sp = 0
-
   z80.halted = 0
 
   local add_cycles_normal = function(cycles)
@@ -120,71 +110,6 @@ function Z80.new(modules)
   end
 
   io.write_mask[0x4D] = 0x01
-
-  reg.f = function()
-    local value = lshift(reg.flags.z, 7) +
-            lshift(reg.flags.n, 6) +
-            lshift(reg.flags.h, 5) +
-            lshift(reg.flags.c, 4)
-    return value
-  end
-
-  reg.set_f = function(value)
-    if band(value, 0x80) ~= 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-
-    if band(value, 0x40) ~= 0 then
-      reg.flags.n = 1
-    else
-      reg.flags.n = 0
-    end
-
-    if band(value, 0x20) ~= 0 then
-      reg.flags.h = 1
-    else
-      reg.flags.h = 0
-    end
-
-    if band(value, 0x10) ~= 0 then
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
-    end
-  end
-
-  reg.af = function()
-    return lshift(reg.a, 8) + reg.f()
-  end
-
-  reg.bc = function()
-    return lshift(reg.b, 8) + reg.c
-  end
-
-  reg.de = function()
-    return lshift(reg.d, 8) + reg.e
-  end
-
-  reg.hl = function()
-    return lshift(reg.h, 8) + reg.l
-  end
-
-  reg.set_bc = function(value)
-    reg.b = rshift(band(value, 0xFF00), 8)
-    reg.c = band(value, 0xFF)
-  end
-
-  reg.set_de = function(value)
-    reg.d = rshift(band(value, 0xFF00), 8)
-    reg.e = band(value, 0xFF)
-  end
-
-  reg.set_hl = function(value)
-    reg.h = rshift(band(value, 0xFF00), 8)
-    reg.l = band(value, 0xFF)
-  end
 
   local opcodes = {}
   local opcode_cycles = {}
