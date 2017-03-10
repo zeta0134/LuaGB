@@ -8,8 +8,6 @@ local bor = bit32.bor
 local bnor = bit32.bnor
 
 function apply(opcodes, opcode_cycles, z80, memory)
-  local read_at_hl = z80.read_at_hl
-  local set_at_hl = z80.set_at_hl
   local read_nn = z80.read_nn
   local reg = z80.registers
 
