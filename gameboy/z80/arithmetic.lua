@@ -77,10 +77,12 @@ function apply(opcodes, opcode_cycles, z80, memory)
   opcodes[0x83] = function() add_to_a(reg.e) end
   opcodes[0x84] = function() add_to_a(reg.h) end
   opcodes[0x85] = function() add_to_a(reg.l) end
+  opcode_cycles[0x86] = 8
   opcodes[0x86] = function() add_to_a(read_at_hl()) end
   opcodes[0x87] = function() add_to_a(reg.a) end
 
   -- add A, nn
+  opcode_cycles[0xC6] = 8
   opcodes[0xC6] = function() add_to_a(read_nn()) end
 
   -- adc A, r
@@ -90,10 +92,12 @@ function apply(opcodes, opcode_cycles, z80, memory)
   opcodes[0x8B] = function() adc_to_a(reg.e) end
   opcodes[0x8C] = function() adc_to_a(reg.h) end
   opcodes[0x8D] = function() adc_to_a(reg.l) end
+  opcode_cycles[0x8E] = 8
   opcodes[0x8E] = function() adc_to_a(read_at_hl()) end
   opcodes[0x8F] = function() adc_to_a(reg.a) end
 
   -- adc A, nn
+  opcode_cycles[0xCE] = 8
   opcodes[0xCE] = function() adc_to_a(read_nn()) end
 
   sub_from_a = function(value)
@@ -157,10 +161,12 @@ function apply(opcodes, opcode_cycles, z80, memory)
   opcodes[0x93] = function() sub_from_a(reg.e) end
   opcodes[0x94] = function() sub_from_a(reg.h) end
   opcodes[0x95] = function() sub_from_a(reg.l) end
+  opcode_cycles[0x96] = 8
   opcodes[0x96] = function() sub_from_a(read_at_hl()) end
   opcodes[0x97] = function() sub_from_a(reg.a) end
 
   -- sub A, nn
+  opcode_cycles[0xD6] = 8
   opcodes[0xD6] = function() sub_from_a(read_nn()) end
 
   -- sbc A, r
@@ -170,10 +176,12 @@ function apply(opcodes, opcode_cycles, z80, memory)
   opcodes[0x9B] = function() sbc_from_a(reg.e) end
   opcodes[0x9C] = function() sbc_from_a(reg.h) end
   opcodes[0x9D] = function() sbc_from_a(reg.l) end
+  opcode_cycles[0x9E] = 8
   opcodes[0x9E] = function() sbc_from_a(read_at_hl()) end
   opcodes[0x9F] = function() sbc_from_a(reg.a) end
 
   -- sbc A, nn
+  opcode_cycles[0xDE] = 8
   opcodes[0xDE] = function() sbc_from_a(read_nn()) end
 
   -- daa
@@ -286,7 +294,7 @@ function apply(opcodes, opcode_cycles, z80, memory)
   end
 
   -- add SP, dd
-  opcode_cycles[0xE8] = 12
+  opcode_cycles[0xE8] = 16
   opcodes[0xE8] = function()
     local offset = read_nn()
     -- offset comes in as unsigned 0-255, so convert it to signed -128 - 127

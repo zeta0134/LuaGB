@@ -4,9 +4,6 @@ local lshift = bit32.lshift
 local band = bit32.band
 
 function apply(opcodes, opcode_cycles, z80, memory)
-  local read_at_hl = z80.read_at_hl
-  local set_at_hl = z80.set_at_hl
-  local read_nn = z80.read_nn
   local reg = z80.registers
 
   local read_byte = memory.read_byte

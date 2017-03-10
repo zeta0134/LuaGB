@@ -275,6 +275,7 @@ function apply(opcodes, opcode_cycles, z80, memory)
 
   opcodes[0xCB] = function()
     local cb_op = read_nn()
+    add_cycles(4)
     if cb[cb_op] ~= nil then
       --revert the timing; this is handled automatically by the various functions
       add_cycles(-4)

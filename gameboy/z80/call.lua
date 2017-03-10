@@ -8,8 +8,6 @@ local bor = bit32.bor
 local bnor = bit32.bnor
 
 function apply(opcodes, opcode_cycles, z80, memory, interrupts)
-  local read_at_hl = z80.read_at_hl
-  local set_at_hl = z80.set_at_hl
   local read_nn = z80.read_nn
   local reg = z80.registers
 
@@ -31,7 +29,7 @@ function apply(opcodes, opcode_cycles, z80, memory, interrupts)
   end
 
   -- call nn
-  opcode_cycles[0xCD] = 16
+  opcode_cycles[0xCD] = 24
   opcodes[0xCD] = function()
     call_nnnn()
   end
@@ -41,7 +39,7 @@ function apply(opcodes, opcode_cycles, z80, memory, interrupts)
   opcodes[0xC4] = function()
     if reg.flags.z == 0 then
       call_nnnn()
-      z80.add_cycles(4)
+      z80.add_cycles(12)
     else
       reg.pc = reg.pc + 2
     end
@@ -52,7 +50,7 @@ function apply(opcodes, opcode_cycles, z80, memory, interrupts)
   opcodes[0xD4] = function()
     if reg.flags.c == 0 then
       call_nnnn()
-      z80.add_cycles(4)
+      z80.add_cycles(12)
     else
       reg.pc = reg.pc + 2
     end
@@ -63,7 +61,7 @@ function apply(opcodes, opcode_cycles, z80, memory, interrupts)
   opcodes[0xCC] = function()
     if reg.flags.z == 1 then
       call_nnnn()
-      z80.add_cycles(4)
+      z80.add_cycles(12)
     else
       reg.pc = reg.pc + 2
     end
@@ -74,7 +72,7 @@ function apply(opcodes, opcode_cycles, z80, memory, interrupts)
   opcodes[0xDC] = function()
     if reg.flags.c == 1 then
       call_nnnn()
-      z80.add_cycles(4)
+      z80.add_cycles(12)
     else
       reg.pc = reg.pc + 2
     end

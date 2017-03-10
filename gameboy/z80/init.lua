@@ -126,19 +126,16 @@ function Z80.new(modules)
   end
 
   function z80.read_at_hl()
-    z80.add_cycles(4)
     return read_byte(reg.hl())
   end
 
   function z80.set_at_hl(value)
-    z80.add_cycles(4)
     write_byte(reg.hl(), value)
   end
 
   function z80.read_nn()
     local nn = read_byte(reg.pc)
     reg.pc = reg.pc + 1
-    z80.add_cycles(4)
     return nn
   end
 

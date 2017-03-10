@@ -35,10 +35,12 @@ function apply(opcodes, opcode_cycles, z80, memory)
   opcodes[0xA3] = function() and_a_with(reg.e) end
   opcodes[0xA4] = function() and_a_with(reg.h) end
   opcodes[0xA5] = function() and_a_with(reg.l) end
+  opcode_cycles[0xA6] = 8
   opcodes[0xA6] = function() and_a_with(read_at_hl()) end
   opcodes[0xA7] = function() and_a_with(reg.a) end
 
   -- and A, nn
+  opcode_cycles[0xE6] = 8
   opcodes[0xE6] = function() and_a_with(read_nn()) end
 
   xor_a_with = function(value)
@@ -60,10 +62,12 @@ function apply(opcodes, opcode_cycles, z80, memory)
   opcodes[0xAB] = function() xor_a_with(reg.e) end
   opcodes[0xAC] = function() xor_a_with(reg.h) end
   opcodes[0xAD] = function() xor_a_with(reg.l) end
+  opcode_cycles[0xAE] = 8
   opcodes[0xAE] = function() xor_a_with(read_at_hl()) end
   opcodes[0xAF] = function() xor_a_with(reg.a) end
 
   -- xor A, nn
+  opcode_cycles[0xEE] = 8
   opcodes[0xEE] = function() xor_a_with(read_nn()) end
 
   or_a_with = function(value)
@@ -85,10 +89,12 @@ function apply(opcodes, opcode_cycles, z80, memory)
   opcodes[0xB3] = function() or_a_with(reg.e) end
   opcodes[0xB4] = function() or_a_with(reg.h) end
   opcodes[0xB5] = function() or_a_with(reg.l) end
+  opcode_cycles[0xB6] = 8
   opcodes[0xB6] = function() or_a_with(read_at_hl()) end
   opcodes[0xB7] = function() or_a_with(reg.a) end
 
   -- or A, nn
+  opcode_cycles[0xF6] = 8
   opcodes[0xF6] = function() or_a_with(read_nn()) end
 
   -- cpl
