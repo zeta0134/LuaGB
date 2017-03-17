@@ -16,32 +16,26 @@ oam.draw_sprite = function(sprite_address, sx, sy, sprite_size)
   local io = oam.gameboy.io
   local ports = oam.gameboy.io.ports
 
-  local sprite_y = graphics.oam[sprite_address]
-  local sprite_x = graphics.oam[sprite_address + 1]
-  local sprite_tile = graphics.oam[sprite_address + 2]
-  if sprite_size == 16 then
-    sprite_tile = bit32.band(sprite_tile, 0xFE)
-  end
+  local sprite = graphics.cache.oam[(sprite_address - 0xFE00) / 4]
   local sprite_flags = graphics.oam[sprite_address + 3]
-
-  local sprite_palette = graphics.palette.obj0
-  if bit32.band(sprite_flags, 0x10) ~= 0 then
-    sprite_palette = graphics.palette.obj1
-  end
 
   for y = 0, (sprite_size - 1) do
     for x = 0, 7 do
       local color
       if y < 8 then
-        color = sprite_palette[graphics.cache.tiles[sprite_tile][x][y]]
+        if sprite_size == 8 then
+          color = sprite.palette[sprite.tile[x][y]]
+        else
+          color = sprite.palette[sprite.upper_tile[x][y]]
+        end
       else
-        color = sprite_palette[graphics.cache.tiles[sprite_tile + 1][x][y - 8]]
+        color = sprite.palette[sprite.lower_tile[x][y - 8]]
       end
       oam.sprite_imagedata:setPixel(sx + x, sy + y, color[1], color[2], color[3], 255)
     end
   end
 
-  return sprite_tile, sprite_x, sprite_y, sprite_flags
+  return sprite_tile, sprite.x, sprite.y, sprite_flags
 end
 
 oam.draw_sprites = function()

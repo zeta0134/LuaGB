@@ -11,6 +11,7 @@ function Cache.new()
   cache.map_1 = {}
   cache.map_0_attr = {}
   cache.map_1_attr = {}
+  cache.oam = {}
 
   cache.reset = function()
     for i = 0, 768 - 1 do
@@ -58,11 +59,64 @@ function Cache.new()
         cache.map_1_attr[x][y].priority = false
       end
     end
+
+    for i = 0, 39 do
+      cache.oam[i] = {}
+      cache.oam[i].x = 0
+      cache.oam[i].y = 0
+      cache.oam[i].tile = cache.tiles[0]
+      cache.oam[i].upper_tile = cache.tiles[0]
+      cache.oam[i].lower_tile = cache.tiles[1]
+      cache.oam[i].bg_priority = false
+      cache.oam[i].horizontal_flip = false
+      cache.oam[i].vertical_flip = false
+      if cache.graphics.gameboy.type == cache.graphics.gameboy.types.color then
+        cache.oam[i].palette = cache.graphics.palette.color_obj[0]
+      else
+        cache.oam[i].palette = cache.graphics.palette.bg
+      end
+    end
+  end
+
+  cache.refreshOamEntry = function(index)
+    local y = cache.graphics.oam[0xFE00 + index * 4 + 0] - 16
+    local x = cache.graphics.oam[0xFE00 + index * 4 + 1] - 8
+    local tile_index = cache.graphics.oam[0xFE00 + index * 4 + 2]
+    local flags = cache.graphics.oam[0xFE00 + index * 4 + 3]
+
+    cache.oam[index].x = x
+    cache.oam[index].y = x
+    local vram_bank = 0
+    if cache.graphics.gameboy.type == cache.graphics.gameboy.types.color then
+      vram_bank = bit32.rshift(bit32.band(0x08, flags), 3)
+    end
+    cache.oam[index].bg_priority = bit32.band(0x80, flags) ~= 0
+    cache.oam[index].vertical_flip = bit32.band(0x40, flags) ~= 0
+    cache.oam[index].horizontal_flip = bit32.band(0x20, flags) ~= 0
+    if cache.graphics.gameboy.type == cache.graphics.gameboy.types.color then
+      local palette_index = bit32.band(0x07, flags)
+      cache.oam[index].palette = cache.graphics.palette.color_obj[palette_index]
+    else
+      if bit32.band(0x10, flags) ~= 0 then
+        cache.oam[index].palette = cache.graphics.palette.obj1
+      else
+        cache.oam[index].palette = cache.graphics.palette.obj0
+      end
+    end
+    if cache.oam[index].horizontal_flip then
+      cache.oam[index].tile =       cache.tiles_h_flipped[tile_index + (384 * vram_bank)]
+      cache.oam[index].upper_tile = cache.tiles_h_flipped[bit32.band(tile_index, 0xFE) + (384 * vram_bank)]
+      cache.oam[index].lower_tile = cache.tiles_h_flipped[bit32.band(tile_index, 0xFE) + 1 + (384 * vram_bank)]
+    else
+      cache.oam[index].tile =       cache.tiles[tile_index + (384 * vram_bank)]
+      cache.oam[index].upper_tile = cache.tiles[bit32.band(tile_index, 0xFE) + (384 * vram_bank)]
+      cache.oam[index].lower_tile = cache.tiles[bit32.band(tile_index, 0xFE) + 1 + (384 * vram_bank)]
+    end
+
   end
 
   cache.refreshAttributes = function(map_attr, x, y, address)
     local data = cache.graphics.vram[address + (16 * 1024)]
-    --map_attr[x][y].palette = bit32.band(data, 0x07)
     if cache.graphics.gameboy.type == cache.graphics.gameboy.types.color then
       map_attr[x][y].palette = cache.graphics.palette.color_bg[bit32.band(data, 0x07)]
     else

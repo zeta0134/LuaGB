@@ -74,13 +74,21 @@ function Graphics.new(modules)
   setmetatable(graphics.vram_map, graphics.vram_map.mt)
   memory.map_block(0x80, 0x9F, graphics.vram_map, 0)
 
-  graphics.oam = memory.generate_block(0xA0, 0xFE00)
+  graphics.oam_raw = memory.generate_block(0xA0, 0xFE00)
+  graphics.oam = {}
   graphics.oam.mt = {}
   graphics.oam.mt.__index = function(table, address)
+    if address <= 0xFE9F then
+      return graphics.oam_raw[address]
+    end
     -- out of range? So sorry, return nothing
     return 0x00
   end
   graphics.oam.mt.__newindex = function(table, address, byte)
+    if address <= 0xFE9F then
+      graphics.oam_raw[address] = byte
+      graphics.cache.refreshOamEntry(math.floor((address - 0xFE00) / 4))
+    end
     -- out of range? So sorry, discard the write
     return
   end
@@ -105,6 +113,9 @@ function Graphics.new(modules)
   end
 
   graphics.reset = function()
+    graphics.cache.reset()
+    graphics.palette.reset()
+
     -- zero out all of VRAM:
     for i = 0x8000, 0x9FFF do
       graphics.vram[i] = 0
@@ -121,9 +132,6 @@ function Graphics.new(modules)
 
     graphics.clear_screen()
     graphics.registers.Status.SetMode(2)
-
-    graphics.cache.reset()
-    graphics.palette.reset()
   end
 
   graphics.save_state = function()
