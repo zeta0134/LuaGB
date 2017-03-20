@@ -200,10 +200,6 @@ function Graphics.new(modules)
     if timers.system_clock - graphics.last_edge > 204 then
       graphics.last_edge = graphics.last_edge + 204
       io.ram[ports.LY] = io.ram[ports.LY] + 1
-      -- If enabled, fire an HBlank interrupt
-      if bit32.band(io.ram[ports.STAT], 0x08) ~= 0 then
-        interrupts.raise(interrupts.LCDStat)
-      end
       if io.ram[ports.LY] == io.ram[ports.LYC] then
         -- set the LY compare bit
         io.ram[ports.STAT] = bit32.bor(io.ram[ports.STAT], 0x4)
@@ -273,6 +269,10 @@ function Graphics.new(modules)
       graphics.last_edge = graphics.last_edge + 172
       graphics.draw_sprites_into_scanline(io.ram[ports.LY], scanline_data.bg_index)
       graphics.registers.Status.SetMode(0)
+      -- If enabled, fire an HBlank interrupt
+      if bit32.band(io.ram[ports.STAT], 0x08) ~= 0 then
+        interrupts.raise(interrupts.LCDStat)
+      end
     end
   end
 
