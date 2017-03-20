@@ -192,6 +192,7 @@ function Graphics.new(modules)
   scanline_data.current_map_attr = nil
   scanline_data.window_active = false
   scanline_data.bg_index = {}
+  scanline_data.bg_priority = {}
   scanline_data.active_palette = nil
 
   -- HBlank: Period between scanlines
@@ -241,6 +242,7 @@ function Graphics.new(modules)
         interrupts.raise(interrupts.LCDStat)
       end
     end
+
     if io.ram[ports.LY] == io.ram[ports.LYC] then
       -- set the LY compare bit
       io.ram[ports.STAT] = bit32.bor(io.ram[ports.STAT], 0x4)
@@ -267,7 +269,7 @@ function Graphics.new(modules)
     graphics.draw_next_pixels(duration)
     if timers.system_clock - graphics.last_edge > 172 then
       graphics.last_edge = graphics.last_edge + 172
-      graphics.draw_sprites_into_scanline(io.ram[ports.LY], scanline_data.bg_index)
+      graphics.draw_sprites_into_scanline(io.ram[ports.LY], scanline_data.bg_index, scanline_data.bg_priority)
       graphics.registers.Status.SetMode(0)
       -- If enabled, fire an HBlank interrupt
       if bit32.band(io.ram[ports.STAT], 0x08) ~= 0 then
@@ -356,6 +358,7 @@ function Graphics.new(modules)
       end
 
       scanline_data.bg_index[scanline_data.x] = bg_index
+      scanline_data.bg_priority[scanline_data.x] = scanline_data.active_attr.priority
 
       --if graphics.registers.sprites_enabled then
         -- DRAW OAM PIXEL HERE
@@ -423,7 +426,7 @@ function Graphics.new(modules)
     return graphics.cache.tiles[tile_index][subpixel_x][subpixel_y]
   end
 
-  graphics.draw_sprites_into_scanline = function(scanline, bg_index)
+  graphics.draw_sprites_into_scanline = function(scanline, bg_index, bg_priority)
     if not graphics.registers.sprites_enabled then
       return
     end
@@ -518,7 +521,7 @@ function Graphics.new(modules)
           end
           local subpixel_index = tile[sub_x][sub_y]
           if subpixel_index > 0 then
-            if sprite_bg_priority or bg_index[display_x] == 0 then
+            if bg_priority[display_x] == false and (sprite_bg_priority or bg_index[display_x] == 0) then
               local subpixel_color = sprite_palette[subpixel_index]
               plot_pixel(graphics.game_screen, display_x, scanline, unpack(subpixel_color))
             end
