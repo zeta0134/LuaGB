@@ -2,7 +2,7 @@ local bit32 = require("bit")
 
 local Registers = {}
 
-function Registers.new(modules, cache)
+function Registers.new(graphics, modules, cache)
   local io = modules.io
   local ports = io.ports
 
@@ -18,6 +18,7 @@ function Registers.new(modules, cache)
   registers.large_sprites = false
   registers.sprites_enabled = true
   registers.background_enabled = true
+  registers.oam_priority = false
 
   io.write_logic[ports.LCDC] = function(byte)
     io.ram[ports.LCDC] = byte
@@ -27,7 +28,12 @@ function Registers.new(modules, cache)
     registers.window_enabled  = bit32.band(0x20, byte) ~= 0
     registers.large_sprites   = bit32.band(0x04, byte) ~= 0
     registers.sprites_enabled = bit32.band(0x02, byte) ~= 0
-    registers.background_enabled      = bit32.band(0x01, byte) ~= 0
+
+    if graphics.gameboy.type == graphics.gameboy.types.color then
+      registers.oam_priority = bit32.band(0x01, byte) == 0
+    else
+      registers.background_enabled = bit32.band(0x01, byte) ~= 0
+    end
 
     if bit32.band(0x40, byte) ~= 0 then
       registers.window_tilemap = cache.map_1

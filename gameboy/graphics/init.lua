@@ -15,11 +15,9 @@ function Graphics.new(modules)
 
   local graphics = {}
 
-  graphics.cache = Cache.new()
+  graphics.cache = Cache.new(graphics)
   graphics.palette = Palette.new(modules)
-  graphics.registers = Registers.new(modules, graphics.cache)
-
-  graphics.cache.graphics = graphics
+  graphics.registers = Registers.new(graphics, modules, graphics.cache)
 
   --just for shortening access
   local ports = io.ports
@@ -521,7 +519,7 @@ function Graphics.new(modules)
           end
           local subpixel_index = tile[sub_x][sub_y]
           if subpixel_index > 0 then
-            if bg_priority[display_x] == false and (sprite_bg_priority or bg_index[display_x] == 0) then
+            if (bg_priority[display_x] == false and sprite_bg_priority) or bg_index[display_x] == 0 or graphics.registers.oam_priority then
               local subpixel_color = sprite_palette[subpixel_index]
               plot_pixel(graphics.game_screen, display_x, scanline, unpack(subpixel_color))
             end
