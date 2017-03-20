@@ -295,11 +295,13 @@ function Graphics.new(modules)
   end
 
   local frame_data = {}
-  frame_data.window_y = 0
+  frame_data.window_pos_y = 0
+  frame_data.window_draw_y = 0
 
   graphics.initialize_frame = function()
     -- latch WY at the beginning of the *frame*
-    frame_data.window_y = io.ram[ports.WY]
+    frame_data.window_pos_y = io.ram[ports.WY]
+    frame_data.window_draw_y = 0
   end
 
   graphics.initialize_scanline = function()
@@ -319,22 +321,28 @@ function Graphics.new(modules)
 
     scanline_data.active_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
     scanline_data.active_tile = scanline_data.current_map[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+    scanline_data.window_active = false
   end
 
   graphics.switch_to_window = function()
     local ly = io.ram[ports.LY]
     local w_x = io.ram[ports.WX] - 7
-    if graphics.registers.window_enabled and scanline_data.x >= w_x and ly >= frame_data.window_y then
+    if graphics.registers.window_enabled and scanline_data.x >= w_x and ly >= frame_data.window_pos_y then
       -- switch to window map
       scanline_data.current_map = graphics.registers.window_tilemap
       scanline_data.current_map_attr = graphics.registers.window_attr
       scanline_data.bg_tile_x = math.floor((scanline_data.x - w_x) / 8)
-      scanline_data.bg_tile_y = math.floor((ly - frame_data.window_y) / 8)
-      scanline_data.sub_x = (scanline_data.x - (io.ram[ports.WX] - 7)) % 8
-      scanline_data.sub_y = (ly - io.ram[ports.WY]) % 8
+      scanline_data.bg_tile_y = math.floor(frame_data.window_draw_y / 8)
+      scanline_data.sub_x = (scanline_data.x - w_x) % 8
+      scanline_data.sub_y = (frame_data.window_draw_y) % 8
+      frame_data.window_draw_y = frame_data.window_draw_y + 1
+      if frame_data.window_draw_y > 143 then
+        frame_data.window_draw_y = 143
+      end
 
       scanline_data.active_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
       scanline_data.active_tile = scanline_data.current_map[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+      scanline_data.window_active = true
     end
   end
 
@@ -371,10 +379,12 @@ function Graphics.new(modules)
         if scanline_data.bg_tile_x >= 32 then
           scanline_data.bg_tile_x = scanline_data.bg_tile_x - 32
         end
-        scanline_data.sub_y = (ly + io.ram[ports.SCY]) % 8
-        scanline_data.bg_tile_y = math.floor((ly + io.ram[ports.SCY]) / 8)
-        if scanline_data.bg_tile_y >= 32 then
-          scanline_data.bg_tile_y = scanline_data.bg_tile_y - 32
+        if not scanline_data.window_active then
+          scanline_data.sub_y = (ly + io.ram[ports.SCY]) % 8
+          scanline_data.bg_tile_y = math.floor((ly + io.ram[ports.SCY]) / 8)
+          if scanline_data.bg_tile_y >= 32 then
+            scanline_data.bg_tile_y = scanline_data.bg_tile_y - 32
+          end
         end
 
         local tile_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
