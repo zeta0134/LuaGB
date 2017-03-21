@@ -25,6 +25,7 @@ function Graphics.new(modules)
   -- Internal Variables
   graphics.vblank_count = 0
   graphics.last_edge = 0
+  graphics.lcd_stat = false
 
   graphics.game_screen = {}
 
@@ -127,6 +128,7 @@ function Graphics.new(modules)
     graphics.vblank_count = 0
     graphics.last_edge = 0
     graphics.vram.bank = 0
+    graphics.lcd_stat = false
 
     graphics.clear_screen()
     graphics.registers.Status.SetMode(2)
@@ -193,6 +195,57 @@ function Graphics.new(modules)
   scanline_data.bg_priority = {}
   scanline_data.active_palette = nil
 
+  graphics.refresh_lcdstat = function()
+    local lcdstat = false
+
+    -- LY == LYC Interrupt
+    if bit32.band(io.ram[ports.STAT], 0x40) ~= 0 then
+      if io.ram[ports.LY] == io.ram[ports.LYC] then
+        lcdstat = true
+      end
+    end
+
+    -- OAM (Mode 2) Interrupt
+    if bit32.band(io.ram[ports.STAT], 0x20) ~= 0 then
+      if graphics.registers.Status.Mode() == 2 then
+        lcdstat = true
+      end
+    end
+
+    -- V-Blank (Mode 1) Interrupt
+    if bit32.band(io.ram[ports.STAT], 0x10) ~= 0 then
+      if graphics.registers.Status.Mode() == 1 then
+        lcdstat = true
+      end
+    end
+
+    -- H-Blank (Mode 0) Interrupt
+    if bit32.band(io.ram[ports.STAT], 0x08) ~= 0 then
+      if graphics.registers.Status.Mode() == 0 then
+        lcdstat = true
+      end
+    end
+
+    -- If this is a *rising* edge, raise the LCDStat interrupt
+    if graphics.lcdstat == false and lcdstat == true then
+      interrupts.raise(interrupts.LCDStat)
+    end
+
+    graphics.lcdstat = lcdstat
+  end
+
+  io.write_logic[ports.LY] = function(byte)
+    -- LY, writes reset the counter
+    io.ram[ports.LY] = 0
+    graphics.refresh_lcdstat()
+  end
+
+  io.write_logic[ports.LYC] = function(byte)
+    -- LY, writes reset the counter
+    io.ram[ports.LYC] = byte
+    graphics.refresh_lcdstat()
+  end
+
   -- HBlank: Period between scanlines
   local handle_mode = {}
   handle_mode[0] = function()
@@ -202,27 +255,20 @@ function Graphics.new(modules)
       if io.ram[ports.LY] == io.ram[ports.LYC] then
         -- set the LY compare bit
         io.ram[ports.STAT] = bit32.bor(io.ram[ports.STAT], 0x4)
-        if bit32.band(io.ram[ports.STAT], 0x40) ~= 0 then
-          interrupts.raise(interrupts.LCDStat)
-        end
       else
         -- clear the LY compare bit
         io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xFB)
       end
+
       if io.ram[ports.LY] >= 144 then
         graphics.registers.Status.SetMode(1)
         graphics.vblank_count = graphics.vblank_count + 1
         interrupts.raise(interrupts.VBlank)
-        if bit32.band(io.ram[ports.STAT], 0x10) ~= 0 then
-          -- This is weird; LCDStat mirrors VBlank?
-          interrupts.raise(interrupts.LCDStat)
-        end
       else
         graphics.registers.Status.SetMode(2)
-        if bit32.band(io.ram[ports.STAT], 0x20) ~= 0 then
-          interrupts.raise(interrupts.LCDStat)
-        end
       end
+
+      graphics.refresh_lcdstat()
     end
   end
 
@@ -231,22 +277,18 @@ function Graphics.new(modules)
     if timers.system_clock - graphics.last_edge > 456 then
       graphics.last_edge = graphics.last_edge + 456
       io.ram[ports.LY] = io.ram[ports.LY] + 1
+      graphics.refresh_lcdstat()
     end
     if io.ram[ports.LY] >= 154 then
       io.ram[ports.LY] = 0
       graphics.initialize_frame()
       graphics.registers.Status.SetMode(2)
-      if bit32.band(io.ram[ports.STAT], 0x20) ~= 0 then
-        interrupts.raise(interrupts.LCDStat)
-      end
+      graphics.refresh_lcdstat()
     end
 
     if io.ram[ports.LY] == io.ram[ports.LYC] then
       -- set the LY compare bit
       io.ram[ports.STAT] = bit32.bor(io.ram[ports.STAT], 0x4)
-      if bit32.band(io.ram[ports.STAT], 0x40) ~= 0 then
-        interrupts.raise(interrupts.LCDStat)
-      end
     else
       -- clear the LY compare bit
       io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xFB)
@@ -259,6 +301,7 @@ function Graphics.new(modules)
       graphics.last_edge = graphics.last_edge + 80
       graphics.initialize_scanline()
       graphics.registers.Status.SetMode(3)
+      graphics.refresh_lcdstat()
     end
   end
   -- VRAM Read: Neither VRAM, OAM, nor CGB palettes can be read
@@ -270,9 +313,7 @@ function Graphics.new(modules)
       graphics.draw_sprites_into_scanline(io.ram[ports.LY], scanline_data.bg_index, scanline_data.bg_priority)
       graphics.registers.Status.SetMode(0)
       -- If enabled, fire an HBlank interrupt
-      if bit32.band(io.ram[ports.STAT], 0x08) ~= 0 then
-        interrupts.raise(interrupts.LCDStat)
-      end
+      graphics.refresh_lcdstat()
     end
   end
 
@@ -285,6 +326,7 @@ function Graphics.new(modules)
       graphics.last_edge = timers.system_clock
       graphics.registers.Status.SetMode(0)
       io.ram[ports.LY] = 0
+      graphics.refresh_lcdstat()
     end
   end
 
@@ -365,10 +407,6 @@ function Graphics.new(modules)
 
       scanline_data.bg_index[scanline_data.x] = bg_index
       scanline_data.bg_priority[scanline_data.x] = scanline_data.active_attr.priority
-
-      --if graphics.registers.sprites_enabled then
-        -- DRAW OAM PIXEL HERE
-      --end
 
       scanline_data.x = scanline_data.x  + 1
       scanline_data.sub_x = scanline_data.sub_x  + 1

@@ -110,11 +110,6 @@ function Io.new(modules)
   io.write_mask[ports.STAT] = 0x78
   io.write_mask[ports.LY] = 0x00
 
-  io.write_logic[ports.LY] = function(byte)
-    -- LY, writes reset the counter
-    io.ram[ports.LY] = 0
-  end
-
   io.write_logic[0x70] = function(byte)
     if io.gameboy.type == io.gameboy.types.color then
       io.ram[0x70] = bit32.band(0x7, byte)
