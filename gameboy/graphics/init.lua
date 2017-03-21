@@ -25,7 +25,7 @@ function Graphics.new(modules)
   -- Internal Variables
   graphics.vblank_count = 0
   graphics.last_edge = 0
-  graphics.lcd_stat = false
+  graphics.lcdstat = false
 
   graphics.game_screen = {}
 
@@ -128,7 +128,7 @@ function Graphics.new(modules)
     graphics.vblank_count = 0
     graphics.last_edge = 0
     graphics.vram.bank = 0
-    graphics.lcd_stat = false
+    graphics.lcdstat = false
 
     graphics.clear_screen()
     graphics.registers.Status.SetMode(2)
