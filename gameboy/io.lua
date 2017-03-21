@@ -107,7 +107,6 @@ function Io.new(modules)
   end
 
   io.write_mask[ports.JOYP] = 0x30
-  io.write_mask[ports.STAT] = 0x78
   io.write_mask[ports.LY] = 0x00
 
   io.write_logic[0x70] = function(byte)

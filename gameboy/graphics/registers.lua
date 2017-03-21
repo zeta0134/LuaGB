@@ -66,30 +66,27 @@ function Registers.new(graphics, modules, cache)
     end
   end
 
-  local Status = {}
-  registers.Status = Status
-  Status.Coincidence_InterruptEnabled = function()
-    return bit32.band(0x20, io.ram[ports.STAT]) ~= 0
-  end
+  local status = {}
+  registers.status = status
 
-  Status.OAM_InterruptEnabled = function()
-    return bit32.band(0x10, io.ram[ports.STAT]) ~= 0
-  end
+  status.mode = 2
 
-  Status.VBlank_InterruptEnabled = function()
-    return bit32.band(0x08, io.ram[ports.STAT]) ~= 0
-  end
-
-  Status.HBlank_InterruptEnabled = function()
-    return bit32.band(0x06, io.ram[ports.STAT]) ~= 0
-  end
-
-  Status.Mode = function()
-    return bit32.band(0x03, io.ram[ports.STAT])
-  end
-
-  Status.SetMode = function(mode)
+  status.SetMode = function(mode)
+    status.mode = mode
     io.ram[ports.STAT] = bit32.band(io.ram[ports.STAT], 0xFC) + bit32.band(mode, 0x3)
+  end
+
+  status.lyc_interrupt_enabled = false
+  status.oam_interrupt_enabled = false
+  status.vblank_interrupt_enabled = false
+  status.hblank_interrupt_enabled = false
+
+  io.write_logic[ports.STAT] = function(byte)
+    io.ram[ports.STAT] = bit32.band(byte, 0x78)
+    status.lyc_interrupt_enabled = bit32.band(byte, 0x40) ~= 0
+    status.oam_interrupt_enabled = bit32.band(byte, 0x20) ~= 0
+    status.vblank_interrupt_enabled = bit32.band(byte, 0x10) ~= 0
+    status.hblank_interrupt_enabled = bit32.band(byte, 0x08) ~= 0
   end
 
   return registers

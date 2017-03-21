@@ -106,7 +106,7 @@ function Graphics.new(modules)
 
   graphics.initialize = function(gameboy)
     graphics.gameboy = gameboy
-    graphics.registers.Status.SetMode(2)
+    graphics.registers.status.SetMode(2)
     graphics.clear_screen()
     graphics.reset()
   end
@@ -131,7 +131,7 @@ function Graphics.new(modules)
     graphics.lcdstat = false
 
     graphics.clear_screen()
-    graphics.registers.Status.SetMode(2)
+    graphics.registers.status.SetMode(2)
   end
 
   graphics.save_state = function()
@@ -197,34 +197,13 @@ function Graphics.new(modules)
 
   graphics.refresh_lcdstat = function()
     local lcdstat = false
+    local status = graphics.registers.status
 
-    -- LY == LYC Interrupt
-    if bit32.band(io.ram[ports.STAT], 0x40) ~= 0 then
-      if io.ram[ports.LY] == io.ram[ports.LYC] then
-        lcdstat = true
-      end
-    end
-
-    -- OAM (Mode 2) Interrupt
-    if bit32.band(io.ram[ports.STAT], 0x20) ~= 0 then
-      if graphics.registers.Status.Mode() == 2 then
-        lcdstat = true
-      end
-    end
-
-    -- V-Blank (Mode 1) Interrupt
-    if bit32.band(io.ram[ports.STAT], 0x10) ~= 0 then
-      if graphics.registers.Status.Mode() == 1 then
-        lcdstat = true
-      end
-    end
-
-    -- H-Blank (Mode 0) Interrupt
-    if bit32.band(io.ram[ports.STAT], 0x08) ~= 0 then
-      if graphics.registers.Status.Mode() == 0 then
-        lcdstat = true
-      end
-    end
+    lcdstat =
+      (status.lyc_interrupt_enabled and io.ram[ports.LY] == io.ram[ports.LYC]) or
+      (status.oam_interrupt_enabled and status.mode == 2) or
+      (status.vblank_interrupt_enabled and status.mode == 1) or
+      (status.hblank_interrupt_enabled and status.mode == 0)
 
     -- If this is a *rising* edge, raise the LCDStat interrupt
     if graphics.lcdstat == false and lcdstat == true then
@@ -261,11 +240,11 @@ function Graphics.new(modules)
       end
 
       if io.ram[ports.LY] >= 144 then
-        graphics.registers.Status.SetMode(1)
+        graphics.registers.status.SetMode(1)
         graphics.vblank_count = graphics.vblank_count + 1
         interrupts.raise(interrupts.VBlank)
       else
-        graphics.registers.Status.SetMode(2)
+        graphics.registers.status.SetMode(2)
       end
 
       graphics.refresh_lcdstat()
@@ -282,7 +261,7 @@ function Graphics.new(modules)
     if io.ram[ports.LY] >= 154 then
       io.ram[ports.LY] = 0
       graphics.initialize_frame()
-      graphics.registers.Status.SetMode(2)
+      graphics.registers.status.SetMode(2)
       graphics.refresh_lcdstat()
     end
 
@@ -300,18 +279,18 @@ function Graphics.new(modules)
     if timers.system_clock - graphics.last_edge > 80 then
       graphics.last_edge = graphics.last_edge + 80
       graphics.initialize_scanline()
-      graphics.registers.Status.SetMode(3)
+      graphics.registers.status.SetMode(3)
       graphics.refresh_lcdstat()
     end
   end
   -- VRAM Read: Neither VRAM, OAM, nor CGB palettes can be read
   handle_mode[3] = function()
     local duration = timers.system_clock - graphics.last_edge
-    graphics.draw_next_pixels(duration)
+    graphics.draw_next_pixels(duration - 6)
     if timers.system_clock - graphics.last_edge > 172 then
       graphics.last_edge = graphics.last_edge + 172
       graphics.draw_sprites_into_scanline(io.ram[ports.LY], scanline_data.bg_index, scanline_data.bg_priority)
-      graphics.registers.Status.SetMode(0)
+      graphics.registers.status.SetMode(0)
       -- If enabled, fire an HBlank interrupt
       graphics.refresh_lcdstat()
     end
@@ -319,12 +298,12 @@ function Graphics.new(modules)
 
   graphics.update = function()
     if graphics.registers.display_enabled then
-      handle_mode[graphics.registers.Status.Mode()]()
+      handle_mode[graphics.registers.status.mode]()
     else
       -- erase our clock debt, so we don't do stupid timing things when the
       -- display is enabled again later
       graphics.last_edge = timers.system_clock
-      graphics.registers.Status.SetMode(0)
+      graphics.registers.status.SetMode(0)
       io.ram[ports.LY] = 0
       graphics.refresh_lcdstat()
     end
