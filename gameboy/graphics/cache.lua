@@ -85,7 +85,7 @@ function Cache.new(graphics)
     local flags = graphics.oam[0xFE00 + index * 4 + 3]
 
     cache.oam[index].x = x
-    cache.oam[index].y = x
+    cache.oam[index].y = y
     local vram_bank = 0
     if graphics.gameboy.type == graphics.gameboy.types.color then
       vram_bank = bit32.rshift(bit32.band(0x08, flags), 3)

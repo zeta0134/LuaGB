@@ -478,9 +478,9 @@ function Graphics.new(modules)
     local i = 0
     while i < 40 do
       -- is this sprite being displayed on this scanline? (respect to Y coordinate)
-      local sprite_y = graphics.oam[0xFE00 + i * 4]
-      local sprite_lower = sprite_y - 16
-      local sprite_upper = sprite_y - 16 + sprite_size
+      local sprite_y = graphics.cache.oam[i].y
+      local sprite_lower = sprite_y
+      local sprite_upper = sprite_y + sprite_size
       if scanline >= sprite_lower and scanline < sprite_upper then
         if #active_sprites < 10 then
           table.insert(active_sprites, i)
@@ -490,8 +490,8 @@ function Graphics.new(modules)
           local lowest_priority = i
           local lowest_priotity_index = nil
           for j = 1, #active_sprites do
-            local lowest_x = graphics.oam[0xFE00 + lowest_priority * 4 + 1]
-            local candidate_x = graphics.oam[0xFE00 + active_sprites[j] * 4 + 1]
+            local lowest_x = graphics.cache.oam[lowest_priority].x
+            local candidate_x = graphics.cache.oam[active_sprites[j]].x
             if candidate_x > lowest_x then
               lowest_priority = active_sprites[j]
               lowest_priority_index = j
@@ -507,49 +507,24 @@ function Graphics.new(modules)
 
     -- now, for every sprite in the list, display it on the current scanline
     for i = #active_sprites, 1, -1 do
-      local sprite_address = 0xFE00 + active_sprites[i] * 4
-      local sprite_y = graphics.oam[sprite_address]
-      local sprite_x = graphics.oam[sprite_address + 1]
-      local sprite_tile = graphics.oam[sprite_address + 2]
-      if sprite_size == 16 then
-        sprite_tile = bit32.band(sprite_tile, 0xFE)
-      end
-      local sprite_flags = graphics.oam[sprite_address + 3]
+      local sprite = graphics.cache.oam[active_sprites[i]]
 
-      local y_flipped = bit32.band(0x40, sprite_flags) ~= 0
-      local x_flipped = bit32.band(0x20, sprite_flags) ~= 0
-
-      local sprite_palette = graphics.palette.obj0
-      if bit32.band(sprite_flags, 0x10) ~= 0 then
-        sprite_palette = graphics.palette.obj1
-      end
-
-      -- handle color mode vram bank
-      if graphics.gameboy.type == graphics.gameboy.types.color then
-        if bit32.band(0x08, sprite_flags) ~= 0 then
-          sprite_tile = sprite_tile + 384
-        end
-
-        local sprite_palette_index = bit32.band(0x07, sprite_flags)
-        sprite_palette = graphics.palette.color_obj[sprite_palette_index]
-      end
-
-      local sub_y = 16 - (sprite_y - scanline)
-      if y_flipped then
+      local sub_y = 16 - ((sprite.y + 16) - scanline)
+      if sprite.vertical_flip then
         sub_y = sprite_size - 1 - sub_y
       end
 
-      local sprite_bg_priority = (bit32.band(0x80, sprite_flags) == 0)
-
-      if sub_y >= 8 then
-        sprite_tile = sprite_tile + 1
-        sub_y = sub_y - 8
+      local tile = sprite.tile
+      if sprite_size == 16 then
+        tile = sprite.upper_tile
+        if sub_y >= 8 then
+          tile = sprite.lower_tile
+          sub_y = sub_y - 8
+        end
       end
 
-      local tile = graphics.cache.tiles[sprite_tile]
-
       for x = 0, 7 do
-        local display_x = sprite_x - 8 + x
+        local display_x = sprite.x + x
         if display_x >= 0 and display_x < 160 then
           local sub_x = x
           if x_flipped then
@@ -557,8 +532,8 @@ function Graphics.new(modules)
           end
           local subpixel_index = tile[sub_x][sub_y]
           if subpixel_index > 0 then
-            if (bg_priority[display_x] == false and sprite_bg_priority) or bg_index[display_x] == 0 or graphics.registers.oam_priority then
-              local subpixel_color = sprite_palette[subpixel_index]
+            if (bg_priority[display_x] == false and not sprite.bg_priority) or bg_index[display_x] == 0 or graphics.registers.oam_priority then
+              local subpixel_color = sprite.palette[subpixel_index]
               plot_pixel(graphics.game_screen, display_x, scanline, unpack(subpixel_color))
             end
           end
