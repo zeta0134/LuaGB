@@ -75,7 +75,9 @@ end
 
 function Gameboy:step()
   self.timers.update()
-  self.graphics.update()
+  if self.timers.system_clock > self.graphics.next_edge then
+    self.graphics.update()
+  end
   self.processor.process_instruction()
   return
 end

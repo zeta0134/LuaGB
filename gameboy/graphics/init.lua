@@ -16,7 +16,7 @@ function Graphics.new(modules)
   local graphics = {}
 
   graphics.cache = Cache.new(graphics)
-  graphics.palette = Palette.new(modules)
+  graphics.palette = Palette.new(graphics, modules)
   graphics.registers = Registers.new(graphics, modules, graphics.cache)
 
   --just for shortening access
@@ -25,6 +25,7 @@ function Graphics.new(modules)
   -- Internal Variables
   graphics.vblank_count = 0
   graphics.last_edge = 0
+  graphics.next_edge = 0
   graphics.lcdstat = false
 
   graphics.game_screen = {}
@@ -248,6 +249,8 @@ function Graphics.new(modules)
       end
 
       graphics.refresh_lcdstat()
+    else
+      graphics.next_edge = graphics.last_edge + 204
     end
   end
 
@@ -257,7 +260,10 @@ function Graphics.new(modules)
       graphics.last_edge = graphics.last_edge + 456
       io.ram[ports.LY] = io.ram[ports.LY] + 1
       graphics.refresh_lcdstat()
+    else
+      graphics.next_edge = graphics.last_edge + 456
     end
+
     if io.ram[ports.LY] >= 154 then
       io.ram[ports.LY] = 0
       graphics.initialize_frame()
@@ -281,18 +287,22 @@ function Graphics.new(modules)
       graphics.initialize_scanline()
       graphics.registers.status.SetMode(3)
       graphics.refresh_lcdstat()
+    else
+      graphics.next_edge = graphics.last_edge + 80
     end
   end
   -- VRAM Read: Neither VRAM, OAM, nor CGB palettes can be read
   handle_mode[3] = function()
     local duration = timers.system_clock - graphics.last_edge
-    graphics.draw_next_pixels(duration - 6)
+    graphics.draw_next_pixels(duration)
     if timers.system_clock - graphics.last_edge > 172 then
       graphics.last_edge = graphics.last_edge + 172
       graphics.draw_sprites_into_scanline(io.ram[ports.LY], scanline_data.bg_index, scanline_data.bg_priority)
       graphics.registers.status.SetMode(0)
       -- If enabled, fire an HBlank interrupt
       graphics.refresh_lcdstat()
+    else
+      graphics.next_edge = graphics.last_edge + 172
     end
   end
 
@@ -303,6 +313,7 @@ function Graphics.new(modules)
       -- erase our clock debt, so we don't do stupid timing things when the
       -- display is enabled again later
       graphics.last_edge = timers.system_clock
+      graphics.next_edge = timers.system_clock
       graphics.registers.status.SetMode(0)
       io.ram[ports.LY] = 0
       graphics.refresh_lcdstat()

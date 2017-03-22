@@ -2,7 +2,7 @@ local bit32 = require("bit")
 
 local Palette = {}
 
-function Palette.new(modules)
+function Palette.new(graphics, modules)
   local io = modules.io
   local ports = io.ports
 
@@ -70,6 +70,7 @@ function Palette.new(modules)
     for i = 0, 3 do
       palette.bg[i] = getColorFromIndex(i, byte)
     end
+    graphics.update()
   end
 
   io.write_logic[ports.OBP0] = function(byte)
@@ -77,6 +78,7 @@ function Palette.new(modules)
     for i = 0, 3 do
       palette.obj0[i] = getColorFromIndex(i, byte)
     end
+    graphics.update()
   end
 
   io.write_logic[ports.OBP1] = function(byte)
@@ -84,6 +86,7 @@ function Palette.new(modules)
     for i = 0, 3 do
       palette.obj1[i] = getColorFromIndex(i, byte)
     end
+    graphics.update()
   end
 
   palette.color_bg_index = 0
