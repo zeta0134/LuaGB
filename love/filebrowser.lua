@@ -289,7 +289,7 @@ filebrowser.draw = function(dx, dy, scale)
       if i + filebrowser.scroll_pos == filebrowser.cursor_pos then
         color = palette[3]
       end
-      filebrowser.draw_string(item, 10, y, color)
+      filebrowser.draw_string(item, 10, y, color, 152)
       y = y + 7
     end
     i = i + 1
