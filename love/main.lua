@@ -40,7 +40,6 @@ local resize_window = function()
   local height = 144 * scale --height of gameboy screen
   if debug_mode then
     if #active_panels > 0 then
-      width = width + 10
       for _, panel in ipairs(active_panels) do
         width = width + panel.width + 10
       end
@@ -196,7 +195,7 @@ function love.load(args)
   love.graphics.setFont(small_font)
   game_screen_imagedata = love.image.newImageData(256, 256)
   game_screen_image = love.graphics.newImage(game_screen_imagedata)
-
+  debug_separator = love.graphics.newImage("images/debug_separator.png")
 
   love.window.setIcon(love.image.newImageData("images/icon_16.png"))
 
@@ -432,6 +431,10 @@ function love.draw()
     end
     local panel_x = 160 * 2 + 10 --width of the gameboy canvas in debug mode
     for _, panel in pairs(active_panels) do
+      love.graphics.push()
+      love.graphics.scale(2, 2)
+      love.graphics.draw(debug_separator, (panel_x - 10) / 2, 0)
+      love.graphics.pop()
       panel.draw(panel_x, 0)
       panel_x = panel_x + panel.width + 10
     end
