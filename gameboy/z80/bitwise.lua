@@ -37,7 +37,17 @@ function apply(opcodes, opcode_cycles, z80, memory)
   opcodes[0xA5] = function() and_a_with(reg.l) end
   opcode_cycles[0xA6] = 8
   opcodes[0xA6] = function() and_a_with(read_at_hl()) end
-  opcodes[0xA7] = function() and_a_with(reg.a) end
+  opcodes[0xA7] = function()
+    --reg.a = band(reg.a, value)
+    if reg.a == 0 then
+      reg.flags.z = 1
+    else
+      reg.flags.z = 0
+    end
+    reg.flags.n = 0
+    reg.flags.h = 1
+    reg.flags.c = 0
+  end
 
   -- and A, nn
   opcode_cycles[0xE6] = 8
@@ -64,7 +74,17 @@ function apply(opcodes, opcode_cycles, z80, memory)
   opcodes[0xAD] = function() xor_a_with(reg.l) end
   opcode_cycles[0xAE] = 8
   opcodes[0xAE] = function() xor_a_with(read_at_hl()) end
-  opcodes[0xAF] = function() xor_a_with(reg.a) end
+  opcodes[0xAF] = function()
+    reg.a = 0
+    if reg.a == 0 then
+      reg.flags.z = 1
+    else
+      reg.flags.z = 0
+    end
+    reg.flags.n = 0
+    reg.flags.h = 0
+    reg.flags.c = 0
+  end
 
   -- xor A, nn
   opcode_cycles[0xEE] = 8
@@ -91,7 +111,16 @@ function apply(opcodes, opcode_cycles, z80, memory)
   opcodes[0xB5] = function() or_a_with(reg.l) end
   opcode_cycles[0xB6] = 8
   opcodes[0xB6] = function() or_a_with(read_at_hl()) end
-  opcodes[0xB7] = function() or_a_with(reg.a) end
+  opcodes[0xB7] = function()
+    if reg.a == 0 then
+      reg.flags.z = 1
+    else
+      reg.flags.z = 0
+    end
+    reg.flags.n = 0
+    reg.flags.h = 0
+    reg.flags.c = 0
+  end
 
   -- or A, nn
   opcode_cycles[0xF6] = 8
