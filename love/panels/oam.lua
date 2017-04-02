@@ -76,8 +76,8 @@ oam.draw_sprites = function()
     love.graphics.pop()
     -- draw info about this sprite
     love.graphics.setColor(0, 0, 0)
-    love.graphics.print(string.format("X:%02X", sprite_x), x * cell_width + cell_width - 17, y * cell_height + 2)
-    love.graphics.print(string.format("Y:%02X", sprite_y), x * cell_width + cell_width - 17, y * cell_height + 9)
+    love.graphics.print(string.format("X:%02X", bit32.band(sprite_x, 0xFF)), x * cell_width + cell_width - 17, y * cell_height + 2)
+    love.graphics.print(string.format("Y:%02X", bit32.band(sprite_y, 0xFF)), x * cell_width + cell_width - 17, y * cell_height + 9)
     love.graphics.print(string.format("F:%02X", flags   ), x * cell_width + cell_width - 17, y * cell_height + 16)
     x = x + 1
     if x >= sprites_per_row then
