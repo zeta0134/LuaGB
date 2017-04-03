@@ -5,15 +5,14 @@ io.width = 64 * 2
 io.init = function(gameboy)
   io.canvas = love.graphics.newCanvas(64, 400)
   io.gameboy = gameboy
+  io.background_image = love.graphics.newImage("images/debug_io_background.png")
 end
 
 io.draw = function(x, y)
   love.graphics.setCanvas(io.canvas)
   love.graphics.clear()
-  love.graphics.setColor(192, 192, 192)
-  love.graphics.rectangle("fill", 0, 0, 70, 400)
   love.graphics.setColor(255, 255, 255)
-  love.graphics.print("IO Registers", 2, 6)
+  love.graphics.draw(io.background_image, 0, 0)
   io.print_values(io.gameboy)
   love.graphics.setCanvas() -- reset to main FB
   love.graphics.setColor(255, 255, 255)

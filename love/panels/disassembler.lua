@@ -9,15 +9,14 @@ disassembler.width = 128 * 2
 disassembler.init = function(gameboy)
   disassembler.canvas = love.graphics.newCanvas(128, 400)
   disassembler.gameboy = gameboy
+  disassembler.background_image = love.graphics.newImage("images/debug_disassembler_background.png")
 end
 
 disassembler.draw = function(x, y)
   love.graphics.setCanvas(disassembler.canvas)
   love.graphics.clear()
-  love.graphics.setColor(192, 192, 192)
-  love.graphics.rectangle("fill", 0, 0, 128, 400)
   love.graphics.setColor(255, 255, 255)
-  love.graphics.print("Disassembly", 2, 2)
+  love.graphics.draw(disassembler.background_image, 0, 0)
   disassembler.print_opcodes(disassembler.gameboy)
   love.graphics.setCanvas() -- reset to main FB
   love.graphics.setColor(255, 255, 255)
