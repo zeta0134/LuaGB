@@ -9,6 +9,8 @@ oam.init = function(gameboy)
   oam.gameboy = gameboy
   oam.sprite_imagedata = love.image.newImageData(8, 16)
   oam.sprite_image = love.graphics.newImage(oam.sprite_imagedata)
+  oam.background_8x8_image = love.graphics.newImage("images/debug_oam_8x8_background.png")
+  oam.background_8x16_image = love.graphics.newImage("images/debug_oam_8x16_background.png")
 end
 
 oam.draw_sprite = function(sprite_address, sx, sy, sprite_size)
@@ -54,17 +56,17 @@ oam.draw_sprites = function()
     sprite_size = 16
     sprite_scaling = 1
   end
+
+  love.graphics.setColor(255, 255, 255)
+  if sprite_size == 8 then
+    love.graphics.draw(oam.background_8x8_image, 0, 0)
+  else
+    love.graphics.draw(oam.background_8x16_image, 0, 0)
+  end
+
   local x = 0
   local y = 0
   for i = 0, 39 do
-    -- Draw the sprite border
-    love.graphics.setColor(128, 128, 128)
-    love.graphics.rectangle("fill", (x * cell_width) + 2, (y * cell_height) + 2, 8 * sprite_scaling + 4, sprite_size * sprite_scaling + 4)
-    love.graphics.setColor(0, 0, 0)
-    love.graphics.rectangle("fill", (x * cell_width) + 1, (y * cell_height) + 1, 8 * sprite_scaling + 4, sprite_size * sprite_scaling + 4)
-    love.graphics.setColor(255, 255, 255)
-    love.graphics.rectangle("fill", (x * cell_width) + 2, (y * cell_height) + 2, 8 * sprite_scaling + 2, sprite_size * sprite_scaling + 2)
-
     -- draw the sprite
     local tile, sprite_x, sprite_y, flags = oam.draw_sprite(0xFE00 + (i * 4), 0, 0, sprite_size)
     love.graphics.setCanvas(oam.canvas)
@@ -72,13 +74,13 @@ oam.draw_sprites = function()
     love.graphics.scale(sprite_scaling, sprite_scaling)
     love.graphics.setColor(255, 255, 255)
     oam.sprite_image:refresh()
-    love.graphics.draw(oam.sprite_image, ((3 + x * cell_width) / sprite_scaling), ((3 + y * cell_height) / sprite_scaling))
+    love.graphics.draw(oam.sprite_image, ((3 + x * cell_width) / sprite_scaling), ((10 + y * cell_height) / sprite_scaling))
     love.graphics.pop()
     -- draw info about this sprite
     love.graphics.setColor(0, 0, 0)
-    love.graphics.print(string.format("X:%02X", bit32.band(sprite_x, 0xFF)), x * cell_width + cell_width - 17, y * cell_height + 2)
-    love.graphics.print(string.format("Y:%02X", bit32.band(sprite_y, 0xFF)), x * cell_width + cell_width - 17, y * cell_height + 9)
-    love.graphics.print(string.format("F:%02X", flags   ), x * cell_width + cell_width - 17, y * cell_height + 16)
+    love.graphics.print(string.format("X:%02X", bit32.band(sprite_x, 0xFF)), x * cell_width + cell_width - 17, y * cell_height + 9)
+    love.graphics.print(string.format("Y:%02X", bit32.band(sprite_y, 0xFF)), x * cell_width + cell_width - 17, y * cell_height + 16)
+    love.graphics.print(string.format("F:%02X", flags   ), x * cell_width + cell_width - 17, y * cell_height + 23)
     x = x + 1
     if x >= sprites_per_row then
       x = 0
