@@ -22,7 +22,7 @@ This is designed to be fairly cross platform, and currently consists of a platfo
 * HDMA Transfers (Used by a very small handful of games, notably Shantae)
 
 ## Build Instructions
-On any Linux system, make sure to install Love 0.10.2, gnu make, and the "zip" utility. Then just run "make" in the source folder. On Windows, you can run windows_build.bat, which will produce Love2D.exe, this can then be run from anywhere.
+On any Linux system, make sure to install Love 0.10.2, GNU make, and the "zip" utility. Then just run "make" in the source folder. On Windows, you can run windows_build.bat, which will produce Love2D.exe, this can then be run from anywhere.
 
 If you'd like games embedded in the resulting .love file, you may drop then in the games folder before running make. Alternately, games will load from the save directory. Due to a by-design limitation with Love2D's filesystem libraries, games may only be loaded from these two locations.
 
