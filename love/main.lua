@@ -422,7 +422,7 @@ end
 
 function love.draw()
   if debug_mode then
-    panels.registers.draw(0, 300)
+    panels.registers.draw(0, 288)
     print_instructions()
     if menu_active then
       filebrowser.draw(0, 0, 2)
