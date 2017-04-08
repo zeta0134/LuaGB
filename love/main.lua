@@ -14,33 +14,37 @@ panels.disassembler = require("panels/disassembler")
 
 require("vendor/profiler")
 
-local active_panels = {}
+local LuaGB = {}
+LuaGB.audio_dump_running = false
+LuaGB.game_filename = ""
+LuaGB.game_loaded = false
+LuaGB.window_title = ""
+LuaGB.save_delay = 0
 
-local ubuntu_font
+LuaGB.game_screen_image = nil
+LuaGB.game_screen_imagedata = nil
 
-local game_screen_image
-local game_screen_imagedata
-local debug_tile_canvas
+LuaGB.debug = {}
+LuaGB.debug.active_panels = {}
+LuaGB.debug.enabled = false
 
-local emulator_running = false
-local debug_mode = false
-local menu_active = true
-local game_loaded = false
+LuaGB.emulator_running = false
+LuaGB.menu_active = true
 
-local screen_scale = 3
+LuaGB.screen_scale = 3
 
-local gameboy = Gameboy.new{}
+LuaGB.gameboy = Gameboy.new{}
 
-local resize_window = function()
-  local scale = screen_scale
-  if debug_mode then
+function LuaGB:resize_window()
+  local scale = self.screen_scale
+  if self.debug.enabled then
     scale = 2
   end
   local width = 160 * scale --width of gameboy screen
   local height = 144 * scale --height of gameboy screen
-  if debug_mode then
-    if #active_panels > 0 then
-      for _, panel in ipairs(active_panels) do
+  if self.debug.enabled then
+    if #self.debug.active_panels > 0 then
+      for _, panel in ipairs(self.debug.active_panels) do
         width = width + panel.width + 10
       end
     end
@@ -49,31 +53,27 @@ local resize_window = function()
   love.window.setMode(width, height)
 end
 
-local toggle_panel = function(name)
+function LuaGB:toggle_panel(name)
   if panels[name].active then
     panels[name].active = false
-    for index, value in ipairs(active_panels) do
+    for index, value in ipairs(self.debug.active_panels) do
       if value == panels[name] then
-        table.remove(active_panels, index)
+        table.remove(self.debug.active_panels, index)
       end
     end
   else
     panels[name].active = true
-    table.insert(active_panels, panels[name])
+    table.insert(self.debug.active_panels, panels[name])
   end
-  resize_window()
+  self:resize_window()
 end
-
-local game_filename = ""
-local window_title = ""
-local save_delay = 0
 
 -- GLOBAL ON PURPOSE
 profile_enabled = false
 
-local function save_ram()
-  local filename = "saves/" .. game_filename .. ".sav"
-  local save_data = binser.serialize(gameboy.cartridge.external_ram)
+function LuaGB:save_ram()
+  local filename = "saves/" .. self.game_filename .. ".sav"
+  local save_data = binser.serialize(self.gameboy.cartridge.external_ram)
   if love.filesystem.write(filename, save_data) then
     print("Successfully wrote SRAM to: ", filename)
   else
@@ -81,8 +81,8 @@ local function save_ram()
   end
 end
 
-local function load_ram()
-  local filename = "saves/" .. game_filename .. ".sav"
+function LuaGB:load_ram()
+  local filename = "saves/" .. self.game_filename .. ".sav"
   local file_data, size = love.filesystem.read(filename)
   if type(size) == "string" then
     print(size)
@@ -92,7 +92,7 @@ local function load_ram()
       local save_data, elements = binser.deserialize(file_data)
       if elements > 0 then
         for i = 0, #save_data[1] do
-          gameboy.cartridge.external_ram[i] = save_data[1][i]
+          self.gameboy.cartridge.external_ram[i] = save_data[1][i]
         end
         print("Loaded SRAM: ", filename)
       else
@@ -102,9 +102,9 @@ local function load_ram()
   end
 end
 
-local function save_state(number)
-  local state_data = gameboy.save_state()
-  local filename = "states/" .. game_filename .. ".s" .. number
+function LuaGB:save_state(number)
+  local state_data = self.gameboy.save_state()
+  local filename = "states/" .. self.game_filename .. ".s" .. number
   local state_string = binser.serialize(state_data)
   if love.filesystem.write(filename, state_string) then
     print("Successfully wrote state: ", filename)
@@ -113,8 +113,8 @@ local function save_state(number)
   end
 end
 
-local function load_state(number)
-  local filename = "states/" .. game_filename .. ".s" .. number
+function LuaGB:load_state(number)
+  local filename = "states/" .. self.game_filename .. ".s" .. number
   local file_data, size = love.filesystem.read(filename)
   if type(size) == "string" then
     print(size)
@@ -123,7 +123,7 @@ local function load_state(number)
     if size > 0 then
       local state_data, elements = binser.deserialize(file_data)
       if elements > 0 then
-        gameboy.load_state(state_data[1])
+        self.gameboy.load_state(state_data[1])
         print("Loaded state: ", filename)
       else
         print("Error parsing state data for ", filename)
@@ -132,20 +132,19 @@ local function load_state(number)
   end
 end
 
-local sound_buffer = nil
+LuaGB.sound_buffer = nil
 
-function play_gameboy_audio(buffer)
-  --local data = love.sound.newSoundData(32768, 32768, 16, 2)
+function LuaGB.play_gameboy_audio(buffer)
   for i = 0, 32768 - 1 do
-    sound_buffer:setSample(i, buffer[i])
+    LuaGB.sound_buffer:setSample(i, buffer[i])
   end
-  local source = love.audio.newSource(sound_buffer)
+  local source = love.audio.newSource(LuaGB.sound_buffer)
   love.audio.play(source)
 end
 
-function dump_audio(buffer)
+function LuaGB.dump_audio(buffer)
   -- play the sound still
-  play_gameboy_audio(buffer)
+  LuaGB.play_gameboy_audio(buffer)
   -- convert this to a bytestring for output
   local output = ""
   local chars = {}
@@ -160,42 +159,44 @@ function dump_audio(buffer)
   love.filesystem.append("audiodump.raw", output, 32768 * 2)
 end
 
-local function load_game(game_path)
-  gameboy:reset()
+function LuaGB:load_game(game_path)
+  self.gameboy:reset()
 
-  game_filename = game_path
-  while string.find(game_filename, "/") do
-    game_filename = string.sub(game_filename, string.find(game_filename, "/") + 1)
+  self.game_filename = game_path
+  while string.find(self.game_filename, "/") do
+    self.game_filename = string.sub(self.game_filename, string.find(self.game_filename, "/") + 1)
   end
 
-  file_data, size = love.filesystem.read(game_path)
+  local file_data, size = love.filesystem.read(game_path)
   if file_data then
-    gameboy.cartridge.load(file_data, size)
-    load_ram()
-    gameboy:reset()
+    self.gameboy.cartridge.load(file_data, size)
+    self:load_ram()
+    self.gameboy:reset()
   else
     print("Couldn't open ", game_path, " bailing.")
     love.event.quit()
     return
   end
 
-  window_title = "LuaGB - " .. gameboy.cartridge.header.title
-  love.window.setTitle(window_title)
+  self.window_title = "LuaGB - " .. self.gameboy.cartridge.header.title
+  love.window.setTitle(self.window_title)
 
-  menu_active = false
-  emulator_running = true
-  game_loaded = true
+  self.menu_active = false
+  self.emulator_running = true
+  self.game_loaded = true
 end
 
 function love.load(args)
-  window_title = "LuaGB"
-  sound_buffer = love.sound.newSoundData(32768, 32768, 16, 2)
+  LuaGB.window_title = "LuaGB"
+  LuaGB.sound_buffer = love.sound.newSoundData(32768, 32768, 16, 2)
   love.graphics.setDefaultFilter("nearest", "nearest")
+
   local small_font = love.graphics.newImageFont("images/5x3font_bm.png", "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ ", 1)
   love.graphics.setFont(small_font)
-  game_screen_imagedata = love.image.newImageData(256, 256)
-  game_screen_image = love.graphics.newImage(game_screen_imagedata)
-  debug_separator = love.graphics.newImage("images/debug_separator.png")
+
+  LuaGB.game_screen_imagedata = love.image.newImageData(256, 256)
+  LuaGB.game_screen_image = love.graphics.newImage(LuaGB.game_screen_imagedata)
+  LuaGB.debug.separator_image = love.graphics.newImage("images/debug_separator.png")
 
   love.window.setIcon(love.image.newImageData("images/icon_16.png"))
 
@@ -204,31 +205,30 @@ function love.load(args)
   love.filesystem.createDirectory("states")
   love.filesystem.createDirectory("saves")
 
-  gameboy:initialize()
+  LuaGB.gameboy:initialize()
 
   if #args >= 2 then
     local game_path = args[2]
-    load_game(game_path)
+    LuaGB:load_game(game_path)
   end
 
   -- Initialize Debug Panels
   for _, panel in pairs(panels) do
-    panel.init(gameboy)
+    panel.init(LuaGB.gameboy)
   end
 
-  toggle_panel("audio")
+  LuaGB:toggle_panel("audio")
 
   filebrowser.is_directory = love.filesystem.isDirectory
   filebrowser.get_directory_items = love.filesystem.getDirectoryItems
-  filebrowser.load_file = load_game
-  filebrowser.init(gameboy)
+  filebrowser.load_file = function(filename) LuaGB:load_game(filename) end
+  filebrowser.init(LuaGB.gameboy)
 
-  resize_window()
-  gameboy.audio.on_buffer_full(play_gameboy_audio)
-  --love.audio.setVolume(1)
+  LuaGB:resize_window()
+  LuaGB.gameboy.audio.on_buffer_full(LuaGB.play_gameboy_audio)
 end
 
-function print_instructions()
+function LuaGB:print_instructions()
   love.graphics.setColor(0, 0, 0)
   local shortcuts = {
     "[P] = Play/Pause",
@@ -243,7 +243,12 @@ function print_instructions()
     "",
     "[F1-F9] = Save State",
     "[1-9]   = Load State",
-    "[Numpad] = Debug Panels"
+    "",
+    "[Num 1] = IO",
+    "[Num 2] = VRAM",
+    "[Num 3] = OAM",
+    "[Num 4] = Disassembler",
+    "[Num 5] = Audio"
   }
   love.graphics.push()
   love.graphics.scale(2, 2)
@@ -253,91 +258,90 @@ function print_instructions()
   love.graphics.pop()
 end
 
-function draw_game_screen(dx, dy, scale)
+function LuaGB:draw_game_screen(dx, dy, scale)
   for y = 0, 143 do
     for x = 0, 159 do
-      game_screen_imagedata:setPixel(x, y, gameboy.graphics.game_screen[y][x][1], gameboy.graphics.game_screen[y][x][2], gameboy.graphics.game_screen[y][x][3], 255)
+      self.game_screen_imagedata:setPixel(x, y, self.gameboy.graphics.game_screen[y][x][1], self.gameboy.graphics.game_screen[y][x][2], self.gameboy.graphics.game_screen[y][x][3], 255)
     end
   end
   love.graphics.setCanvas() -- reset to main FB
   love.graphics.setColor(255, 255, 255)
   love.graphics.push()
   love.graphics.scale(scale, scale)
-  game_screen_image:refresh()
-  love.graphics.draw(game_screen_image, dx / scale, dy / scale)
+  self.game_screen_image:refresh()
+  love.graphics.draw(LuaGB.game_screen_image, dx / scale, dy / scale)
   love.graphics.pop()
 end
 
-local function run_n_cycles(n)
+function LuaGB:run_n_cycles(n)
   for i = 1, n do
-    gameboy:step()
+    self.gameboy:step()
   end
 end
 
 local action_keys = {}
-action_keys.space = function() gameboy:step() end
+action_keys.space = function() LuaGB.gameboy:step() end
 
-action_keys.k = function() run_n_cycles(100) end
-action_keys.l = function() run_n_cycles(1000) end
-action_keys.r = function() gameboy:reset() end
-action_keys.p = function() emulator_running = not emulator_running end
-action_keys.h = function() gameboy:run_until_hblank() end
-action_keys.v = function() gameboy:run_until_vblank() end
+action_keys.k = function() LuaGB:run_n_cycles(100) end
+action_keys.l = function() LuaGB:run_n_cycles(1000) end
+action_keys.r = function() LuaGB.gameboy:reset() end
+action_keys.p = function() LuaGB.emulator_running = not LuaGB.emulator_running end
+action_keys.h = function() LuaGB.gameboy:run_until_hblank() end
+action_keys.v = function() LuaGB.gameboy:run_until_vblank() end
 
-action_keys.o = function() gameboy:step_over() end
-action_keys.i = function() gameboy:run_until_ret() end
+action_keys.o = function() LuaGB.gameboy:step_over() end
+action_keys.i = function() LuaGB.gameboy:run_until_ret() end
 
 action_keys.d = function()
-  debug_mode = not debug_mode
-  resize_window()
+  LuaGB.debug.enabled = not LuaGB.debug.enabled
+  LuaGB:resize_window()
 end
 
 for i = 1, 8 do
   action_keys[tostring(i)] = function()
-    load_state(i)
+    LuaGB:load_state(i)
   end
 
   action_keys["f" .. tostring(i)] = function()
-    save_state(i)
+    LuaGB:save_state(i)
   end
 end
 
-action_keys["f9"] = function() gameboy.audio.tone1.debug_disabled = not gameboy.audio.tone1.debug_disabled end
-action_keys["f10"] = function() gameboy.audio.tone2.debug_disabled = not gameboy.audio.tone2.debug_disabled end
-action_keys["f11"] = function() gameboy.audio.wave3.debug_disabled = not gameboy.audio.wave3.debug_disabled end
-action_keys["f12"] = function() gameboy.audio.noise4.debug_disabled = not gameboy.audio.noise4.debug_disabled end
+action_keys["f9"] = function() LuaGB.gameboy.audio.tone1.debug_disabled = not LuaGB.gameboy.audio.tone1.debug_disabled end
+action_keys["f10"] = function() LuaGB.gameboy.audio.tone2.debug_disabled = not LuaGB.gameboy.audio.tone2.debug_disabled end
+action_keys["f11"] = function() LuaGB.gameboy.audio.wave3.debug_disabled = not LuaGB.gameboy.audio.wave3.debug_disabled end
+action_keys["f12"] = function() LuaGB.gameboy.audio.noise4.debug_disabled = not LuaGB.gameboy.audio.noise4.debug_disabled end
 
-action_keys.kp1 = function() toggle_panel("io") end
-action_keys.kp2 = function() toggle_panel("vram") end
-action_keys.kp3 = function() toggle_panel("oam") end
-action_keys.kp4 = function() toggle_panel("disassembler") end
-action_keys.kp5 = function() toggle_panel("audio") end
+action_keys.kp1 = function() LuaGB:toggle_panel("io") end
+action_keys.kp2 = function() LuaGB:toggle_panel("vram") end
+action_keys.kp3 = function() LuaGB:toggle_panel("oam") end
+action_keys.kp4 = function() LuaGB:toggle_panel("disassembler") end
+action_keys.kp5 = function() LuaGB:toggle_panel("audio") end
 
 action_keys["kp+"] = function()
-  if screen_scale < 5 then
-    screen_scale = screen_scale + 1
-    resize_window()
+  if LuaGB.screen_scale < 5 then
+    LuaGB.screen_scale = LuaGB.screen_scale + 1
+    LuaGB:resize_window()
   end
 end
 
 action_keys["kp-"] = function()
-  if screen_scale > 1 then
-    screen_scale = screen_scale - 1
-    resize_window()
+  if LuaGB.screen_scale > 1 then
+    LuaGB.screen_scale = LuaGB.screen_scale - 1
+    LuaGB:resize_window()
   end
 end
 
-local audio_dump_running = false
 action_keys.a = function()
-  if audio_dump_running then
-    gameboy.audio.on_buffer_full(play_gameboy_audio)
+  if LuaGB.audio_dump_running then
+    LuaGB.gameboy.audio.on_buffer_full(LuaGB.play_gameboy_audio)
     print("Stopped dumping audio.")
-    audio_dump_running = false
+    LuaGB.audio_dump_running = false
   else
     love.filesystem.remove("audiodump.raw")
-    gameboy.audio.on_buffer_full(dump_audio)
+    LuaGB.gameboy.audio.on_buffer_full(LuaGB.dump_audio)
     print("Started dumping audio to audiodump.raw ...")
-    audio_dump_running = true
+    LuaGB.audio_dump_running = true
   end
 end
 
@@ -355,8 +359,8 @@ input_mappings.rshift = "Select"
 
 function love.keypressed(key)
   if input_mappings[key] then
-    gameboy.input.keys[input_mappings[key]] = 1
-    gameboy.input.update()
+    LuaGB.gameboy.input.keys[input_mappings[key]] = 1
+    LuaGB.gameboy.input.update()
   end
 end
 
@@ -367,32 +371,34 @@ function love.keyreleased(key)
     end
   end
 
-  if menu_active then
+  if LuaGB.menu_active then
     filebrowser.keyreleased(key)
   end
 
   if input_mappings[key] then
-    gameboy.input.keys[input_mappings[key]] = 0
-    gameboy.input.update()
+    LuaGB.gameboy.input.keys[input_mappings[key]] = 0
+    LuaGB.gameboy.input.update()
   end
 
-  if key == "escape" and game_loaded then
-    menu_active = not menu_active
+  if key == "escape" and LuaGB.game_loaded then
+    LuaGB.menu_active = not LuaGB.menu_active
   end
 end
 
 function love.mousepressed(x, y, button)
-  if menu_active then
-    filebrowser.mousepressed(x / screen_scale, y / screen_scale, button)
-  end
-  if debug_mode then
+  local scale = LuaGB.screen_scale
+  if LuaGB.debug.enabled then
     local panel_x = 160 * 2 + 10 --width of the gameboy canvas in debug mode
-    for _, panel in pairs(active_panels) do
+    for _, panel in pairs(LuaGB.active_panels) do
       if panel.mousepressed then
         panel.mousepressed(x - panel_x, y, button)
       end
       panel_x = panel_x + panel.width + 10
     end
+    scale = 2
+  end
+  if LuaGB.menu_active then
+    filebrowser.mousepressed(x / scale, y / scale, button)
   end
 end
 
@@ -400,20 +406,20 @@ function love.update()
   if profile_enabled then
     profilerStart()
   end
-  if menu_active then
+  if LuaGB.menu_active then
     filebrowser.update()
   else
-    if emulator_running then
-      gameboy:run_until_vblank()
+    if LuaGB.emulator_running then
+      LuaGB.gameboy:run_until_vblank()
     end
   end
-  if gameboy.cartridge.external_ram.dirty then
-    save_delay = save_delay + 1
+  if LuaGB.gameboy.cartridge.external_ram.dirty then
+    LuaGB.save_delay = LuaGB.save_delay + 1
   end
-  if save_delay > 60 * 10 then
-    save_delay = 0
-    gameboy.cartridge.external_ram.dirty = false
-    save_ram()
+  if LuaGB.save_delay > 60 * 10 then
+    LuaGB.save_delay = 0
+    LuaGB.gameboy.cartridge.external_ram.dirty = false
+    LuaGB:save_ram()
   end
   if profile_enabled then
     profilerStop()
@@ -421,28 +427,28 @@ function love.update()
 end
 
 function love.draw()
-  if debug_mode then
+  if LuaGB.debug.enabled then
     panels.registers.draw(0, 288)
-    print_instructions()
-    if menu_active then
+    LuaGB:print_instructions()
+    if LuaGB.menu_active then
       filebrowser.draw(0, 0, 2)
     else
-      draw_game_screen(0, 0, 2)
+      LuaGB:draw_game_screen(0, 0, 2)
     end
     local panel_x = 160 * 2 + 10 --width of the gameboy canvas in debug mode
-    for _, panel in pairs(active_panels) do
+    for _, panel in pairs(LuaGB.debug.active_panels) do
       love.graphics.push()
       love.graphics.scale(2, 2)
-      love.graphics.draw(debug_separator, (panel_x - 10) / 2, 0)
+      love.graphics.draw(LuaGB.debug.separator_image, (panel_x - 10) / 2, 0)
       love.graphics.pop()
       panel.draw(panel_x, 0)
       panel_x = panel_x + panel.width + 10
     end
   else
-    if menu_active then
-      filebrowser.draw(0, 0, screen_scale)
+    if LuaGB.menu_active then
+      filebrowser.draw(0, 0, LuaGB.screen_scale)
     else
-      draw_game_screen(0, 0, screen_scale)
+      LuaGB:draw_game_screen(0, 0, LuaGB.screen_scale)
     end
   end
 
@@ -452,12 +458,12 @@ function love.draw()
     love.graphics.setColor(255, 255, 255)
   end
 
-  love.window.setTitle("(FPS: " .. love.timer.getFPS() .. ") - " .. window_title)
+  love.window.setTitle("(FPS: " .. love.timer.getFPS() .. ") - " .. LuaGB.window_title)
 end
 
 function love.quit()
   profilerReport("profiler.txt")
-  if game_loaded then
-    save_ram()
+  if LuaGB.game_loaded then
+    LuaGB:save_ram()
   end
 end
