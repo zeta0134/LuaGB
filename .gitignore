@@ -2,3 +2,4 @@ games
 love/games
 *.love
 LuaGB.zip
+*.gz
