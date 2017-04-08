@@ -17,6 +17,7 @@ require("vendor/profiler")
 local LuaGB = {}
 LuaGB.audio_dump_running = false
 LuaGB.game_filename = ""
+LuaGB.game_path = ""
 LuaGB.game_loaded = false
 LuaGB.window_title = ""
 LuaGB.save_delay = 0
@@ -32,8 +33,6 @@ LuaGB.emulator_running = false
 LuaGB.menu_active = true
 
 LuaGB.screen_scale = 3
-
-LuaGB.gameboy = Gameboy.new{}
 
 function LuaGB:resize_window()
   local scale = self.screen_scale
@@ -160,8 +159,9 @@ function LuaGB.dump_audio(buffer)
 end
 
 function LuaGB:load_game(game_path)
-  self.gameboy:reset()
+  self:reset()
 
+  self.game_path = game_path
   self.game_filename = game_path
   while string.find(self.game_filename, "/") do
     self.game_filename = string.sub(self.game_filename, string.find(self.game_filename, "/") + 1)
@@ -205,7 +205,7 @@ function love.load(args)
   love.filesystem.createDirectory("states")
   love.filesystem.createDirectory("saves")
 
-  LuaGB.gameboy:initialize()
+  LuaGB:reset()
 
   if #args >= 2 then
     local game_path = args[2]
@@ -225,7 +225,6 @@ function love.load(args)
   filebrowser.init(LuaGB.gameboy)
 
   LuaGB:resize_window()
-  LuaGB.gameboy.audio.on_buffer_full(LuaGB.play_gameboy_audio)
 end
 
 function LuaGB:print_instructions()
@@ -279,12 +278,25 @@ function LuaGB:run_n_cycles(n)
   end
 end
 
+function LuaGB:reset()
+  self.gameboy = Gameboy.new{}
+  self.gameboy:initialize()
+  self.gameboy:reset()
+  self.gameboy.audio.on_buffer_full(self.play_gameboy_audio)
+  self.audio_dump_running = false
+end
+
 local action_keys = {}
 action_keys.space = function() LuaGB.gameboy:step() end
 
 action_keys.k = function() LuaGB:run_n_cycles(100) end
 action_keys.l = function() LuaGB:run_n_cycles(1000) end
-action_keys.r = function() LuaGB.gameboy:reset() end
+action_keys.r = function()
+  LuaGB:reset()
+  if LuaGB.game_loaded then
+    LuaGB:load_game(LuaGB.game_path)
+  end
+end
 action_keys.p = function() LuaGB.emulator_running = not LuaGB.emulator_running end
 action_keys.h = function() LuaGB.gameboy:run_until_hblank() end
 action_keys.v = function() LuaGB.gameboy:run_until_vblank() end
