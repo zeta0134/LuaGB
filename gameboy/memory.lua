@@ -114,10 +114,12 @@ function Memory.new(modules)
       state.work_ram_0[i] = memory.work_ram_0[i]
     end
 
-    state.work_ram_1 = {}
-    for i = 0xD000, 0xDFFF do
-      state.work_ram_1[i] = memory.work_ram_1[i]
+    state.work_ram_1_raw = {}
+    for i = 0xD000, (0xD000 + (4 * 7 * 1024) - 1) do
+      state.work_ram_1_raw[i] = memory.work_ram_1_raw[i]
     end
+
+    state.work_ram_1_bank = 1
 
     return state
   end
@@ -126,9 +128,11 @@ function Memory.new(modules)
     for i = 0xC000, 0xCFFF do
       memory.work_ram_0[i] = state.work_ram_0[i]
     end
-    for i = 0xD000, 0xDFFF do
-      memory.work_ram_1[i] = state.work_ram_1[i]
+    for i = 0xD000, (0xD000 + (4 * 7 * 1024) - 1) do
+      memory.work_ram_1_raw[i] = state.work_ram_1_raw[i]
     end
+
+    memory.work_ram_1.bank = state.work_ram_1_bank
   end
 
   -- Fancy: make access to ourselves act as an array, reading / writing memory using the above

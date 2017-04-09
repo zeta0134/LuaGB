@@ -120,7 +120,7 @@ function Cache.new(graphics)
     if graphics.gameboy.type == graphics.gameboy.types.color then
       map_attr[x][y].palette = graphics.palette.color_bg[bit32.band(data, 0x07)]
     else
-      map_attr[x][y].palette = cache.gameboy.palette.bg
+      map_attr[x][y].palette = graphics.palette.bg
     end
     map_attr[x][y].bank = bit32.rshift(bit32.band(data, 0x08), 3)
     map_attr[x][y].horizontal_flip = bit32.rshift(bit32.band(data, 0x20), 5) ~= 0
@@ -145,8 +145,10 @@ function Cache.new(graphics)
 
   cache.refreshTiles = function()
     for i = 0, 384 - 1 do
-      cache.refreshTile(0x8000 + i * 2, 0)
-      cache.refreshTile(0x8000 + i * 2, 1)
+      for y = 0, 7 do
+        cache.refreshTile(0x8000 + i * 16 + y * 2, 0)
+        cache.refreshTile(0x8000 + i * 16 + y * 2, 1)
+      end
     end
   end
 

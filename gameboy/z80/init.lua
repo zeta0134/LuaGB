@@ -51,7 +51,7 @@ function Z80.new(modules)
 
   z80.add_cycles = add_cycles_normal
 
-  local double_speed = false
+  z80.double_speed = false
 
   z80.reset = function(gameboy)
     -- Initialize registers to what the GB's
@@ -80,13 +80,14 @@ function Z80.new(modules)
 
     z80.halted = 0
 
-    double_speed = false
+    z80.double_speed = false
     z80.add_cycles = add_cycles_normal
-    timers.set_normal_speed()
+    timers:set_normal_speed()
   end
 
   z80.save_state = function()
     local state = {}
+    state.double_speed = z80.double_speed
     state.registers = z80.registers
     state.halted = z80.halted
     return state
@@ -110,6 +111,12 @@ function Z80.new(modules)
     z80.registers.pc = state.registers.pc
     z80.registers.sp = state.registers.sp
 
+    z80.double_speed = state.double_speed
+    if z80.double_speed then
+      timers:set_double_speed()
+    else
+      timers:set_normal_speed()
+    end
     z80.halted = state.halted
   end
 
@@ -199,17 +206,17 @@ function Z80.new(modules)
     if band(io.ram[0x4D], 0x01) ~= 0 then
       --speed switch!
       print("Switching speeds!")
-      if double_speed then
+      if z80.double_speed then
         z80.add_cycles = add_cycles_normal
-        double_speed = false
+        z80.double_speed = false
         io.ram[0x4D] = band(io.ram[0x4D], 0x7E) + 0x00
-        timers.set_normal_speed()
+        timers:set_normal_speed()
         print("Switched to Normal Speed")
       else
         z80.add_cycles = add_cycles_double
-        double_speed = true
+        z80.double_speed = true
         io.ram[0x4D] = band(io.ram[0x4D], 0x7E) + 0x80
-        timers.set_double_speed()
+        timers:set_double_speed()
         print("Switched to Double Speed")
       end
     end

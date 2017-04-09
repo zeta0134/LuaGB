@@ -85,7 +85,8 @@ function Mbc5.new()
     return {
       rom_bank = self.rom_bank,
       ram_bank = self.ram_bank,
-      ram_enable = self.ram_enable}
+      ram_enable = self.ram_enable,
+      rumble_pak = self.rumble_pak}
   end
 
   mbc5.load_state = function(self, state_data)
@@ -94,6 +95,8 @@ function Mbc5.new()
     self.rom_bank = state_data.rom_bank
     self.ram_bank = state_data.ram_bank
     self.ram_enable = state_data.ram_enable
+    self.rumble_pak = state_data.rumble_pak
+    self.rumbling = false
   end
 
   setmetatable(mbc5, mbc5.mt)

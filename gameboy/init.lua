@@ -39,7 +39,7 @@ function Gameboy:reset()
   self.memory.reset()
   self.cartridge.reset()
   self.graphics.reset() -- Note to self: this needs to come AFTER resetting IO
-  self.timers.reset()
+  self.timers:reset()
   self.processor.reset(self)
 
   self.interrupts.enabled = 1
@@ -48,11 +48,11 @@ end
 function Gameboy:save_state()
   local state = {}
   state.audio = self.audio.save_state()
+  state.cartridge = self.cartridge.save_state()
   state.io = self.io.save_state()
   state.memory = self.memory.save_state()
-  state.cartridge = self.cartridge.save_state()
   state.graphics = self.graphics.save_state()
-  state.timers = self.timers.save_state()
+  state.timers = self.timers:save_state()
   state.processor = self.processor.save_state()
 
   -- Note: the underscore
@@ -62,11 +62,11 @@ end
 
 function Gameboy:load_state(state)
   self.audio.load_state(state.audio)
+  self.cartridge.load_state(state.cartridge)
   self.io.load_state(state.io)
   self.memory.load_state(state.memory)
-  self.cartridge.load_state(state.cartridge)
   self.graphics.load_state(state.graphics)
-  self.timers.load_state(state.timers)
+  self.timers:load_state(state.timers)
   self.processor.load_state(state.processor)
 
   -- Note: the underscore
@@ -74,7 +74,7 @@ function Gameboy:load_state(state)
 end
 
 function Gameboy:step()
-  self.timers.update()
+  self.timers:update()
   if self.timers.system_clock > self.graphics.next_edge then
     self.graphics.update()
   end

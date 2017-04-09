@@ -14,27 +14,23 @@ function Timers.new(modules)
 
   timers.clock_rates = {}
 
-  timers.set_normal_speed = function()
-    timers.clock_rates[0] = math.floor(system_clocks_per_second / 4096)
-    timers.clock_rates[1] = math.floor(system_clocks_per_second / 262144)
-    timers.clock_rates[2] = math.floor(system_clocks_per_second / 65536)
-    timers.clock_rates[3] = math.floor(system_clocks_per_second / 16384)
+  function timers:set_normal_speed()
+    self.clock_rates[0] = math.floor(system_clocks_per_second / 4096)
+    self.clock_rates[1] = math.floor(system_clocks_per_second / 262144)
+    self.clock_rates[2] = math.floor(system_clocks_per_second / 65536)
+    self.clock_rates[3] = math.floor(system_clocks_per_second / 16384)
   end
 
-  timers.set_double_speed = function()
-    timers.clock_rates[0] = math.floor(system_clocks_per_second / 4096 / 2)
-    timers.clock_rates[1] = math.floor(system_clocks_per_second / 262144 / 2)
-    timers.clock_rates[2] = math.floor(system_clocks_per_second / 65536 / 2)
-    timers.clock_rates[3] = math.floor(system_clocks_per_second / 16384 / 2)
+  function timers:set_double_speed()
+    self.clock_rates[0] = math.floor(system_clocks_per_second / 4096 / 2)
+    self.clock_rates[1] = math.floor(system_clocks_per_second / 262144 / 2)
+    self.clock_rates[2] = math.floor(system_clocks_per_second / 65536 / 2)
+    self.clock_rates[3] = math.floor(system_clocks_per_second / 16384 / 2)
   end
 
   timers.div_base = 0
   timers.timer_offset = 0
   timers.timer_enabled = false
-
-  --local timer_enabled = function()
-    --return bit32.band(io.ram[io.ports.TAC], 0x4) == 0x4
-  --end
 
   io.write_logic[io.ports.DIV] = function(byte)
     -- Reset the DIV timer, in this case by re-basing it to the
@@ -52,12 +48,12 @@ function Timers.new(modules)
     timers.timer_offset = timers.system_clock
   end
 
-  timers.update = function()
-    if timers.timer_enabled then
+  function timers:update()
+    if self.timer_enabled then
       local rate_select = bit32.band(io.ram[io.ports.TAC], 0x3)
-      while timers.system_clock > timers.timer_offset + timers.clock_rates[rate_select] do
+      while self.system_clock > self.timer_offset + self.clock_rates[rate_select] do
         io.ram[io.ports.TIMA] = bit32.band(io.ram[io.ports.TIMA] + 1, 0xFF)
-        timers.timer_offset = timers.timer_offset + timers.clock_rates[rate_select]
+        self.timer_offset = self.timer_offset + self.clock_rates[rate_select]
         if io.ram[io.ports.TIMA] == 0x00 then
           --overflow happened, first reset TIMA to TMA
           io.ram[io.ports.TIMA] = io.ram[io.ports.TMA]
@@ -68,20 +64,26 @@ function Timers.new(modules)
     end
   end
 
-  timers.reset = function()
-    timers.system_clock = 0
-    timers.div_offset = 0
-    timers.timer_offset = 0
+  function timers:reset()
+    self.system_clock = 0
+    self.div_base = 0
+    self.timer_offset = 0
+    self.timer_enabled = false
   end
 
-  timers.save_state = function()
-    return {system_clock = timers.system_clock, div_offset = timers.div_offset, timer_offset = timers.timer_offset}
+  function timers:save_state()
+    return {
+      system_clock = self.system_clock,
+      div_base = self.div_base,
+      timer_offset = self.timer_offset,
+      timer_enabled = self.timer_enabled}
   end
 
-  timers.load_state = function(state)
-    timers.system_clock = state.system_clock
-    timers.div_offset = state.div_offset
-    timers.timer_offset = state.timer_offset
+  function timers:load_state(state)
+    self.system_clock = state.system_clock
+    self.div_base = state.div_base
+    self.timer_offset = state.timer_offset
+    self.timer_enabled = state.timer_enabled
   end
 
   return timers

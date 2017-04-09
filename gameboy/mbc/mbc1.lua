@@ -83,7 +83,11 @@ function Mbc1.new()
   end
 
   mbc1.save_state = function(self)
-    return {rom_bank = self.rom_bank, ram_bank = self.ram_bank, mode = self.mode, ram_enable = self.ram_enable}
+    return {
+      rom_bank = self.rom_bank,
+      ram_bank = self.ram_bank,
+      mode = self.mode,
+      ram_enable = self.ram_enable}
   end
 
   mbc1.load_state = function(self, state_data)

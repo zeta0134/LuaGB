@@ -14,7 +14,7 @@ function MbcNone.new()
     return
   end
 
-  mbc_none.reset = function(self)
+  mbc_none.load_state = function(self)
     -- Do nothing! This MBC has no state.
   end
 

@@ -102,7 +102,7 @@ function LuaGB:load_ram()
 end
 
 function LuaGB:save_state(number)
-  local state_data = self.gameboy.save_state()
+  local state_data = self.gameboy:save_state()
   local filename = "states/" .. self.game_filename .. ".s" .. number
   local state_string = binser.serialize(state_data)
   if love.filesystem.write(filename, state_string) then
@@ -122,7 +122,7 @@ function LuaGB:load_state(number)
     if size > 0 then
       local state_data, elements = binser.deserialize(file_data)
       if elements > 0 then
-        self.gameboy.load_state(state_data[1])
+        self.gameboy:load_state(state_data[1])
         print("Loaded state: ", filename)
       else
         print("Error parsing state data for ", filename)
@@ -212,11 +212,6 @@ function love.load(args)
     LuaGB:load_game(game_path)
   end
 
-  -- Initialize Debug Panels
-  for _, panel in pairs(panels) do
-    panel.init(LuaGB.gameboy)
-  end
-
   LuaGB:toggle_panel("audio")
 
   filebrowser.is_directory = love.filesystem.isDirectory
@@ -284,6 +279,11 @@ function LuaGB:reset()
   self.gameboy:reset()
   self.gameboy.audio.on_buffer_full(self.play_gameboy_audio)
   self.audio_dump_running = false
+
+  -- Initialize Debug Panels
+  for _, panel in pairs(panels) do
+    panel.init(self.gameboy)
+  end
 end
 
 local action_keys = {}
@@ -401,7 +401,7 @@ function love.mousepressed(x, y, button)
   local scale = LuaGB.screen_scale
   if LuaGB.debug.enabled then
     local panel_x = 160 * 2 + 10 --width of the gameboy canvas in debug mode
-    for _, panel in pairs(LuaGB.active_panels) do
+    for _, panel in pairs(LuaGB.debug.active_panels) do
       if panel.mousepressed then
         panel.mousepressed(x - panel_x, y, button)
       end

@@ -117,7 +117,7 @@ function Graphics.new(modules)
     graphics.palette.reset()
 
     -- zero out all of VRAM:
-    for i = 0x8000, 0x9FFF do
+    for i = 0x8000, (0x8000 + (16 * 2 * 1024) - 1) do
       graphics.vram[i] = 0
     end
 
@@ -139,9 +139,11 @@ function Graphics.new(modules)
     local state = {}
 
     state.vram = {}
-    for i = 0x8000, 0x9FFF do
+    for i = 0x8000, (0x8000 + (16 * 2 * 1024) - 1) do
       state.vram[i] = graphics.vram[i]
     end
+
+    state.vram_bank = graphics.vram.bank
 
     state.oam = {}
     for i = 0xFE00, 0xFE9F do
@@ -160,16 +162,18 @@ function Graphics.new(modules)
   end
 
   graphics.load_state = function(state)
-    for i = 0x8000, 0x9FFF do
+    for i = 0x8000, (0x8000 + (16 * 2 * 1024) - 1) do
       graphics.vram[i] = state.vram[i]
     end
+
+    graphics.vram.bank = state.vram_bank
+
     for i = 0xFE00, 0xFE9F do
       graphics.oam[i] = state.oam[i]
     end
     graphics.vblank_count = state.vblank_count
     graphics.last_edge = state.last_edge
 
-    graphics.cache.reset()
     graphics.cache.refreshAll()
 
     graphics.palette.bg   = state.palette.bg
