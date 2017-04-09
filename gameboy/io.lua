@@ -158,7 +158,7 @@ function Io.new(modules)
   io.save_state = function()
     local state = {}
 
-    for i = 0, #io.ram do
+    for i = 0, 0xFF do
       state[i] = io.ram[i]
     end
 
@@ -166,7 +166,7 @@ function Io.new(modules)
   end
 
   io.load_state = function(state)
-    for i = 0, #io.ram do
+    for i = 0, 0xFF do
       io.ram[i] = state[i]
     end
   end

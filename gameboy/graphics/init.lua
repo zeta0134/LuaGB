@@ -152,6 +152,8 @@ function Graphics.new(modules)
 
     state.vblank_count = graphics.vblank_count
     state.last_edge = graphics.last_edge
+    state.lcdstat = graphics.lcdstat
+    state.mode = graphics.registers.status.mode
 
     state.palette = {}
     state.palette.bg   = graphics.palette.bg
@@ -188,6 +190,8 @@ function Graphics.new(modules)
     end
     graphics.vblank_count = state.vblank_count
     graphics.last_edge = state.last_edge
+    graphics.lcdstat = state.lcdstat
+    graphics.registers.status.mode = state.mode
 
     graphics.palette.bg   = state.palette.bg
     graphics.palette.obj0 = state.palette.obj0
@@ -204,6 +208,8 @@ function Graphics.new(modules)
     end
 
     graphics.cache.refreshAll()
+    io.write_logic[ports.STAT](io.ram[ports.STAT])
+    io.write_logic[ports.LCDC](io.ram[ports.LCDC])
   end
 
   local time_at_this_mode = function()

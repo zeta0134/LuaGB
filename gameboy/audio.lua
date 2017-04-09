@@ -120,14 +120,11 @@ function Audio.new(modules)
 
   audio.save_state = function()
     local state = {}
-    state.next_sample = next_sample
     state.next_sample_cycle = next_sample_cycle
     return state
   end
 
   audio.load_state = function(state)
-    audio.reset()
-    next_sample = state.next_sample
     next_sample_cycle = state.next_sample_cycle
   end
 

@@ -113,6 +113,9 @@ function LuaGB:save_state(number)
 end
 
 function LuaGB:load_state(number)
+  LuaGB:reset()
+  LuaGB:load_game(LuaGB.game_path)
+
   local filename = "states/" .. self.game_filename .. ".s" .. number
   local file_data, size = love.filesystem.read(filename)
   if type(size) == "string" then
