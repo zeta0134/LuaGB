@@ -195,8 +195,8 @@ function Cache.new(graphics)
 
   cache.refreshAll = function()
     cache.refreshTiles()
-    cache.refreshTileMaps()
     cache.refreshTileAttributes()
+    cache.refreshTileMaps()
   end
 
   return cache

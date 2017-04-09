@@ -158,6 +158,21 @@ function Graphics.new(modules)
     state.palette.obj0 = graphics.palette.obj0
     state.palette.obj1 = graphics.palette.obj1
 
+    state.color_bg = {}
+    state.color_obj = {}
+    state.color_bg_raw = {}
+    state.color_obj_raw = {}
+
+    for p = 0, 7 do
+      state.color_bg[p] = graphics.palette.color_bg[p]
+      state.color_obj[p] = graphics.palette.color_obj[p]
+    end
+
+    for i = 0, 63 do
+      state.color_bg_raw[i] = graphics.palette.color_bg_raw[i]
+      state.color_obj_raw[i] = graphics.palette.color_obj_raw[i]
+    end
+
     return state
   end
 
@@ -174,11 +189,21 @@ function Graphics.new(modules)
     graphics.vblank_count = state.vblank_count
     graphics.last_edge = state.last_edge
 
-    graphics.cache.refreshAll()
-
     graphics.palette.bg   = state.palette.bg
     graphics.palette.obj0 = state.palette.obj0
     graphics.palette.obj1 = state.palette.obj1
+
+    for p = 0, 7 do
+      graphics.palette.color_bg[p] = state.color_bg[p]
+      graphics.palette.color_obj[p] = state.color_obj[p]
+    end
+
+    for i = 0, 63 do
+      graphics.palette.color_bg_raw[i] = state.color_bg_raw[i]
+      graphics.palette.color_obj_raw[i] = state.color_obj_raw[i]
+    end
+
+    graphics.cache.refreshAll()
   end
 
   local time_at_this_mode = function()
