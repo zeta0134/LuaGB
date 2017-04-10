@@ -39,7 +39,6 @@ LuaGB.screen_scale = 3
 local ffi_status, ffi
 if type(jit) == "table" and jit.status() then
   ffi_status, ffi = pcall(require, "ffi")
-  print('ffi_status', ffi_status)
   if ffi_status then
     ffi.cdef("typedef struct { unsigned char r, g, b, a; } luaGB_pixel;")
   end
