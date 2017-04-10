@@ -26,7 +26,7 @@ filebrowser.load_file = function()
 end
 
 filebrowser.init = function(gameboy)
-  filebrowser.image_data = love.image.newImageData(160, 144)
+  filebrowser.image_data = love.image.newImageData(256, 256)
   if ffi_status then
     filebrowser.raw_image_data = ffi.cast("luaGB_pixel*", filebrowser.image_data:getPointer())
   end
@@ -323,18 +323,21 @@ filebrowser.draw = function(dx, dy, scale)
   filebrowser.draw_image(22, 0, filebrowser.logo)
 
   -- Blit the virtual game screen to a love canvas
-  local width = 160
-  for x = 0, (width - 1) do
-    for y = 0, 143 do
-      if filebrowser.raw_image_data then
-        local pixel = filebrowser.raw_image_data[y*width+x]
-        local v_pixel = filebrowser.game_screen[y][x]
+  local pixels = filebrowser.game_screen
+  local image_data = filebrowser.image_data
+  local raw_image_data = filebrowser.raw_image_data
+  local stride = image_data:getWidth()
+  for y = 0, 143 do
+    for x = 0, 159 do
+      if raw_image_data then
+        local pixel = raw_image_data[y*stride+x]
+        local v_pixel = pixels[y][x]
         pixel.r = v_pixel[1]
         pixel.g = v_pixel[2]
         pixel.b = v_pixel[3]
         pixel.a = 255
       else
-        filebrowser.image_data:setPixel(x, y, unpack(filebrowser.game_screen[y][x]))
+        image_data:setPixel(x, y, pixels[y][x][1], pixels[y][x][2], pixels[y][x][3], 255)
       end
     end
   end

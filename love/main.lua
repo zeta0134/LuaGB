@@ -269,18 +269,21 @@ function LuaGB:print_instructions()
 end
 
 function LuaGB:draw_game_screen(dx, dy, scale)
-  local width = 160
+  local pixels = self.gameboy.graphics.game_screen
+  local image_data = self.game_screen_imagedata
+  local raw_image_data = self.raw_game_screen_imagedata
+  local stride = image_data:getWidth()
   for y = 0, 143 do
-    for x = 0, (width - 1) do
-      if self.raw_game_screen_imagedata then
-        local pixel = self.raw_game_screen_imagedata[y*width+x]
-        local v_pixel = self.gameboy.graphics.game_screen[y][x]
+    for x = 0, 159 do
+      if raw_image_data then
+        local pixel = raw_image_data[y*stride+x]
+        local v_pixel = pixels[y][x]
         pixel.r = v_pixel[1]
         pixel.g = v_pixel[2]
         pixel.b = v_pixel[3]
         pixel.a = 255
       else
-        self.game_screen_imagedata:setPixel(x, y, self.gameboy.graphics.game_screen[y][x][1], self.gameboy.graphics.game_screen[y][x][2], self.gameboy.graphics.game_screen[y][x][3], 255)
+        image_data:setPixel(x, y, pixels[y][x][1], pixels[y][x][2], pixels[y][x][3], 255)
       end
     end
   end
