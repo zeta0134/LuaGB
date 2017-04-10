@@ -207,7 +207,7 @@ function love.load(args)
   local small_font = love.graphics.newImageFont("images/5x3font_bm.png", "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ ", 1)
   love.graphics.setFont(small_font)
 
-  LuaGB.game_screen_imagedata = love.image.newImageData(160, 144)
+  LuaGB.game_screen_imagedata = love.image.newImageData(256, 256)
   if ffi_status then
     LuaGB.raw_game_screen_imagedata = ffi.cast("luaGB_pixel*", LuaGB.game_screen_imagedata:getPointer())
   end
