@@ -1,4 +1,4 @@
-.PHONY : love osx
+.PHONY : love osx windows all
 
 love:
 	@mkdir -p love
@@ -10,7 +10,7 @@ love:
 linux: love
 	-rm LuaGB_Linux.tar.gz
 	cp vendor/love-win32/Love2D_License.txt .
-	tar zcvf LuaGB_Linux.tar.gz LuaGB.love LICENSE.txt README.md Love2D_License.txt
+	tar zcvf LuaGB-linux.tar.gz LuaGB.love LICENSE.txt README.md Love2D_License.txt
 	-rm Love2D_License.txt
 
 osx: love
@@ -18,4 +18,4 @@ osx: love
 	cd vendor/love-mac && zip -9 -r -y ../../LuaGB-mac.zip LuaGB.app
 	-rm vendor/love-mac/LuaGB.app/Contents/Resources/LuaGB.love
 
-.PHONY : love
+all: linux osx

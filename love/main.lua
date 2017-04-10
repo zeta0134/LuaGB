@@ -19,6 +19,7 @@ LuaGB.audio_dump_running = false
 LuaGB.game_filename = ""
 LuaGB.game_path = ""
 LuaGB.game_loaded = false
+LuaGB.version = "0.1.0-alpha"
 LuaGB.window_title = ""
 LuaGB.save_delay = 0
 
@@ -180,7 +181,7 @@ function LuaGB:load_game(game_path)
     return
   end
 
-  self.window_title = "LuaGB - " .. self.gameboy.cartridge.header.title
+  self.window_title = "LuaGB v" .. self.version .. " - " .. self.gameboy.cartridge.header.title
   love.window.setTitle(self.window_title)
 
   self.menu_active = false
@@ -189,7 +190,8 @@ function LuaGB:load_game(game_path)
 end
 
 function love.load(args)
-  LuaGB.window_title = "LuaGB"
+  LuaGB.window_title = "LuaGB v" .. LuaGB.version
+  print(LuaGB.window_title)
   LuaGB.sound_buffer = love.sound.newSoundData(32768, 32768, 16, 2)
   love.graphics.setDefaultFilter("nearest", "nearest")
 

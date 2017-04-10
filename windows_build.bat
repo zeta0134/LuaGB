@@ -17,5 +17,5 @@ copy /Y LICENSE.txt build\LuaGB_License.txt
 copy /Y README.md build\README.md
 del build\LuaGB.love
 del build\love.exe
-powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('build', 'LuaGB_Win32.zip'); }"
+powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('build', 'LuaGB-win32.zip'); }"
 rd /s /q build
