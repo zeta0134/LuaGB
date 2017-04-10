@@ -35,6 +35,16 @@ LuaGB.menu_active = true
 
 LuaGB.screen_scale = 3
 
+-- Do the check to see if JIT is enabled. If so use the optimized FFI structs.
+local ffi_status, ffi
+if type(jit) == "table" and jit.status() then
+  ffi_status, ffi = pcall(require, "ffi")
+  print('ffi_status', ffi_status)
+  if ffi_status then
+    ffi.cdef("typedef struct { unsigned char r, g, b, a; } luaGB_pixel;")
+  end
+end
+
 function LuaGB:resize_window()
   local scale = self.screen_scale
   if self.debug.enabled then
@@ -198,7 +208,10 @@ function love.load(args)
   local small_font = love.graphics.newImageFont("images/5x3font_bm.png", "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ ", 1)
   love.graphics.setFont(small_font)
 
-  LuaGB.game_screen_imagedata = love.image.newImageData(256, 256)
+  LuaGB.game_screen_imagedata = love.image.newImageData(160, 144)
+  if ffi_status then
+    LuaGB.raw_game_screen_imagedata = ffi.cast("luaGB_pixel*", LuaGB.game_screen_imagedata:getPointer())
+  end
   LuaGB.game_screen_image = love.graphics.newImage(LuaGB.game_screen_imagedata)
   LuaGB.debug.separator_image = love.graphics.newImage("images/debug_separator.png")
 
@@ -257,9 +270,19 @@ function LuaGB:print_instructions()
 end
 
 function LuaGB:draw_game_screen(dx, dy, scale)
+  local width = 160
   for y = 0, 143 do
-    for x = 0, 159 do
-      self.game_screen_imagedata:setPixel(x, y, self.gameboy.graphics.game_screen[y][x][1], self.gameboy.graphics.game_screen[y][x][2], self.gameboy.graphics.game_screen[y][x][3], 255)
+    for x = 0, (width - 1) do
+      if self.raw_game_screen_imagedata then
+        local pixel = self.raw_game_screen_imagedata[y*width+x]
+        local v_pixel = self.gameboy.graphics.game_screen[y][x]
+        pixel.r = v_pixel[1]
+        pixel.g = v_pixel[2]
+        pixel.b = v_pixel[3]
+        pixel.a = 255
+      else
+        self.game_screen_imagedata:setPixel(x, y, self.gameboy.graphics.game_screen[y][x][1], self.gameboy.graphics.game_screen[y][x][2], self.gameboy.graphics.game_screen[y][x][3], 255)
+      end
     end
   end
   love.graphics.setCanvas() -- reset to main FB
