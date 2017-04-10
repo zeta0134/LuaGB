@@ -8,9 +8,9 @@ love:
 	cd love && zip -9 -r ../LuaGB.love .
 
 linux: love
-	-rm LuaGB_Linux.tar.gz
+	-rm LuaGB-Linux.tar.gz
 	cp vendor/love-win32/Love2D_License.txt .
-	tar zcvf LuaGB-linux.tar.gz LuaGB.love LICENSE.txt README.md Love2D_License.txt
+	tar zcvf LuaGB-Linux.tar.gz LuaGB.love LICENSE.txt README.md Love2D_License.txt
 	-rm Love2D_License.txt
 
 osx: love
