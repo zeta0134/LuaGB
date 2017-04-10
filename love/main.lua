@@ -164,20 +164,19 @@ end
 function LuaGB:load_game(game_path)
   self:reset()
 
-  self.game_path = game_path
-  self.game_filename = game_path
-  while string.find(self.game_filename, "/") do
-    self.game_filename = string.sub(self.game_filename, string.find(self.game_filename, "/") + 1)
-  end
-
   local file_data, size = love.filesystem.read(game_path)
   if file_data then
     self.gameboy.cartridge.load(file_data, size)
     self:load_ram()
     self.gameboy:reset()
+
+    self.game_path = game_path
+    self.game_filename = game_path
+    while string.find(self.game_filename, "/") do
+      self.game_filename = string.sub(self.game_filename, string.find(self.game_filename, "/") + 1)
+    end
   else
-    print("Couldn't open ", game_path, " bailing.")
-    love.event.quit()
+    print("Couldn't open ", game_path, " giving up.")
     return
   end
 
