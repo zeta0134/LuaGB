@@ -265,8 +265,8 @@ function LuaGB:draw_game_screen(dx, dy, scale)
   local screen = self.gameboy.graphics.game_screen
   for y = 0, 143 * graphics_width - 1, graphics_width do
     for x = 0, 159 do
-      local pixel = screen[y * graphics_width + x]
-      self.game_screen_imagedata:setPixel(x, y, pixel[1], pixel[2], pixel[3], 255)
+      local pixel = screen[y + x]
+      self.game_screen_imagedata:setPixel(x, y / graphics_width, pixel[1], pixel[2], pixel[3], 255)
     end
   end
   love.graphics.setCanvas() -- reset to main FB
