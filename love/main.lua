@@ -1,18 +1,22 @@
-local bit32 = require("bit")
-local filebrowser = require("filebrowser")
-local Gameboy = require("gameboy")
-local binser = require("vendor/binser")
+luagb = {
+  require = require
+}
+
+local bit32 = luagb.require("bit")
+local filebrowser = luagb.require("filebrowser")
+local Gameboy = luagb.require("gameboy")
+local binser = luagb.require("vendor/binser")
 
 local panels = {}
 
-panels.audio = require("panels/audio")
-panels.registers = require("panels/registers")
-panels.io = require("panels/io")
-panels.vram = require("panels/vram")
-panels.oam = require("panels/oam")
-panels.disassembler = require("panels/disassembler")
+panels.audio = luagb.require("panels/audio")
+panels.registers = luagb.require("panels/registers")
+panels.io = luagb.require("panels/io")
+panels.vram = luagb.require("panels/vram")
+panels.oam = luagb.require("panels/oam")
+panels.disassembler = luagb.require("panels/disassembler")
 
-require("vendor/profiler")
+luagb.require("vendor/profiler")
 
 local LuaGB = {}
 LuaGB.audio_dump_running = false

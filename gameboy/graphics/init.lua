@@ -1,8 +1,8 @@
-local bit32 = require("bit")
+local bit32 = luagb.require("bit")
 
-local Cache = require("gameboy/graphics/cache")
-local Palette = require("gameboy/graphics/palette")
-local Registers = require("gameboy/graphics/registers")
+local Cache = luagb.require("gameboy/graphics/cache")
+local Palette = luagb.require("gameboy/graphics/palette")
+local Registers = luagb.require("gameboy/graphics/registers")
 
 local Graphics = {}
 

@@ -1,4 +1,4 @@
-local bit32 = require("bit")
+local bit32 = luagb.require("bit")
 
 local rom_header = {}
 -- given an entire rom (as a string reference),

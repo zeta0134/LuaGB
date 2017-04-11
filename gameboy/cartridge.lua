@@ -1,10 +1,10 @@
-local rom_header = require("gameboy/rom_header")
+local rom_header = luagb.require("gameboy/rom_header")
 
-local MbcNone = require("gameboy/mbc/none")
-local Mbc1 = require("gameboy/mbc/mbc1")
-local Mbc2 = require("gameboy/mbc/mbc2")
-local Mbc3 = require("gameboy/mbc/mbc3")
-local Mbc5 = require("gameboy/mbc/mbc5")
+local MbcNone = luagb.require("gameboy/mbc/none")
+local Mbc1 = luagb.require("gameboy/mbc/mbc1")
+local Mbc2 = luagb.require("gameboy/mbc/mbc2")
+local Mbc3 = luagb.require("gameboy/mbc/mbc3")
+local Mbc5 = luagb.require("gameboy/mbc/mbc5")
 
 local Cartridge = {}
 

@@ -1,4 +1,4 @@
-local bit32 = require("bit")
+local bit32 = luagb.require("bit")
 
 local band = bit32.band
 local lshift = bit32.lshift

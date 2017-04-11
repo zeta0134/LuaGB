@@ -1,4 +1,4 @@
-local bit32 = require("bit")
+local bit32 = luagb.require("bit")
 
 local Mbc3 = {}
 

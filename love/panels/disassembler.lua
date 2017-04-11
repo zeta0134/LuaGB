@@ -1,6 +1,6 @@
-local bit32 = require("bit")
+local bit32 = luagb.require("bit")
 
-local opcode_names = require("gameboy/opcode_names")
+local opcode_names = luagb.require("gameboy/opcode_names")
 
 local disassembler = {}
 
