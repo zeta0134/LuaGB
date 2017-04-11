@@ -15,7 +15,7 @@ linux: love
 
 osx: love
 	cp LuaGB.love vendor/love-mac/LuaGB.app/Contents/Resources
-	cd vendor/love-mac && zip -9 -r -y ../../LuaGB-mac.zip LuaGB.app
+	cd vendor/love-mac && zip -9 -r -y ../../LuaGB-Mac.zip LuaGB.app
 	-rm vendor/love-mac/LuaGB.app/Contents/Resources/LuaGB.love
 
 all: linux osx
