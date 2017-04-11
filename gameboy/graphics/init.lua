@@ -415,8 +415,10 @@ function Graphics.new(modules)
 
   graphics.draw_next_pixels = function(duration)
     local ly = io.ram[ports.LY]
+    local game_screen = graphics.game_screen
 
     while scanline_data.x < duration and scanline_data.x < 160 do
+      local dx = scanline_data.x
       if not scanline_data.window_active then
         graphics.switch_to_window()
       end
@@ -427,7 +429,11 @@ function Graphics.new(modules)
         local sub_x = scanline_data.sub_x
         local sub_y = scanline_data.sub_y
         bg_index = scanline_data.active_tile[sub_x][sub_y]
-        plot_pixel(graphics.game_screen, scanline_data.x, ly, unpack(scanline_data.active_attr.palette[bg_index]))
+        local active_palette = scanline_data.active_attr.palette[bg_index]
+
+        game_screen[ly][dx][1] = active_palette[1]
+        game_screen[ly][dx][2] = active_palette[2]
+        game_screen[ly][dx][3] = active_palette[3]
       end
 
       scanline_data.bg_index[scanline_data.x] = bg_index
