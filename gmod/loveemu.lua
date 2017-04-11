@@ -9,7 +9,7 @@ love = {
   _VERSION = 0,
   require = function(s) 
     if (not require_loads[s]) then
-      require_loads[s] = pack(include(s..".lua"))
+      require_loads[s] = pack(include("luagb/"..s..".lua"))
     end
     return unpack(require_loads[s], require_loads[s].n)
   end,

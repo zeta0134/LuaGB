@@ -20,7 +20,10 @@ function PANEL:SetLoveInstance(love)
                 local name = func[1]
                 if (self.love[name]) then
                     self.love.__love_curfunc = name
+                    local time = SysTime
+                    local t = time()
                     self.love[name](unpack(func, 2, func.n))
+                    print(string.format("func took %.2f ms", (t - time()) * 1000))
                 end
             end
             coroutine.yield(false)
