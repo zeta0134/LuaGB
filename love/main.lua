@@ -1,18 +1,22 @@
-local bit32 = require("bit")
-local filebrowser = require("filebrowser")
-local Gameboy = require("gameboy")
-local binser = require("vendor/binser")
+luagb = {
+  require = require
+}
+
+local bit32 = luagb.require("bit")
+local filebrowser = luagb.require("filebrowser")
+local Gameboy = luagb.require("gameboy")
+local binser = luagb.require("vendor/binser")
 
 local panels = {}
 
-panels.audio = require("panels/audio")
-panels.registers = require("panels/registers")
-panels.io = require("panels/io")
-panels.vram = require("panels/vram")
-panels.oam = require("panels/oam")
-panels.disassembler = require("panels/disassembler")
+panels.audio = luagb.require("panels/audio")
+panels.registers = luagb.require("panels/registers")
+panels.io = luagb.require("panels/io")
+panels.vram = luagb.require("panels/vram")
+panels.oam = luagb.require("panels/oam")
+panels.disassembler = luagb.require("panels/disassembler")
 
-require("vendor/profiler")
+luagb.require("vendor/profiler")
 
 local LuaGB = {}
 LuaGB.audio_dump_running = false
@@ -257,9 +261,12 @@ function LuaGB:print_instructions()
 end
 
 function LuaGB:draw_game_screen(dx, dy, scale)
-  for y = 0, 143 do
+  local graphics_width = self.gameboy.graphics.game_width
+  local screen = self.gameboy.graphics.game_screen
+  for y = 0, 143 * graphics_width - 1, graphics_width do
     for x = 0, 159 do
-      self.game_screen_imagedata:setPixel(x, y, self.gameboy.graphics.game_screen[y][x][1], self.gameboy.graphics.game_screen[y][x][2], self.gameboy.graphics.game_screen[y][x][3], 255)
+      local pixel = screen[y + x]
+      self.game_screen_imagedata:setPixel(x, y / graphics_width, pixel[1], pixel[2], pixel[3], 255)
     end
   end
   love.graphics.setCanvas() -- reset to main FB

@@ -1,4 +1,4 @@
-local bit32 = require("bit")
+local bit32 = luagb.require("bit")
 
 local lshift = bit32.lshift
 local rshift = bit32.rshift
@@ -7,17 +7,17 @@ local bxor = bit32.bxor
 local bor = bit32.bor
 local bnot = bit32.bnot
 
-local apply_arithmetic = require("gameboy/z80/arithmetic")
-local apply_bitwise = require("gameboy/z80/bitwise")
-local apply_call = require("gameboy/z80/call")
-local apply_cp = require("gameboy/z80/cp")
-local apply_inc_dec = require("gameboy/z80/inc_dec")
-local apply_jp = require("gameboy/z80/jp")
-local apply_ld = require("gameboy/z80/ld")
-local apply_rl_rr_cb = require("gameboy/z80/rl_rr_cb")
-local apply_stack = require("gameboy/z80/stack")
+local apply_arithmetic = luagb.require("gameboy/z80/arithmetic")
+local apply_bitwise = luagb.require("gameboy/z80/bitwise")
+local apply_call = luagb.require("gameboy/z80/call")
+local apply_cp = luagb.require("gameboy/z80/cp")
+local apply_inc_dec = luagb.require("gameboy/z80/inc_dec")
+local apply_jp = luagb.require("gameboy/z80/jp")
+local apply_ld = luagb.require("gameboy/z80/ld")
+local apply_rl_rr_cb = luagb.require("gameboy/z80/rl_rr_cb")
+local apply_stack = luagb.require("gameboy/z80/stack")
 
-local Registers = require("gameboy/z80/registers")
+local Registers = luagb.require("gameboy/z80/registers")
 
 local Z80 = {}
 

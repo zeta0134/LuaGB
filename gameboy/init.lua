@@ -1,17 +1,17 @@
-local bit32 = require("bit")
+local bit32 = luagb.require("bit")
 
 local Gameboy = {}
 
-Gameboy.audio = require("gameboy/audio")
-Gameboy.cartridge = require("gameboy/cartridge")
-Gameboy.dma = require("gameboy/dma")
-Gameboy.graphics = require("gameboy/graphics")
-Gameboy.input = require("gameboy/input")
-Gameboy.interrupts = require("gameboy/interrupts")
-Gameboy.io = require("gameboy/io")
-Gameboy.memory = require("gameboy/memory")
-Gameboy.timers = require("gameboy/timers")
-Gameboy.processor = require("gameboy/z80")
+Gameboy.audio = luagb.require("gameboy/audio")
+Gameboy.cartridge = luagb.require("gameboy/cartridge")
+Gameboy.dma = luagb.require("gameboy/dma")
+Gameboy.graphics = luagb.require("gameboy/graphics/init")
+Gameboy.input = luagb.require("gameboy/input")
+Gameboy.interrupts = luagb.require("gameboy/interrupts")
+Gameboy.io = luagb.require("gameboy/io")
+Gameboy.memory = luagb.require("gameboy/memory")
+Gameboy.timers = luagb.require("gameboy/timers")
+Gameboy.processor = luagb.require("gameboy/z80/init")
 
 function Gameboy:initialize()
   self.audio.initialize()
