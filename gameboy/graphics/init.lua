@@ -564,6 +564,8 @@ function Graphics.new(modules)
         end
       end
 
+      local game_screen = graphics.game_screen
+
       for x = 0, 7 do
         local display_x = sprite.x + x
         if display_x >= 0 and display_x < 160 then
@@ -575,7 +577,9 @@ function Graphics.new(modules)
           if subpixel_index > 0 then
             if (bg_priority[display_x] == false and not sprite.bg_priority) or bg_index[display_x] == 0 or graphics.registers.oam_priority then
               local subpixel_color = sprite.palette[subpixel_index]
-              plot_pixel(graphics.game_screen, display_x, scanline, unpack(subpixel_color))
+              game_screen[scanline][display_x][1] = subpixel_color[1]
+              game_screen[scanline][display_x][2] = subpixel_color[2]
+              game_screen[scanline][display_x][3] = subpixel_color[3]
             end
           end
         end
