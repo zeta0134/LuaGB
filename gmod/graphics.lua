@@ -48,7 +48,6 @@ graphics.setFont = function(font)
 end
 
 graphics.print = function(text, x, y, r, sx, sy, ox, oy, kx, ky)
-text = "abcdefg"
     local font = graphics.__love_font
     assert(font, "no font loaded")
     local mat = font.img

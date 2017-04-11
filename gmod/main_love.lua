@@ -252,9 +252,12 @@ function LuaGB:print_instructions()
 end
 
 function LuaGB:draw_game_screen(dx, dy, scale)
+  local graphics_width = self.gameboy.graphics.game_width
+  local screen = self.gameboy.graphics.game_screen
   for y = 0, 143 do
     for x = 0, 159 do
-      self.game_screen_imagedata:setPixel(x, y, self.gameboy.graphics.game_screen[y][x][1], self.gameboy.graphics.game_screen[y][x][2], self.gameboy.graphics.game_screen[y][x][3], 255)
+      local pixel = screen[y * graphics_width + x]
+      self.game_screen_imagedata:setPixel(x, y, pixel[1], pixel[2], pixel[3], 255)
     end
   end
   love.graphics.setCanvas() -- reset to main FB
@@ -420,8 +423,11 @@ function love.update()
   if LuaGB.menu_active then
     filebrowser.update()
   else
+  local time = SysTime
+  local t = time()
     if LuaGB.emulator_running then
       LuaGB.gameboy:run_until_vblank()
+    print(string.format("vblank wait took %.2f", (time() - t) * 1000))
     end
   end
   if LuaGB.gameboy.cartridge.external_ram.dirty then

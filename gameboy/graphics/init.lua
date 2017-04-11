@@ -30,11 +30,12 @@ function Graphics.new(modules)
 
   graphics.game_screen = {}
 
+  graphics.game_width = 160
+  graphics.game_height = 144
   graphics.clear_screen = function()
-    for y = 0, 143 do
-      graphics.game_screen[y] = {}
-      for x = 0, 159 do
-        graphics.game_screen[y][x] = {255, 255, 255}
+    for y = 0, graphics.game_height * graphics.game_width - 1, graphics.game_width do
+      for x = 0, graphics.game_width do
+        graphics.game_screen[y + x] = {255, 255, 255}
       end
     end
   end
@@ -356,9 +357,8 @@ function Graphics.new(modules)
   end
 
   local function plot_pixel(buffer, x, y, r, g, b)
-    buffer[y][x][1] = r
-    buffer[y][x][2] = g
-    buffer[y][x][3] = b
+    local col = buffer[y * graphics.game_width + x]
+    col[1], col[2], col[3] = r, g, b
   end
 
   local frame_data = {}
@@ -427,7 +427,8 @@ function Graphics.new(modules)
         local sub_x = scanline_data.sub_x
         local sub_y = scanline_data.sub_y
         bg_index = scanline_data.active_tile[sub_x][sub_y]
-        plot_pixel(graphics.game_screen, scanline_data.x, ly, unpack(scanline_data.active_attr.palette[bg_index]))
+        local palette = scanline_data.active_attr.palette[bg_index]
+        plot_pixel(graphics.game_screen, scanline_data.x, ly, palette[1], palette[2], palette[3])
       end
 
       scanline_data.bg_index[scanline_data.x] = bg_index
@@ -569,7 +570,7 @@ function Graphics.new(modules)
           if subpixel_index > 0 then
             if (bg_priority[display_x] == false and not sprite.bg_priority) or bg_index[display_x] == 0 or graphics.registers.oam_priority then
               local subpixel_color = sprite.palette[subpixel_index]
-              plot_pixel(graphics.game_screen, display_x, scanline, unpack(subpixel_color))
+              plot_pixel(graphics.game_screen, display_x, scanline, subpixel_color[1], subpixel_color[2], subpixel_color[3])
             end
           end
         end
@@ -610,13 +611,15 @@ function Graphics.new(modules)
         -- The Window is visible here, so draw that
         local window_index = graphics.getIndexFromTilemap(window_tilemap, tile_data, x - w_x, scanline - w_y)
         scanline_bg_index[x] = window_index
-        plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.palette.bg[window_index]))
+        local palette = graphics.palette.bg[window_index]
+        plot_pixel(graphics.game_screen, x, scanline, palette[1], palette[2], palette[3])
       else
         -- The background is visible
         if background_enabled then
           local bg_index = graphics.getIndexFromTilemap(background_tilemap, tile_data, bg_x, bg_y)
           scanline_bg_index[x] = bg_index
-          plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.palette.bg[bg_index]))
+          local palette = graphics.palette.bg[bg_index]
+          plot_pixel(graphics.game_screen, x, scanline, palette[1], palette[2], palette[3])
         end
       end
       bg_x = bg_x + 1
