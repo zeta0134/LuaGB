@@ -35,6 +35,15 @@ LuaGB.menu_active = true
 
 LuaGB.screen_scale = 3
 
+-- Do the check to see if JIT is enabled. If so use the optimized FFI structs.
+local ffi_status, ffi
+if type(jit) == "table" and jit.status() then
+  ffi_status, ffi = pcall(require, "ffi")
+  if ffi_status then
+    ffi.cdef("typedef struct { unsigned char r, g, b, a; } luaGB_pixel;")
+  end
+end
+
 function LuaGB:resize_window()
   local scale = self.screen_scale
   if self.debug.enabled then
@@ -199,6 +208,9 @@ function love.load(args)
   love.graphics.setFont(small_font)
 
   LuaGB.game_screen_imagedata = love.image.newImageData(256, 256)
+  if ffi_status then
+    LuaGB.raw_game_screen_imagedata = ffi.cast("luaGB_pixel*", LuaGB.game_screen_imagedata:getPointer())
+  end
   LuaGB.game_screen_image = love.graphics.newImage(LuaGB.game_screen_imagedata)
   LuaGB.debug.separator_image = love.graphics.newImage("images/debug_separator.png")
 
@@ -257,9 +269,22 @@ function LuaGB:print_instructions()
 end
 
 function LuaGB:draw_game_screen(dx, dy, scale)
+  local pixels = self.gameboy.graphics.game_screen
+  local image_data = self.game_screen_imagedata
+  local raw_image_data = self.raw_game_screen_imagedata
+  local stride = image_data:getWidth()
   for y = 0, 143 do
     for x = 0, 159 do
-      self.game_screen_imagedata:setPixel(x, y, self.gameboy.graphics.game_screen[y][x][1], self.gameboy.graphics.game_screen[y][x][2], self.gameboy.graphics.game_screen[y][x][3], 255)
+      if raw_image_data then
+        local pixel = raw_image_data[y*stride+x]
+        local v_pixel = pixels[y][x]
+        pixel.r = v_pixel[1]
+        pixel.g = v_pixel[2]
+        pixel.b = v_pixel[3]
+        pixel.a = 255
+      else
+        image_data:setPixel(x, y, pixels[y][x][1], pixels[y][x][2], pixels[y][x][3], 255)
+      end
     end
   end
   love.graphics.setCanvas() -- reset to main FB
