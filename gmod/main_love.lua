@@ -423,11 +423,8 @@ function love.update()
   if LuaGB.menu_active then
     filebrowser.update()
   else
-  local time = SysTime
-  local t = time()
     if LuaGB.emulator_running then
       LuaGB.gameboy:run_until_vblank()
-    print(string.format("vblank wait took %.2f", (time() - t) * 1000))
     end
   end
   if LuaGB.gameboy.cartridge.external_ram.dirty then
