@@ -589,55 +589,6 @@ function Graphics.new(modules)
     end
   end
 
-  graphics.draw_scanline = function(scanline)
-    if scanline < 0 or scanline > 143 then
-      print("Bad scanline: ", scanline)
-      return
-    end
-    local bg_y = scanline + io.ram[ports.SCY]
-    local bg_x = io.ram[ports.SCX]
-    -- wrap the map in the Y direction
-    if bg_y >= 256 then
-      bg_y = bg_y - 256
-    end
-
-    local scanline_bg_index = {}
-
-    -- Grab this stuff just once, rather than every iteration
-    -- through the loop
-    local tile_data = graphics.registers.tile_select
-    local window_tilemap = graphics.registers.window_tilemap
-    local background_tilemap = graphics.registers.background_tilemap
-    local window_enabled = graphics.registers.window_enabled
-    local background_enabled = graphics.registers.background_enabled
-
-    local w_x = io.ram[ports.WX] - 7
-    local w_y = io.ram[ports.WY]
-
-    for x = 0, 159 do
-      scanline_bg_index[x] = 0
-      if window_enabled and w_x <= x and w_y <= scanline then
-        -- The Window is visible here, so draw that
-        local window_index = graphics.getIndexFromTilemap(window_tilemap, tile_data, x - w_x, scanline - w_y)
-        scanline_bg_index[x] = window_index
-        plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.palette.bg[window_index]))
-      else
-        -- The background is visible
-        if background_enabled then
-          local bg_index = graphics.getIndexFromTilemap(background_tilemap, tile_data, bg_x, bg_y)
-          scanline_bg_index[x] = bg_index
-          plot_pixel(graphics.game_screen, x, scanline, unpack(graphics.palette.bg[bg_index]))
-        end
-      end
-      bg_x = bg_x + 1
-      if bg_x >= 256 then
-        bg_x = bg_x - 256
-      end
-    end
-
-    draw_sprites_into_scanline(scanline, scanline_bg_index)
-  end
-
   return graphics
 end
 
