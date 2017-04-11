@@ -5,6 +5,11 @@ filebrowser.cursor_pos = 0
 filebrowser.scroll_pos = 0
 filebrowser.items = {}
 
+local ffi_status, ffi
+if type(jit) == "table" and jit.status() then
+  ffi_status, ffi = pcall(require, "ffi")
+end
+
 -- Note: the calling code will need to replace these dummy functions with
 -- platform specific code for the filebrowser to actually get directory
 -- listings.
@@ -21,7 +26,10 @@ filebrowser.load_file = function()
 end
 
 filebrowser.init = function(gameboy)
-  filebrowser.image_data = love.image.newImageData(160, 144)
+  filebrowser.image_data = love.image.newImageData(256, 256)
+  if ffi_status then
+    filebrowser.raw_image_data = ffi.cast("luaGB_pixel*", filebrowser.image_data:getPointer())
+  end
   filebrowser.image = love.graphics.newImage(filebrowser.image_data)
   filebrowser.font = love.image.newImageData("images/5x3font.png")
   filebrowser.round_button = love.image.newImageData("images/round_button.png")
@@ -315,9 +323,22 @@ filebrowser.draw = function(dx, dy, scale)
   filebrowser.draw_image(22, 0, filebrowser.logo)
 
   -- Blit the virtual game screen to a love canvas
-  for x = 0, 159 do
-    for y = 0, 143 do
-      filebrowser.image_data:setPixel(x, y, unpack(filebrowser.game_screen[y][x]))
+  local pixels = filebrowser.game_screen
+  local image_data = filebrowser.image_data
+  local raw_image_data = filebrowser.raw_image_data
+  local stride = image_data:getWidth()
+  for y = 0, 143 do
+    for x = 0, 159 do
+      if raw_image_data then
+        local pixel = raw_image_data[y*stride+x]
+        local v_pixel = pixels[y][x]
+        pixel.r = v_pixel[1]
+        pixel.g = v_pixel[2]
+        pixel.b = v_pixel[3]
+        pixel.a = 255
+      else
+        image_data:setPixel(x, y, pixels[y][x][1], pixels[y][x][2], pixels[y][x][3], 255)
+      end
     end
   end
 
