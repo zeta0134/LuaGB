@@ -192,6 +192,9 @@ end
 
 filebrowser.select_at_cursor = function()
   local cursor_item = filebrowser.items[filebrowser.cursor_pos + 1]
+  if cursor_item == nil then
+    return
+  end
   if cursor_item == ".." then
     -- remove the last directory off of pwd
     local index = string.find(filebrowser.pwd, "[^/]*/$")
