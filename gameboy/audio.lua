@@ -633,7 +633,7 @@ function Audio.new(modules)
     end
   end
 
-  audio.debug.enabled = true
+  audio.debug.enabled = false
 
   audio.generate_pending_samples = function()
     while next_sample_cycle < timers.system_clock do

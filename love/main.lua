@@ -335,6 +335,7 @@ action_keys.i = function() LuaGB.gameboy:run_until_ret() end
 
 action_keys.d = function()
   LuaGB.debug.enabled = not LuaGB.debug.enabled
+  LuaGB.gameboy.audio.debug.enabled = LuaGB.debug.enabled
   LuaGB:resize_window()
 end
 
@@ -386,7 +387,15 @@ action_keys.a = function()
   end
 end
 
-action_keys.lshift = function() profile_enabled = not profile_enabled end
+action_keys.lshift = function()
+  if profile_enabled then
+    profilerStop()
+    profile_enabled = false
+  else
+    profilerStart()
+    profile_enabled = true
+  end
+end
 
 local input_mappings = {}
 input_mappings.up = "Up"
@@ -444,9 +453,6 @@ function love.mousepressed(x, y, button)
 end
 
 function love.update()
-  if profile_enabled then
-    profilerStart()
-  end
   if LuaGB.menu_active then
     filebrowser.update()
   else
@@ -461,9 +467,6 @@ function love.update()
     LuaGB.save_delay = 0
     LuaGB.gameboy.cartridge.external_ram.dirty = false
     LuaGB:save_ram()
-  end
-  if profile_enabled then
-    profilerStop()
   end
 end
 
