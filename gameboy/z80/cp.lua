@@ -14,29 +14,16 @@ function apply(opcodes, opcode_cycles, z80, memory)
 
   cp_with_a = function(value)
     -- half-carry
-    if (reg.a % 0x10) - (value % 0x10) < 0 then
-      reg.flags.h = 1
-    else
-      reg.flags.h = 0
-    end
+    reg.flags.h = (reg.a % 0x10) - (value % 0x10) < 0
 
     local temp = reg.a - value
 
     -- carry (and overflow correction)
-    if temp < 0 or temp > 0xFF then
-      temp  = (temp + 0x100) % 0x100
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
-    end
+    reg.flags.c = temp < 0 or temp > 0xFF
+    temp  = (temp + 0x100) % 0x100
 
-    if temp == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-
-    reg.flags.n = 1
+    reg.flags.z = temp == 0
+    reg.flags.n = true
   end
 
   -- cp A, r

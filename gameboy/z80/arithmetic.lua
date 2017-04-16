@@ -18,56 +18,34 @@ function apply(opcodes, opcode_cycles, z80, memory)
 
   local add_to_a = function(value)
     -- half-carry
-    if band(reg.a, 0xF) + band(value, 0xF) > 0xF then
-      reg.flags.h = 1
-    else
-      reg.flags.h = 0
-    end
+    reg.flags.h = band(reg.a, 0xF) + band(value, 0xF) > 0xF
 
     local sum = reg.a + value
 
     -- carry (and overflow correction)
-    if sum > 0xFF then
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
-    end
+    reg.flags.c = sum > 0xFF
+
     reg.a = band(sum, 0xFF)
 
-    if reg.a == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-
-    reg.flags.n = 0
+    reg.flags.z = reg.a == 0
+    reg.flags.n = false
   end
 
   local adc_to_a = function(value)
     -- half-carry
-    if band(reg.a, 0xF) + band(value, 0xF) + reg.flags.c > 0xF then
-      reg.flags.h = 1
-    else
-      reg.flags.h = 0
+    local carry = 0
+    if reg.flags.c then
+      carry = 1
     end
-
-    local sum = reg.a + value + reg.flags.c
+    reg.flags.h = band(reg.a, 0xF) + band(value, 0xF) + carry > 0xF
+    local sum = reg.a + value + carry
 
     -- carry (and overflow correction)
-    if sum > 0xFF then
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
-    end
+    reg.flags.c = sum > 0xFF
     reg.a = band(sum, 0xFF)
 
-    if reg.a == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-
-    reg.flags.n = 0
+    reg.flags.z = reg.a == 0
+    reg.flags.n = false
   end
 
   -- add A, r
@@ -102,56 +80,33 @@ function apply(opcodes, opcode_cycles, z80, memory)
 
   sub_from_a = function(value)
     -- half-carry
-    if band(reg.a, 0xF) - band(value, 0xF) < 0 then
-      reg.flags.h = 1
-    else
-      reg.flags.h = 0
-    end
-
+    reg.flags.h = band(reg.a, 0xF) - band(value, 0xF) < 0
     reg.a = reg.a - value
 
     -- carry (and overflow correction)
-    if reg.a < 0 or reg.a > 0xFF then
-      reg.a = band(reg.a, 0xFF)
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
-    end
+    reg.flags.c = reg.a < 0 or reg.a > 0xFF
+    reg.a = band(reg.a, 0xFF)
 
-    if reg.a == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-
-    reg.flags.n = 1
+    reg.flags.z = reg.a == 0
+    reg.flags.n = true
   end
 
   sbc_from_a = function(value)
-    -- half-carry
-    if band(reg.a, 0xF) - band(value, 0xF) - reg.flags.c < 0 then
-      reg.flags.h = 1
-    else
-      reg.flags.h = 0
+    local carry = 0
+    if reg.flags.c then
+      carry = 1
     end
+    -- half-carry
+    reg.flags.h = band(reg.a, 0xF) - band(value, 0xF) - carry < 0
 
-    local difference = reg.a - value - reg.flags.c
+    local difference = reg.a - value - carry
 
     -- carry (and overflow correction)
-    if difference < 0 or difference > 0xFF then
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
-    end
+    reg.flags.c = difference < 0 or difference > 0xFF
     reg.a = band(difference, 0xFF)
 
-    if reg.a == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-
-    reg.flags.n = 1
+    reg.flags.z = reg.a == 0
+    reg.flags.n = true
   end
 
   -- sub A, r
@@ -189,56 +144,48 @@ function apply(opcodes, opcode_cycles, z80, memory)
   -- http://www.z80.info/z80syntx.htm#DAA
   opcodes[0x27] = function()
     local a = reg.a
-    if reg.flags.n == 0 then
+    if not reg.flags.n then
       -- Addition Mode, adjust BCD for previous addition-like instruction
-      if band(0xF, a) > 0x9 or reg.flags.h == 1 then
+      if band(0xF, a) > 0x9 or reg.flags.h then
         a = a + 0x6
       end
-      if a > 0x9F or reg.flags.c == 1 then
+      if a > 0x9F or reg.flags.c then
         a = a + 0x60
       end
     else
       -- Subtraction mode! Adjust BCD for previous subtraction-like instruction
-      if reg.flags.h == 1 then
+      if reg.flags.h then
         a = band(a - 0x6, 0xFF)
       end
-      if reg.flags.c == 1 then
+      if reg.flags.c then
         a = a - 0x60
       end
     end
     -- Always reset H and Z
-    reg.flags.h = 0
-    reg.flags.z = 0
+    reg.flags.h = false
+    reg.flags.z = false
 
     -- If a is greater than 0xFF, set the carry flag
     if band(0x100, a) == 0x100 then
-      reg.flags.c = 1
+      reg.flags.c = true
     end
+    -- Note: Do NOT clear the carry flag otherwise. This is how hardware
+    -- behaves, yes it's weird.
+
     reg.a = band(a, 0xFF)
     -- Update zero flag based on A's contents
-    if reg.a == 0 then
-      reg.flags.z = 1
-    end
+    reg.flags.z = reg.a == 0
   end
 
   add_to_hl = function(value)
     -- half carry
-    if band(reg.hl(), 0xFFF) + band(value, 0xFFF) > 0xFFF then
-      reg.flags.h = 1
-    else
-      reg.flags.h = 0
-    end
-
+    reg.flags.h = band(reg.hl(), 0xFFF) + band(value, 0xFFF) > 0xFFF
     local sum = reg.hl() + value
 
     -- carry
-    if sum > 0xFFFF or sum < 0x0000 then
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
-    end
+    reg.flags.c = sum > 0xFFFF or sum < 0x0000
     reg.set_hl(band(sum, 0xFFFF))
-    reg.flags.n = 0
+    reg.flags.n = false
   end
 
   -- add HL, rr
@@ -304,23 +251,15 @@ function apply(opcodes, opcode_cycles, z80, memory)
 
     -- half carry
     --if band(reg.sp, 0xFFF) + offset > 0xFFF or band(reg.sp, 0xFFF) + offset < 0 then
-    if band(reg.sp, 0xF) + band(offset, 0xF) > 0xF then
-      reg.flags.h = 1
-    else
-      reg.flags.h = 0
-    end
+    reg.flags.h = band(reg.sp, 0xF) + band(offset, 0xF) > 0xF
     -- carry
-    if band(reg.sp, 0xFF) + band(offset, 0xFF) > 0xFF then
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
-    end
+    reg.flags.c = band(reg.sp, 0xFF) + band(offset, 0xFF) > 0xFF
 
     reg.sp = reg.sp + offset
     reg.sp = band(reg.sp, 0xFFFF)
 
-    reg.flags.z = 0
-    reg.flags.n = 0
+    reg.flags.z = false
+    reg.flags.n = false
   end
 end
 

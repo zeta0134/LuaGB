@@ -15,44 +15,34 @@ function Registers.new()
   reg.c = 0
   reg.d = 0
   reg.e = 0
-  reg.flags = {z=0,n=0,h=0,c=0}
+  reg.flags = {z=false,n=false,h=false,c=false}
   reg.h = 0
   reg.l = 0
   reg.pc = 0
   reg.sp = 0
 
   reg.f = function()
-    local value = lshift(reg.flags.z, 7) +
-            lshift(reg.flags.n, 6) +
-            lshift(reg.flags.h, 5) +
-            lshift(reg.flags.c, 4)
+    local value = 0
+    if reg.flags.z then
+      value = value + 0x80
+    end
+    if reg.flags.n then
+      value = value + 0x40
+    end
+    if reg.flags.h then
+      value = value + 0x20
+    end
+    if reg.flags.c then
+      value = value + 0x10
+    end
     return value
   end
 
   reg.set_f = function(value)
-    if band(value, 0x80) ~= 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-
-    if band(value, 0x40) ~= 0 then
-      reg.flags.n = 1
-    else
-      reg.flags.n = 0
-    end
-
-    if band(value, 0x20) ~= 0 then
-      reg.flags.h = 1
-    else
-      reg.flags.h = 0
-    end
-
-    if band(value, 0x10) ~= 0 then
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
-    end
+    reg.flags.z = band(value, 0x80) ~= 0
+    reg.flags.n = band(value, 0x40) ~= 0
+    reg.flags.h = band(value, 0x20) ~= 0
+    reg.flags.c = band(value, 0x10) ~= 0
   end
 
   reg.af = function()

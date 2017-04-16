@@ -20,98 +20,75 @@ function apply(opcodes, opcode_cycles, z80, memory)
   local reg_rlc = function(value)
     value = lshift(value, 1)
     -- move what would be bit 8 into the carry
-    if band(value, 0x100) ~= 0 then
-      value = band(value, 0xFF)
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
-    end
+    reg.flags.c = band(value, 0x100) ~= 0
+    value = band(value, 0xFF)
     -- also copy the carry into bit 0
-    value = value + reg.flags.c
-    if value == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
+    if reg.flags.c then
+      value = value + 1
     end
-    reg.flags.h = 0
-    reg.flags.n = 0
+    reg.flags.z = value == 0
+    reg.flags.h = false
+    reg.flags.n = false
     return value
   end
 
   local reg_rl = function(value)
     value = lshift(value, 1)
     -- move the carry into bit 0
-    value = value + reg.flags.c
+    if reg.flags.c then
+      value = value + 1
+    end
     -- now move what would be bit 8 into the carry
-    if band(value, 0x100) ~= 0 then
-      value = band(value, 0xFF)
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
-    end
-    if value == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-    reg.flags.h = 0
-    reg.flags.n = 0
+    reg.flags.c = band(value, 0x100) ~= 0
+    value = band(value, 0xFF)
+
+    reg.flags.z = value == 0
+    reg.flags.h = false
+    reg.flags.n = false
     return value
   end
 
   local reg_rrc = function(value)
     -- move bit 0 into the carry
-    if band(value, 0x1) ~= 0 then
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
-    end
+    reg.flags.c = band(value, 0x1) ~= 0
     value = rshift(value, 1)
     -- also copy the carry into bit 7
-    value = value + lshift(reg.flags.c, 7)
-    if value == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
+    if reg.flags.c then
+      value = value + 0x80
     end
-    reg.flags.h = 0
-    reg.flags.n = 0
+    reg.flags.z = value == 0
+    reg.flags.h = false
+    reg.flags.n = false
     return value
   end
 
   local reg_rr = function(value)
     -- first, copy the carry into bit 8 (!!)
-    value = value + lshift(reg.flags.c, 8)
-    -- move bit 0 into the carry
-    if band(value, 0x1) ~= 0 then
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
+    if reg.flags.c then
+      value = value + 0x100
     end
+    -- move bit 0 into the carry
+    reg.flags.c = band(value, 0x1) ~= 0
     value = rshift(value, 1)
     -- for safety, this should be a nop?
-    value = band(value, 0xFF)
-    if value == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-    reg.flags.h = 0
-    reg.flags.n = 0
+    -- value = band(value, 0xFF)
+    reg.flags.z = value == 0
+    reg.flags.h = false
+    reg.flags.n = false
     return value
   end
 
   -- rlc a
-  opcodes[0x07] = function() reg.a = reg_rlc(reg.a); reg.flags.z = 0 end
+  opcodes[0x07] = function() reg.a = reg_rlc(reg.a); reg.flags.z = false end
 
   -- rl a
-  opcodes[0x17] = function() reg.a = reg_rl(reg.a); reg.flags.z = 0 end
+  opcodes[0x17] = function() reg.a = reg_rl(reg.a); reg.flags.z = false end
 
   -- rrc a
-  opcodes[0x0F] = function() reg.a = reg_rrc(reg.a); reg.flags.z = 0 end
+  opcodes[0x0F] = function() reg.a = reg_rrc(reg.a); reg.flags.z = false end
 
   -- rr a
-  opcodes[0x1F] = function() reg.a = reg_rr(reg.a); reg.flags.z = 0 end
+  opcodes[0x1F] = function() reg.a = reg_rr(reg.a); reg.flags.z = false end
 
   -- ====== CB: Extended Rotate and Shift ======
 
@@ -159,38 +136,22 @@ function apply(opcodes, opcode_cycles, z80, memory)
 
   local reg_sla = function(value)
     -- copy bit 7 into carry
-    if band(value, 0x80) == 0x80 then
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
-    end
+    reg.flags.c = band(value, 0x80) == 0x80
     value = band(lshift(value, 1), 0xFF)
-    if value == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-    reg.flags.h = 0
-    reg.flags.n = 0
+    reg.flags.z = value == 0
+    reg.flags.h = false
+    reg.flags.n = false
     add_cycles(4)
     return value
   end
 
   local reg_srl = function(value)
     -- copy bit 0 into carry
-    if band(value, 0x1) == 1 then
-      reg.flags.c = 1
-    else
-      reg.flags.c = 0
-    end
+    reg.flags.c = band(value, 0x1) == 1
     value = rshift(value, 1)
-    if value == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-    reg.flags.h = 0
-    reg.flags.n = 0
+    reg.flags.z = value == 0
+    reg.flags.h = false
+    reg.flags.n = false
     add_cycles(4)
     return value
   end
@@ -207,14 +168,10 @@ function apply(opcodes, opcode_cycles, z80, memory)
 
   local reg_swap = function(value)
     value = rshift(band(value, 0xF0), 4) + lshift(band(value, 0xF), 4)
-    if value == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-    reg.flags.n = 0
-    reg.flags.h = 0
-    reg.flags.c = 0
+    reg.flags.z = value == 0
+    reg.flags.n = false
+    reg.flags.h = false
+    reg.flags.c = false
     add_cycles(4)
     return value
   end
@@ -261,13 +218,9 @@ function apply(opcodes, opcode_cycles, z80, memory)
 
   -- ====== GMB Singlebit Operation Commands ======
   local reg_bit = function(value, bit)
-    if band(value, lshift(0x1, bit)) ~= 0 then
-      reg.flags.z = 0
-    else
-      reg.flags.z = 1
-    end
-    reg.flags.n = 0
-    reg.flags.h = 1
+    reg.flags.z = band(value, lshift(0x1, bit)) == 0
+    reg.flags.n = false
+    reg.flags.h = true
     return
   end
 

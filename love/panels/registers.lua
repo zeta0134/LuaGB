@@ -72,7 +72,7 @@ registers.print_wide_registers = function(gameboy, x, y)
 end
 
 registers.print_flags = function(gameboy, x, y)
-  local function flag_string(flag) return gameboy.processor.registers.flags[flag] == 1 and flag or "" end
+  local function flag_string(flag) return gameboy.processor.registers.flags[flag] == true and flag or "" end
   love.graphics.setColor(0, 0, 0)
   love.graphics.print(string.format("Flags: [%1s %1s %1s %1s]", flag_string("c"), flag_string("n"), flag_string("h"), flag_string("z")), x, y)
   love.graphics.setColor(255, 255, 255)

@@ -18,14 +18,10 @@ function apply(opcodes, opcode_cycles, z80, memory)
 
   and_a_with = function(value)
     reg.a = band(reg.a, value)
-    if reg.a == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-    reg.flags.n = 0
-    reg.flags.h = 1
-    reg.flags.c = 0
+    reg.flags.z = reg.a == 0
+    reg.flags.n = false
+    reg.flags.h = true
+    reg.flags.c = false
   end
 
   -- and A, r
@@ -39,14 +35,10 @@ function apply(opcodes, opcode_cycles, z80, memory)
   opcodes[0xA6] = function() and_a_with(read_at_hl()) end
   opcodes[0xA7] = function()
     --reg.a = band(reg.a, value)
-    if reg.a == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-    reg.flags.n = 0
-    reg.flags.h = 1
-    reg.flags.c = 0
+    reg.flags.z = reg.a == 0
+    reg.flags.n = false
+    reg.flags.h = true
+    reg.flags.c = false
   end
 
   -- and A, nn
@@ -55,14 +47,10 @@ function apply(opcodes, opcode_cycles, z80, memory)
 
   xor_a_with = function(value)
     reg.a = bxor(reg.a, value)
-    if reg.a == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-    reg.flags.n = 0
-    reg.flags.h = 0
-    reg.flags.c = 0
+    reg.flags.z = reg.a == 0
+    reg.flags.n = false
+    reg.flags.h = false
+    reg.flags.c = false
   end
 
   -- xor A, r
@@ -76,14 +64,10 @@ function apply(opcodes, opcode_cycles, z80, memory)
   opcodes[0xAE] = function() xor_a_with(read_at_hl()) end
   opcodes[0xAF] = function()
     reg.a = 0
-    if reg.a == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-    reg.flags.n = 0
-    reg.flags.h = 0
-    reg.flags.c = 0
+    reg.flags.z = true
+    reg.flags.n = false
+    reg.flags.h = false
+    reg.flags.c = false
   end
 
   -- xor A, nn
@@ -92,14 +76,10 @@ function apply(opcodes, opcode_cycles, z80, memory)
 
   or_a_with = function(value)
     reg.a = bor(reg.a, value)
-    if reg.a == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-    reg.flags.n = 0
-    reg.flags.h = 0
-    reg.flags.c = 0
+    reg.flags.z = reg.a == 0
+    reg.flags.n = false
+    reg.flags.h = false
+    reg.flags.c = false
   end
 
   -- or A, r
@@ -112,14 +92,10 @@ function apply(opcodes, opcode_cycles, z80, memory)
   opcode_cycles[0xB6] = 8
   opcodes[0xB6] = function() or_a_with(read_at_hl()) end
   opcodes[0xB7] = function()
-    if reg.a == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-    reg.flags.n = 0
-    reg.flags.h = 0
-    reg.flags.c = 0
+    reg.flags.z = reg.a == 0
+    reg.flags.n = false
+    reg.flags.h = false
+    reg.flags.c = false
   end
 
   -- or A, nn
@@ -129,8 +105,8 @@ function apply(opcodes, opcode_cycles, z80, memory)
   -- cpl
   opcodes[0x2F] = function()
     reg.a = bxor(reg.a, 0xFF)
-    reg.flags.n = 1
-    reg.flags.h = 1
+    reg.flags.n = true
+    reg.flags.h = true
   end
 end
 

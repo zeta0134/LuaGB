@@ -10,39 +10,15 @@ function apply(opcodes, opcode_cycles, z80, memory)
   local write_byte = memory.write_byte
 
   set_inc_flags = function(value)
-    -- zero flag
-    if value == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-
-    -- half-carry
-    if value % 0x10 == 0x0 then
-      reg.flags.h = 1
-    else
-      reg.flags.h = 0
-    end
-
-    reg.flags.n = 0
+    reg.flags.z = value == 0
+    reg.flags.h = value % 0x10 == 0x0
+    reg.flags.n = false
   end
 
   set_dec_flags = function(value)
-    -- zero flag
-    if value == 0 then
-      reg.flags.z = 1
-    else
-      reg.flags.z = 0
-    end
-
-    -- half-carry
-    if value % 0x10 == 0xF then
-      reg.flags.h = 1
-    else
-      reg.flags.h = 0
-    end
-
-    reg.flags.n = 1
+    reg.flags.z = value == 0
+    reg.flags.h = value % 0x10 == 0xF
+    reg.flags.n = true
   end
 
   -- inc r

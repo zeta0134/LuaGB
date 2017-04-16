@@ -58,10 +58,10 @@ function Z80.new(modules)
     -- iternal state would be after executing
     -- BIOS code
 
-    reg.flags.z = 1
-    reg.flags.n = 0
-    reg.flags.h = 1
-    reg.flags.c = 1
+    reg.flags.z = true
+    reg.flags.n = false
+    reg.flags.h = true
+    reg.flags.c = true
 
     if gameboy.type == gameboy.types.color then
       reg.a = 0x11
@@ -163,16 +163,16 @@ function Z80.new(modules)
   -- ====== GMB CPU-Controlcommands ======
   -- ccf
   opcodes[0x3F] = function()
-    reg.flags.c = band(0x1, bnot(reg.flags.c))
-    reg.flags.n = 0
-    reg.flags.h = 0
+    reg.flags.c = not reg.flags.c
+    reg.flags.n = false
+    reg.flags.h = false
   end
 
   -- scf
   opcodes[0x37] = function()
-    reg.flags.c = 1
-    reg.flags.n = 0
-    reg.flags.h = 0
+    reg.flags.c = true
+    reg.flags.n = false
+    reg.flags.h = false
   end
 
   -- nop

@@ -35,7 +35,7 @@ function apply(opcodes, opcode_cycles, z80, memory)
   -- jp nz, nnnn
   opcode_cycles[0xC2] = 16
   opcodes[0xC2] = function()
-    if reg.flags.z == 0 then
+    if not reg.flags.z then
       jump_to_nnnn()
     else
       reg.pc = reg.pc + 2
@@ -46,7 +46,7 @@ function apply(opcodes, opcode_cycles, z80, memory)
   -- jp nc, nnnn
   opcode_cycles[0xD2] = 16
   opcodes[0xD2] = function()
-    if reg.flags.c == 0 then
+    if not reg.flags.c then
       jump_to_nnnn()
     else
       reg.pc = reg.pc + 2
@@ -57,7 +57,7 @@ function apply(opcodes, opcode_cycles, z80, memory)
   -- jp z, nnnn
   opcode_cycles[0xCA] = 16
   opcodes[0xCA] = function()
-    if reg.flags.z == 1 then
+    if reg.flags.z then
       jump_to_nnnn()
     else
       reg.pc = reg.pc + 2
@@ -68,7 +68,7 @@ function apply(opcodes, opcode_cycles, z80, memory)
   -- jp c, nnnn
   opcode_cycles[0xDA] = 16
   opcodes[0xDA] = function()
-    if reg.flags.c == 1 then
+    if reg.flags.c then
       jump_to_nnnn()
     else
       reg.pc = reg.pc + 2
@@ -93,7 +93,7 @@ function apply(opcodes, opcode_cycles, z80, memory)
   -- jr nz, nn
   opcode_cycles[0x20] = 12
   opcodes[0x20] = function()
-    if reg.flags.z == 0 then
+    if not reg.flags.z then
       jump_relative_to_nn()
     else
       reg.pc = reg.pc + 1
@@ -104,7 +104,7 @@ function apply(opcodes, opcode_cycles, z80, memory)
   -- jr nc, nn
   opcode_cycles[0x30] = 12
   opcodes[0x30] = function()
-    if reg.flags.c == 0 then
+    if not reg.flags.c then
       jump_relative_to_nn()
     else
       reg.pc = reg.pc + 1
@@ -115,7 +115,7 @@ function apply(opcodes, opcode_cycles, z80, memory)
   -- jr z, nn
   opcode_cycles[0x28] = 12
   opcodes[0x28] = function()
-    if reg.flags.z == 1 then
+    if reg.flags.z then
       jump_relative_to_nn()
     else
       reg.pc = reg.pc + 1
@@ -126,7 +126,7 @@ function apply(opcodes, opcode_cycles, z80, memory)
   -- jr c, nn
   opcode_cycles[0x38] = 12
   opcodes[0x38] = function()
-    if reg.flags.c == 1 then
+    if reg.flags.c then
       jump_relative_to_nn()
     else
       reg.pc = reg.pc + 1

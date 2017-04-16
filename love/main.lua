@@ -325,7 +325,9 @@ action_keys.l = function() LuaGB:run_n_cycles(1000) end
 action_keys.r = function()
   LuaGB:reset()
   if LuaGB.game_loaded then
+    local emulator_running = LuaGB.emulator_running
     LuaGB:load_game(LuaGB.game_path)
+    LuaGB.emulator_running = emulator_running
   end
 end
 action_keys.p = function() LuaGB.emulator_running = not LuaGB.emulator_running end
