@@ -6,6 +6,7 @@ function Memory.new(modules)
   local memory = {}
 
   local block_map = {}
+  memory.block_map = block_map
 
   memory.print_block_map = function()
     --debug

@@ -133,11 +133,11 @@ function Z80.new(modules)
   end
 
   function z80.read_at_hl()
-    return read_byte(reg.hl())
+    return memory.block_map[reg.h * 0x100][reg.h * 0x100 + reg.l]
   end
 
   function z80.set_at_hl(value)
-    write_byte(reg.hl(), value)
+    memory.block_map[reg.h * 0x100][reg.h * 0x100 + reg.l] = value
   end
 
   function z80.read_nn()
