@@ -10,6 +10,7 @@ local bnor = bit32.bnor
 function apply(opcodes, opcode_cycles, z80, memory, interrupts)
   local read_nn = z80.read_nn
   local reg = z80.registers
+  local flags = reg.flags
 
   local read_byte = memory.read_byte
   local write_byte = memory.write_byte
@@ -37,7 +38,7 @@ function apply(opcodes, opcode_cycles, z80, memory, interrupts)
   -- call nz, nnnn
   opcode_cycles[0xC4] = 12
   opcodes[0xC4] = function()
-    if not reg.flags.z then
+    if not flags.z then
       call_nnnn()
       z80.add_cycles(12)
     else
@@ -48,7 +49,7 @@ function apply(opcodes, opcode_cycles, z80, memory, interrupts)
   -- call nc, nnnn
   opcode_cycles[0xD4] = 12
   opcodes[0xD4] = function()
-    if not reg.flags.c then
+    if not flags.c then
       call_nnnn()
       z80.add_cycles(12)
     else
@@ -59,7 +60,7 @@ function apply(opcodes, opcode_cycles, z80, memory, interrupts)
   -- call z, nnnn
   opcode_cycles[0xCC] = 12
   opcodes[0xCC] = function()
-    if reg.flags.z then
+    if flags.z then
       call_nnnn()
       z80.add_cycles(12)
     else
@@ -70,7 +71,7 @@ function apply(opcodes, opcode_cycles, z80, memory, interrupts)
   -- call c, nnnn
   opcode_cycles[0xDC] = 12
   opcodes[0xDC] = function()
-    if reg.flags.c then
+    if flags.c then
       call_nnnn()
       z80.add_cycles(12)
     else
@@ -93,7 +94,7 @@ function apply(opcodes, opcode_cycles, z80, memory, interrupts)
   -- ret nz
   opcode_cycles[0xC0] = 8
   opcodes[0xC0] = function()
-    if not reg.flags.z then
+    if not flags.z then
       ret()
     end
   end
@@ -101,7 +102,7 @@ function apply(opcodes, opcode_cycles, z80, memory, interrupts)
   -- ret nc
   opcode_cycles[0xD0] = 8
   opcodes[0xD0] = function()
-    if not reg.flags.c then
+    if not flags.c then
       ret()
     end
   end
@@ -109,7 +110,7 @@ function apply(opcodes, opcode_cycles, z80, memory, interrupts)
   -- ret z
   opcode_cycles[0xC8] = 8
   opcodes[0xC8] = function()
-    if reg.flags.z then
+    if flags.z then
       ret()
     end
   end
@@ -117,7 +118,7 @@ function apply(opcodes, opcode_cycles, z80, memory, interrupts)
   -- ret c
   opcode_cycles[0xD8] = 8
   opcodes[0xD8] = function()
-    if reg.flags.c then
+    if flags.c then
       ret()
     end
   end

@@ -35,6 +35,7 @@ function Z80.new(modules)
 
   z80.registers = Registers.new()
   local reg = z80.registers
+  local flags = reg.flags
 
   -- Intentionally bad naming convention: I am NOT typing "registers"
   -- a bazillion times. The exported symbol uses the full name as a
@@ -58,10 +59,10 @@ function Z80.new(modules)
     -- iternal state would be after executing
     -- BIOS code
 
-    reg.flags.z = true
-    reg.flags.n = false
-    reg.flags.h = true
-    reg.flags.c = true
+    flags.z = true
+    flags.n = false
+    flags.h = true
+    flags.c = true
 
     if gameboy.type == gameboy.types.color then
       reg.a = 0x11
@@ -96,10 +97,10 @@ function Z80.new(modules)
   z80.load_state = function(state)
     -- Note: doing this explicitly for safety, so as
     -- not to replace the table with external, possibly old / wrong structure
-    reg.flags.z = state.registers.flags.z
-    reg.flags.n = state.registers.flags.n
-    reg.flags.h = state.registers.flags.h
-    reg.flags.c = state.registers.flags.c
+    flags.z = state.registers.flags.z
+    flags.n = state.registers.flags.n
+    flags.h = state.registers.flags.h
+    flags.c = state.registers.flags.c
 
     z80.registers.a = state.registers.a
     z80.registers.b = state.registers.b
@@ -163,16 +164,16 @@ function Z80.new(modules)
   -- ====== GMB CPU-Controlcommands ======
   -- ccf
   opcodes[0x3F] = function()
-    reg.flags.c = not reg.flags.c
-    reg.flags.n = false
-    reg.flags.h = false
+    flags.c = not flags.c
+    flags.n = false
+    flags.h = false
   end
 
   -- scf
   opcodes[0x37] = function()
-    reg.flags.c = true
-    reg.flags.n = false
-    reg.flags.h = false
+    flags.c = true
+    flags.n = false
+    flags.h = false
   end
 
   -- nop

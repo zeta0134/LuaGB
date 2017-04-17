@@ -5,20 +5,21 @@ local band = bit32.band
 
 function apply(opcodes, opcode_cycles, z80, memory)
   local reg = z80.registers
+  local flags = reg.flags
 
   local read_byte = memory.read_byte
   local write_byte = memory.write_byte
 
   set_inc_flags = function(value)
-    reg.flags.z = value == 0
-    reg.flags.h = value % 0x10 == 0x0
-    reg.flags.n = false
+    flags.z = value == 0
+    flags.h = value % 0x10 == 0x0
+    flags.n = false
   end
 
   set_dec_flags = function(value)
-    reg.flags.z = value == 0
-    reg.flags.h = value % 0x10 == 0xF
-    reg.flags.n = true
+    flags.z = value == 0
+    flags.h = value % 0x10 == 0xF
+    flags.n = true
   end
 
   -- inc r

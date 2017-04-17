@@ -8,22 +8,23 @@ function apply(opcodes, opcode_cycles, z80, memory)
   local set_at_hl = z80.set_at_hl
   local read_nn = z80.read_nn
   local reg = z80.registers
+  local flags = reg.flags
 
   local read_byte = memory.read_byte
   local write_byte = memory.write_byte
 
   cp_with_a = function(value)
     -- half-carry
-    reg.flags.h = (reg.a % 0x10) - (value % 0x10) < 0
+    flags.h = (reg.a % 0x10) - (value % 0x10) < 0
 
     local temp = reg.a - value
 
     -- carry (and overflow correction)
-    reg.flags.c = temp < 0 or temp > 0xFF
+    flags.c = temp < 0 or temp > 0xFF
     temp  = (temp + 0x100) % 0x100
 
-    reg.flags.z = temp == 0
-    reg.flags.n = true
+    flags.z = temp == 0
+    flags.n = true
   end
 
   -- cp A, r
