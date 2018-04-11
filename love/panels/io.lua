@@ -11,11 +11,11 @@ end
 io.draw = function(x, y)
   love.graphics.setCanvas(io.canvas)
   love.graphics.clear()
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(1, 1, 1)
   love.graphics.draw(io.background_image, 0, 0)
   io.print_values(io.gameboy)
   love.graphics.setCanvas() -- reset to main FB
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(1, 1, 1)
   love.graphics.push()
   love.graphics.scale(2, 2)
   love.graphics.draw(io.canvas, x / 2, y / 2)

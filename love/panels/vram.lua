@@ -59,7 +59,7 @@ vram.draw = function(x, y)
   vram.draw_palettes(vram.gameboy)
 
   love.graphics.setCanvas() -- reset to main FB
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(1, 1, 1)
   love.graphics.push()
   love.graphics.scale(2, 2)
   love.graphics.draw(vram.canvas, x / 2, y / 2)
@@ -82,7 +82,7 @@ vram.draw_palettes = function(gameboy)
       love.graphics.rectangle("fill", 76 + (index * 24) + (i * 4), 122, 4, 4)
     end
   end
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(1, 1, 1)
 end
 
 vram.draw_tile = function(gameboy, tile, attr, sx, sy)
@@ -99,7 +99,7 @@ vram.draw_tile = function(gameboy, tile, attr, sx, sy)
       end
       local index = tile[x][ty]
       local color = palette[index]
-      vram.tile_imagedata:setPixel(sx + x, sy + y, color[1], color[2], color[3], 255)
+      vram.tile_imagedata:setPixel(sx + x, sy + y, color[1] / 255, color[2] / 255, color[3] / 255, 255)
     end
   end
 end
@@ -121,7 +121,7 @@ vram.draw_tiles = function(gameboy, dx, dy, tiles_across, bank)
       y = y + 8
     end
   end
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(1, 1, 1)
   love.graphics.setCanvas(vram.canvas)
   vram.tile_image:replacePixels(vram.tile_imagedata)
   love.graphics.draw(vram.tile_image, dx, dy)
@@ -142,7 +142,7 @@ function vram.draw_background(gameboy, map, attrs, dx, dy, scale)
     end
   end
   love.graphics.setCanvas(vram.canvas)
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(1, 1, 1)
   love.graphics.push()
   love.graphics.scale(scale, scale)
   vram.tile_image:replacePixels(vram.tile_imagedata)

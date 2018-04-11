@@ -16,13 +16,13 @@ audio.draw_graph = function(x, y, table, start, size, disabled)
   love.graphics.clear()
   love.graphics.setLineWidth(1)
   love.graphics.setLineStyle("rough")
-  love.graphics.setColor(128, 128, 128)
+  love.graphics.setColor(0.5, 0.5, 0.5)
   if disabled then
-    love.graphics.setColor(128, 128, 128)
+    love.graphics.setColor(0.5, 0.5, 0.5)
     love.graphics.rectangle("fill", 4, 1, 128, 31)
-    love.graphics.setColor(192, 192, 192)
+    love.graphics.setColor(0.75, 0.75, 0.75)
   else
-    love.graphics.setColor(255, 255, 255)
+    love.graphics.setColor(1, 1, 1)
     love.graphics.rectangle("fill", 4, 1, 128, 31)
     love.graphics.setColor(0, 0, 0)
   end
@@ -32,14 +32,14 @@ audio.draw_graph = function(x, y, table, start, size, disabled)
     love.graphics.line(i + 4, 16 * sample + 16, i + 1 + 4, 16 * sample_next + 16)
   end
   love.graphics.setCanvas(audio.canvas)
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(1, 1, 1)
   love.graphics.draw(audio.graph_canvas, x, y)
 end
 
 audio.draw = function(x, y)
   love.graphics.setCanvas(audio.canvas)
   love.graphics.clear()
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(1, 1, 1)
   love.graphics.draw(audio.background_image, 0, 0)
 
   local debug = audio.gameboy.audio.debug
@@ -50,7 +50,7 @@ audio.draw = function(x, y)
   audio.draw_graph(0, 217, debug.final, debug.current_sample, debug.max_samples)
 
   love.graphics.setCanvas() -- reset to main FB
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(1, 1, 1)
   love.graphics.push()
   love.graphics.scale(2, 2)
   love.graphics.draw(audio.canvas, x / 2, y / 2)

@@ -15,11 +15,11 @@ end
 disassembler.draw = function(x, y)
   love.graphics.setCanvas(disassembler.canvas)
   love.graphics.clear()
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(1, 1, 1)
   love.graphics.draw(disassembler.background_image, 0, 0)
   disassembler.print_opcodes(disassembler.gameboy)
   love.graphics.setCanvas() -- reset to main FB
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(1, 1, 1)
   love.graphics.push()
   love.graphics.scale(2, 2)
   love.graphics.draw(disassembler.canvas, x / 2, y / 2)
@@ -65,29 +65,29 @@ disassembler.print_opcodes = function(gameboy)
   local y = 15
   local pc = gameboy.processor.registers.pc
   local darken_rows = 0
-  love.graphics.setColor(128, 128, 128)
+  love.graphics.setColor(0.5, 0.5, 0.5)
   love.graphics.rectangle("fill", 0, 14, 128, 7)
   for i = 1, math.floor((400 - 15) / 7) do
     local name, data_values = opcode_string(gameboy.memory[pc], gameboy.memory[pc + 1], gameboy.memory[pc + 2])
 
-    local color = {255, 255, 255}
+    local color = 1
     if darken_rows > 0 then
-      color = {128, 128, 128}
+      color = 0.5
       darken_rows = darken_rows - 1
     else
       if i ~= 1 then
-        color = {0, 0, 0}
+        color = 0
       end
       if darken_rows == 0 and data_values > 1 then
         darken_rows = data_values - 1
       end
     end
-    love.graphics.setColor(unpack(color))
+    love.graphics.setColor(color, color, color)
     love.graphics.print(string.format("%04X: [%02X] %s", pc, gameboy.memory[pc], name), 4, y)
     pc = bit32.band(pc + 1, 0xFFFF)
     y = y + 7
   end
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(1, 1, 1)
 end
 
 return disassembler

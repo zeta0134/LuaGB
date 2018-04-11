@@ -33,7 +33,7 @@ oam.draw_sprite = function(sprite_address, sx, sy, sprite_size)
       else
         color = sprite.palette[sprite.lower_tile[x][y - 8]]
       end
-      oam.sprite_imagedata:setPixel(sx + x, sy + y, color[1], color[2], color[3], 255)
+      oam.sprite_imagedata:setPixel(sx + x, sy + y, color[1] / 255, color[2] / 255, color[3] / 255, 1)
     end
   end
 
@@ -57,7 +57,7 @@ oam.draw_sprites = function()
     sprite_scaling = 1
   end
 
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(1, 1, 1)
   if sprite_size == 8 then
     love.graphics.draw(oam.background_8x8_image, 0, 0)
   else
@@ -72,7 +72,7 @@ oam.draw_sprites = function()
     love.graphics.setCanvas(oam.canvas)
     love.graphics.push()
     love.graphics.scale(sprite_scaling, sprite_scaling)
-    love.graphics.setColor(255, 255, 255)
+    love.graphics.setColor(1, 1, 1)
     oam.sprite_image:replacePixels(oam.sprite_imagedata)
     love.graphics.draw(oam.sprite_image, ((3 + x * cell_width) / sprite_scaling), ((10 + y * cell_height) / sprite_scaling))
     love.graphics.pop()
@@ -92,11 +92,11 @@ end
 oam.draw = function(x, y)
   love.graphics.setCanvas(oam.canvas)
   love.graphics.clear()
-  love.graphics.setColor(192, 192, 192)
+  love.graphics.setColor(0.75, 0.75, 0.75)
   love.graphics.rectangle("fill", 0, 0, 160, 400)
   oam.draw_sprites()
   love.graphics.setCanvas() -- reset to main FB
-  love.graphics.setColor(255, 255, 255)
+  love.graphics.setColor(1, 1, 1)
   love.graphics.push()
   love.graphics.scale(2, 2)
   love.graphics.draw(oam.canvas, x / 2, y / 2)
