@@ -84,9 +84,9 @@ filebrowser.draw_string = function(str, dx, dy, color, max_x)
             if y + dy <= 143 then
               local r, g, b, a = filebrowser.font:getPixel(font_x + x, font_y + y)
               if a > 0 then
-                r = color[1] * r / 255
-                g = color[2] * g / 255
-                b = color[3] * b / 255
+                r = color[1] * r
+                g = color[2] * g
+                b = color[3] * b
                 filebrowser.game_screen[y + dy][i * 4 - 4 + x + dx] = {r, g, b}
               end
             end
@@ -134,6 +134,11 @@ filebrowser.draw_image = function(sx, sy, image)
     for y = 0, image:getHeight() - 1 do
       local r, g, b, a = image:getPixel(x, y)
       if a > 0 then
+        -- image:getPixel returns values from 0.0 - 1.0 starting in Love 11.0.1... which is annoying
+        -- because we need the original un-modified value to use as a lookup. For now, we cheat and
+        -- multiply back into the space we need:
+        r = r * 255
+
         if r == 127 then
           filebrowser.draw_shadow_pixel(sx + x, sy + y)
         end
@@ -346,8 +351,7 @@ filebrowser.draw = function(dx, dy, scale)
   end
 
   love.graphics.setCanvas()
-  love.graphics.setColor(255, 255, 255)
-  print("Image: ", filebrowser.image)
+  love.graphics.setColor(1, 1, 1)
   filebrowser.image:replacePixels(filebrowser.image_data)
   love.graphics.push()
   love.graphics.scale(scale, scale)
