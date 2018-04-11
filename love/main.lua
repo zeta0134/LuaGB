@@ -293,7 +293,7 @@ function LuaGB:draw_game_screen(dx, dy, scale)
   love.graphics.setColor(255, 255, 255)
   love.graphics.push()
   love.graphics.scale(scale, scale)
-  self.game_screen_image:refresh()
+  self.game_screen_image:replacePixels(image_data)
   love.graphics.draw(LuaGB.game_screen_image, dx / scale, dy / scale)
   love.graphics.pop()
 end

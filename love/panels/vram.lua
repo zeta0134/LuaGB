@@ -123,7 +123,7 @@ vram.draw_tiles = function(gameboy, dx, dy, tiles_across, bank)
   end
   love.graphics.setColor(255, 255, 255)
   love.graphics.setCanvas(vram.canvas)
-  vram.tile_image:refresh()
+  vram.tile_image:replacePixels(vram.tile_imagedata)
   love.graphics.draw(vram.tile_image, dx, dy)
 end
 
@@ -145,8 +145,7 @@ function vram.draw_background(gameboy, map, attrs, dx, dy, scale)
   love.graphics.setColor(255, 255, 255)
   love.graphics.push()
   love.graphics.scale(scale, scale)
-  --love.graphics.draw(vram.tile_canvas, dx / scale, dy / scale)
-  vram.tile_image:refresh()
+  vram.tile_image:replacePixels(vram.tile_imagedata)
   love.graphics.draw(vram.tile_image, dx / scale, dy / scale)
   love.graphics.pop()
 end
