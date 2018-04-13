@@ -147,11 +147,16 @@ end
 LuaGB.sound_buffer = nil
 
 function LuaGB.play_gameboy_audio(buffer)
-  for i = 0, 32768 - 1 do
-    LuaGB.sound_buffer:setSample(i, buffer[i])
+  sound_buffer = love.sound.newSoundData(2048, 32768, 16, 2)
+  for i = 0, 4096 - 1 do
+    sound_buffer:setSample(i, buffer[i])
   end
-  local source = love.audio.newSource(LuaGB.sound_buffer)
-  love.audio.play(source)
+  --local source = love.audio.newSource(LuaGB.sound_buffer)
+  --love.audio.play(source)
+  LuaGB.queueable_source:queue(sound_buffer)
+  if not LuaGB.queueable_source:isPlaying() then
+    LuaGB.queueable_source:play()
+  end
 end
 
 function LuaGB.dump_audio(buffer)
@@ -160,7 +165,7 @@ function LuaGB.dump_audio(buffer)
   -- convert this to a bytestring for output
   local output = ""
   local chars = {}
-  for i = 0, 32768 - 1 do
+  for i = 0, 4096 - 1 do
     local sample = buffer[i]
     sample = math.floor(sample * (32768 - 1)) -- re-root in 16-bit range
     chars[i * 2] = string.char(bit32.band(sample, 0xFF))
@@ -168,7 +173,7 @@ function LuaGB.dump_audio(buffer)
   end
   output = table.concat(chars)
 
-  love.filesystem.append("audiodump.raw", output, 32768 * 2)
+  love.filesystem.append("audiodump.raw", output, 4096 * 2)
 end
 
 function LuaGB:load_game(game_path)
@@ -203,7 +208,7 @@ end
 function love.load(args)
   LuaGB.window_title = "LuaGB v" .. LuaGB.version
   print(LuaGB.window_title)
-  LuaGB.sound_buffer = love.sound.newSoundData(32768, 32768, 16, 2)
+  LuaGB.queueable_source = love.audio.newQueueableSource(32768, 16, 2)
   love.graphics.setDefaultFilter("nearest", "nearest")
 
   local small_font = love.graphics.newImageFont("images/5x3font_bm.png", "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ ", 1)
