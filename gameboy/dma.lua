@@ -19,10 +19,12 @@ function Dma.new(modules)
 
   io.write_logic[ports.DMA] = function(byte)
     -- DMA Transfer. Copies data from 0x0000 + 0x100 * byte, into OAM data
+    local destmap = memory.block_map[0xfe00]
+    local sourcemap = memory.block_map[byte * 0x100]
     local source = 0x0000 + 0x100 * byte
     local destination = 0xFE00
     while destination <= 0xFE9F do
-      memory.write_byte(destination, memory.read_byte(source))
+      destmap[destination] = sourcemap[source]
       destination = destination + 1
       source = source + 1
     end
