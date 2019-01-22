@@ -1,3 +1,10 @@
+if pcall(require, "jit.opt") then
+  require("jit.opt").start(
+    "maxmcode=8192",
+    "maxtrace=2000"
+    --
+  )
+end
 local bit32 = require("bit")
 local filebrowser = require("filebrowser")
 local Gameboy = require("gameboy")
