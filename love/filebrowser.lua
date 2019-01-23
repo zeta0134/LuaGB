@@ -178,14 +178,14 @@ filebrowser.refresh_items = function()
 
   -- Sort directories first
   for _, path in pairs(pwd_items) do
-    if love.filesystem.isDirectory(filebrowser.pwd .. path) then
+    if love.filesystem.getInfo(filebrowser.pwd .. path).type == "directory" then
       table.insert(filebrowser.items, path)
     end
   end
 
   -- Then not directories (Everything else)
   for _, path in pairs(pwd_items) do
-    if not love.filesystem.isDirectory(filebrowser.pwd .. path) then
+    if love.filesystem.getInfo(filebrowser.pwd .. path).type ~= "directory" then
       table.insert(filebrowser.items, path)
     end
   end
@@ -208,7 +208,7 @@ filebrowser.select_at_cursor = function()
     filebrowser.refresh_items()
     return
   end
-  if love.filesystem.isDirectory(filebrowser.pwd .. cursor_item) then
+  if love.filesystem.getInfo(filebrowser.pwd .. cursor_item).type == "directory" then
     filebrowser.pwd = filebrowser.pwd .. cursor_item .. "/"
     filebrowser.refresh_items()
     return
