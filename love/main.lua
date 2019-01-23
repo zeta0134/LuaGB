@@ -154,8 +154,8 @@ end
 LuaGB.sound_buffer = nil
 
 function LuaGB.play_gameboy_audio(buffer)
-  sound_buffer = love.sound.newSoundData(2048, 32768, 16, 2)
-  for i = 0, 4096 - 1 do
+  sound_buffer = love.sound.newSoundData(512, 32768, 16, 2)
+  for i = 0, 1024 - 1 do
     sound_buffer:setSample(i, buffer[i])
   end
   --local source = love.audio.newSource(LuaGB.sound_buffer)
@@ -172,7 +172,7 @@ function LuaGB.dump_audio(buffer)
   -- convert this to a bytestring for output
   local output = ""
   local chars = {}
-  for i = 0, 4096 - 1 do
+  for i = 0, 1024 - 1 do
     local sample = buffer[i]
     sample = math.floor(sample * (32768 - 1)) -- re-root in 16-bit range
     chars[i * 2] = string.char(bit32.band(sample, 0xFF))
@@ -180,7 +180,7 @@ function LuaGB.dump_audio(buffer)
   end
   output = table.concat(chars)
 
-  love.filesystem.append("audiodump.raw", output, 4096 * 2)
+  love.filesystem.append("audiodump.raw", output, 1024 * 2)
 end
 
 function LuaGB:load_game(game_path)

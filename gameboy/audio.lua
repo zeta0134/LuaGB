@@ -691,7 +691,7 @@ function Audio.new(modules)
       next_sample = next_sample + 1
       audio.buffer[next_sample] = sample_right
       next_sample = next_sample + 1
-      if next_sample >= 4096 then
+      if next_sample >= 1024 then
         audio.__on_buffer_full(audio.buffer)
         next_sample = 0
       end
