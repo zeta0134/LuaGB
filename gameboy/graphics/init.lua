@@ -8,6 +8,7 @@ local Graphics = {}
 
 function Graphics.new(modules)
   local interrupts = modules.interrupts
+  local dma = modules.dma
   local io = modules.io
   local memory = modules.memory
   local timers = modules.timers
@@ -336,6 +337,8 @@ function Graphics.new(modules)
       graphics.registers.status.SetMode(0)
       -- If enabled, fire an HBlank interrupt
       graphics.refresh_lcdstat()
+      -- If the hblank dma is active, copy the next block
+      dma.do_hblank()
     else
       graphics.next_edge = graphics.last_edge + 172
     end

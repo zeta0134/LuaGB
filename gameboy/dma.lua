@@ -17,6 +17,24 @@ function Dma.new(modules)
   dma.hblank = false
   dma.running = false
 
+  dma.do_hblank = function()
+    if dma.hblank then
+      for i = 0, 0x10 - 1 do
+        memory[dma.destination + i] = memory[dma.source + i]
+      end
+      dma.source = dma.source + 0x10;
+      dma.destination = dma.destination + 0x10;
+      dma.length = dma.length - 16;
+      if dma.length <= 0 then
+        dma.hblank = false
+        io.ram[0x55] = 0xFF;
+      else
+        io.ram[0x55] = (dma.length - 16) - 1;
+      end
+      -- TODO: Implement clock delay for hblank DMA transfers
+    end
+  end
+
   io.write_logic[ports.DMA] = function(byte)
     -- DMA Transfer. Copies data from 0x0000 + 0x100 * byte, into OAM data
     local destmap = memory.block_map[0xfe00]
@@ -39,8 +57,14 @@ function Dma.new(modules)
     dma.length = (bit32.band(byte, 0x7F) + 1) * 16
     if bit32.band(byte, 0x80) ~= 0 then
       dma.hblank = true
-      print("HBlank DMA from ", dma.source, " to ", dma.destination)
+      --print(string.format("HBlank DMA from 0x%04X to 0x%04X with length 0x%04X", dma.source, dma.destination, dma.length))
     else
+      if dma.hblank then
+        -- Terminate the hblank DMA in progress. Do NOT start a general purpose DMA on this write.
+        dma.hblank = false
+        io.ram[0x55] = bit32.bor(io.ram[0x55], 0x80);
+        return
+      end
       dma.hblank = false
       -- process the DMA now, adjust clock too. (cheat, basically.)
       for i = 0, dma.length - 1 do
