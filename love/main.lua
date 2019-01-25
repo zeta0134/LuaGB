@@ -26,7 +26,7 @@ LuaGB.audio_dump_running = false
 LuaGB.game_filename = ""
 LuaGB.game_path = ""
 LuaGB.game_loaded = false
-LuaGB.version = "0.1.0-alpha"
+LuaGB.version = "0.1.1"
 LuaGB.window_title = ""
 LuaGB.save_delay = 0
 
