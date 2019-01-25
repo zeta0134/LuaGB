@@ -322,6 +322,7 @@ function LuaGB:reset()
   self.gameboy:reset()
   self.gameboy.audio.on_buffer_full(self.play_gameboy_audio)
   self.audio_dump_running = false
+  self.gameboy.graphics.palette_dmg_colors = palette
 
   -- Initialize Debug Panels
   for _, panel in pairs(panels) do
@@ -484,6 +485,9 @@ function love.update()
     LuaGB.gameboy.cartridge.external_ram.dirty = false
     LuaGB:save_ram()
   end
+
+  -- Apply any changed local settings to the gameboy
+  LuaGB.gameboy.graphics.palette.set_dmg_colors(filebrowser.palette[0], filebrowser.palette[1], filebrowser.palette[2], filebrowser.palette[3])
 end
 
 function love.draw()

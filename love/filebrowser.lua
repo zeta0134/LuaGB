@@ -5,6 +5,12 @@ filebrowser.cursor_pos = 0
 filebrowser.scroll_pos = 0
 filebrowser.items = {}
 
+local palettes = {}
+local palette_index = 1
+palettes[1] = {[0]={255, 255, 255}, [1]={192, 192, 192}, [2]={128, 128, 128}, [3]={0, 0, 0}}
+palettes[2] = {[0]={215, 215, 215}, [1]={140, 124, 114}, [2]={100, 82, 73}, [3]={45, 45, 45}}
+palettes[3] = {[0]={224, 248, 208}, [1]={136, 192, 112}, [2]={52, 104, 86}, [3]={8, 24, 32}}
+
 local ffi_status, ffi
 if type(jit) == "table" and jit.status() then
   ffi_status, ffi = pcall(require, "ffi")
@@ -25,7 +31,7 @@ filebrowser.load_file = function()
   -- Does nothing!
 end
 
-filebrowser.init = function(gameboy)
+filebrowser.init = function()
   filebrowser.image_data = love.image.newImageData(256, 256)
   if ffi_status then
     filebrowser.raw_image_data = ffi.cast("luaGB_pixel*", filebrowser.image_data:getPointer())
@@ -42,7 +48,8 @@ filebrowser.init = function(gameboy)
   for i = 0, 8 do
     filebrowser.dango[i] = love.image.newImageData("images/dango_" .. i .. ".png")
   end
-  filebrowser.gameboy = gameboy
+
+  filebrowser.palette = palettes[1]
 
   filebrowser.game_screen = {}
   for y = 0, 143 do
@@ -56,7 +63,7 @@ filebrowser.init = function(gameboy)
 end
 
 filebrowser.draw_background = function(sx, sy)
-  local palette = filebrowser.gameboy.graphics.palette.dmg_colors
+  local palette = filebrowser.palette
   for x = 0, 159 do
     for y = 0, 143 do
       local tx = math.floor((x + sx) / 8)
@@ -108,7 +115,7 @@ filebrowser.draw_rectangle = function(dx, dy, width, height, color, filled)
 end
 
 filebrowser.draw_shadow_pixel = function(x, y)
-  local palette = filebrowser.gameboy.graphics.palette.dmg_colors
+  local palette = filebrowser.palette
   if filebrowser.game_screen[y][x] == palette[2] then
     filebrowser.game_screen[y][x] = palette[3]
   end
@@ -129,7 +136,7 @@ filebrowser.draw_shadow = function(dx, dy, width, height)
 end
 
 filebrowser.draw_image = function(sx, sy, image)
-  local palette = filebrowser.gameboy.graphics.palette.dmg_colors
+  local palette = filebrowser.palette
   for x = 0, image:getWidth() - 1 do
     for y = 0, image:getHeight() - 1 do
       local r, g, b, a = image:getPixel(x, y)
@@ -160,7 +167,7 @@ filebrowser.draw_image = function(sx, sy, image)
 end
 
 filebrowser.shadow_box = function(x, y, width, height)
-  local palette = filebrowser.gameboy.graphics.palette.dmg_colors
+  local palette = filebrowser.palette
   filebrowser.draw_shadow(x + 1, y + 1, width, height)
   filebrowser.draw_rectangle(x, y, width, height, palette[0], true)
   filebrowser.draw_rectangle(x, y, width, height, palette[3])
@@ -237,12 +244,6 @@ filebrowser.keyreleased = function(key)
   end
 end
 
-local palettes = {}
-local palette_index = 1
-palettes[1] = {{255, 255, 255}, {192, 192, 192}, {128, 128, 128}, {0, 0, 0}}
-palettes[2] = {{215, 215, 215}, {140, 124, 114}, {100, 82, 73}, {45, 45, 45}}
-palettes[3] = {{224, 248, 208}, {136, 192, 112}, {52, 104, 86}, {8, 24, 32}}
-
 
 filebrowser.switch_palette = function(button)
   if button == 1 then
@@ -257,7 +258,8 @@ filebrowser.switch_palette = function(button)
   if palette_index > #palettes then
     palette_index = 1
   end
-  filebrowser.gameboy.graphics.palette.set_dmg_colors(unpack(palettes[palette_index]))
+  --filebrowser.gameboy.graphics.palette.set_dmg_colors(unpack(palettes[palette_index]))
+  filebrowser.palette = palettes[palette_index]
 end
 
 local dango_index = 0
@@ -285,7 +287,7 @@ end
 -- used for animations. Assume 60FPS, don't overcomplicate things.
 filebrowser.frame_counter = 0
 filebrowser.draw = function(dx, dy, scale)
-  local palette = filebrowser.gameboy.graphics.palette.dmg_colors
+  local palette = filebrowser.palette
 
   -- run the drawing functions to the virtual game screen
   local frames = filebrowser.frame_counter
