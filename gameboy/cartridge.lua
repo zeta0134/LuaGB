@@ -68,6 +68,7 @@ function Cartridge.new(modules)
       print("Using mapper: ", cartridge.header.mbc_name)
       MBC.raw_data = cartridge.raw_data
       MBC.external_ram = cartridge.external_ram
+      MBC.header = cartridge.header
       -- Cart ROM
       memory.map_block(0x00, 0x7F, MBC)
       -- External RAM

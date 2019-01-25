@@ -6,6 +6,7 @@ function Mbc2.new()
   local mbc2 = {}
   mbc2.raw_data = {}
   mbc2.external_ram = {}
+  mbc2.header = {}
   mbc2.rom_bank = 1
   mbc2.ram_enable = false
   mbc2.mt = {}

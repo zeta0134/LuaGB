@@ -6,6 +6,7 @@ function MbcNone.new()
   mbc_none.mt = {}
   mbc_none.raw_data = {}
   mbc_none.external_ram = {}
+  mbc_none.header = {}
   mbc_none.mt.__index = function(table, address)
     return mbc_none.raw_data[address]
   end

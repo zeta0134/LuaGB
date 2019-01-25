@@ -6,6 +6,7 @@ function Mbc1.new()
   local mbc1 = {}
   mbc1.raw_data = {}
   mbc1.external_ram = {}
+  mbc1.header = {}
   mbc1.rom_bank = 1
   mbc1.ram_bank = 0
   mbc1.mode = 0 --0 = ROM bank mode, 1 = RAM bank mode

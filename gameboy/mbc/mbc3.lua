@@ -6,6 +6,7 @@ function Mbc3.new()
   local mbc3 = {}
   mbc3.raw_data = {}
   mbc3.external_ram = {}
+  mbc3.header = {}
   mbc3.rom_bank = 0
   mbc3.ram_bank = 0
   mbc3.ram_enable = false

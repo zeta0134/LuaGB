@@ -6,6 +6,7 @@ function Mbc5.new()
   local mbc5 = {}
   mbc5.raw_data = {}
   mbc5.external_ram = {}
+  mbc5.header = {}
   mbc5.rom_bank = 0
   mbc5.ram_bank = 0
   mbc5.ram_enable = false
@@ -44,9 +45,12 @@ function Mbc5.new()
       return
     end
     if address >= 0x3000 and address <= 0x3FFF then
-      -- Write the upper 1 bits of the ROM bank
-      mbc5.rom_bank = bit32.band(mbc5.rom_bank, 0xFF) + bit32.lshift(bit32.band(value, 0x01), 8)
-      print("Switched (high) to rom bank: ", mbc5.rom_bank)
+      if mbc5.header.rom_size > (4096 * 1024) then
+        -- This is a >4MB game, so set the high bit of the bank select
+        mbc5.rom_bank = bit32.band(mbc5.rom_bank, 0xFF) + bit32.lshift(bit32.band(value, 0x01), 8)
+      else
+        -- This is a <= 4MB game. Do nothing!
+      end
       return
     end
     if address >= 0x4000 and address <= 0x5FFF then
