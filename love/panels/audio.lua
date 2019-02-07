@@ -4,9 +4,8 @@ local audio = {}
 
 audio.width = 136 * 2
 
-audio.init = function(gameboy)
+audio.init = function()
   audio.canvas = love.graphics.newCanvas(audio.width / 2, 400)
-  audio.gameboy = gameboy
   audio.graph_canvas = love.graphics.newCanvas(136, 64)
   audio.background_image = love.graphics.newImage("images/debug_audio_background.png")
 end
@@ -36,17 +35,17 @@ audio.draw_graph = function(x, y, table, start, size, disabled)
   love.graphics.draw(audio.graph_canvas, x, y)
 end
 
-audio.draw = function(x, y)
+audio.draw = function(x, y, gameboy)
   love.graphics.setCanvas(audio.canvas)
   love.graphics.clear()
   love.graphics.setColor(1, 1, 1)
   love.graphics.draw(audio.background_image, 0, 0)
 
-  local debug = audio.gameboy.audio.debug
-  audio.draw_graph(0, 17, debug.tone1, debug.current_sample, debug.max_samples, audio.gameboy.audio.tone1.debug_disabled)
-  audio.draw_graph(0, 62, debug.tone2, debug.current_sample, debug.max_samples, audio.gameboy.audio.tone2.debug_disabled)
-  audio.draw_graph(0, 107, debug.wave3, debug.current_sample, debug.max_samples, audio.gameboy.audio.wave3.debug_disabled)
-  audio.draw_graph(0, 152, debug.noise4, debug.current_sample, debug.max_samples, audio.gameboy.audio.noise4.debug_disabled)
+  local debug = gameboy.audio.debug
+  audio.draw_graph(0, 17, debug.tone1, debug.current_sample, debug.max_samples, gameboy.audio.tone1.debug_disabled)
+  audio.draw_graph(0, 62, debug.tone2, debug.current_sample, debug.max_samples, gameboy.audio.tone2.debug_disabled)
+  audio.draw_graph(0, 107, debug.wave3, debug.current_sample, debug.max_samples, gameboy.audio.wave3.debug_disabled)
+  audio.draw_graph(0, 152, debug.noise4, debug.current_sample, debug.max_samples, gameboy.audio.noise4.debug_disabled)
   audio.draw_graph(0, 217, debug.final, debug.current_sample, debug.max_samples)
 
   love.graphics.setCanvas() -- reset to main FB

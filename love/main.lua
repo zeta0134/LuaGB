@@ -505,7 +505,7 @@ function love.draw()
       love.graphics.scale(2, 2)
       love.graphics.draw(LuaGB.debug.separator_image, (panel_x - 10) / 2, 0)
       love.graphics.pop()
-      panel.draw(panel_x, 0)
+      panel.draw(panel_x, 0, LuaGB.gameboy)
       panel_x = panel_x + panel.width + 10
     end
   else
