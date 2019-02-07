@@ -2,15 +2,13 @@ local vram = {}
 
 vram.width = 264 * 2
 
-vram.init = function(gameboy)
+vram.init = function()
   vram.canvas = love.graphics.newCanvas(264, 400)
   vram.tile_imagedata = love.image.newImageData(256, 256)
   vram.tile_image = love.graphics.newImage(vram.tile_imagedata)
 
   vram.active_bg = 0
   vram.active_bank = 0
-
-  vram.gameboy = gameboy
 
   vram.background_image = love.graphics.newImage("images/debug_vram_background.png")
   vram.bank_1_image = love.graphics.newImage("images/debug_tiles_1.png")
@@ -38,25 +36,25 @@ vram.mousepressed = function(x, y, button)
   end
 end
 
-vram.draw = function(x, y)
+vram.draw = function(x, y, gameboy)
   love.graphics.setCanvas(vram.canvas)
   love.graphics.clear()
   love.graphics.draw(vram.background_image, 0, 0)
-  local registers = vram.gameboy.graphics.registers
+  local registers = gameboy.graphics.registers
 
-  vram.draw_tiles(vram.gameboy, 4, 21, 32, vram.active_bank)
+  vram.draw_tiles(gameboy, 4, 21, 32, vram.active_bank)
   if vram.active_bank == 1 then
     love.graphics.draw(vram.bank_1_image, 2, 9)
   end
 
   if vram.active_bg == 0 then
-    vram.draw_background(vram.gameboy, registers.background_tilemap, registers.background_attr, 4, 140, 1)
+    vram.draw_background(gameboy, registers.background_tilemap, registers.background_attr, 4, 140, 1)
   else
     love.graphics.draw(vram.map_wx_image, 2, 128)
-    vram.draw_background(vram.gameboy, registers.window_tilemap, registers.window_attr, 4, 140, 1)
+    vram.draw_background(gameboy, registers.window_tilemap, registers.window_attr, 4, 140, 1)
   end
 
-  vram.draw_palettes(vram.gameboy)
+  vram.draw_palettes(gameboy)
 
   love.graphics.setCanvas() -- reset to main FB
   love.graphics.setColor(1, 1, 1)
@@ -112,7 +110,7 @@ vram.draw_tiles = function(gameboy, dx, dy, tiles_across, bank)
   end)
   local x = 0
   local y = 0
-  local tiles = vram.gameboy.graphics.cache.tiles
+  local tiles = gameboy.graphics.cache.tiles
   for i = 0, 384 - 1 do
     vram.draw_tile(gameboy, tiles[bank * 384 + i], nil, x, y)
     x = x + 8
