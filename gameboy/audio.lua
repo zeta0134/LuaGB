@@ -633,8 +633,6 @@ function Audio.new(modules)
     end
   end
 
-  audio.debug.enabled = false
-
   audio.generate_pending_samples = function()
     while next_sample_cycle < timers.system_clock do
       local tone1  = audio.tone1.generate_sample(next_sample_cycle)
@@ -675,10 +673,7 @@ function Audio.new(modules)
       sample_right = sample_right / 4
       sample_left = sample_left / 4
 
-      if audio.debug.enabled then
-        -- Debug in mono
-        audio.save_debug_samples(tone1, tone2, wave3, noise4, (tone1 + tone2 + wave3 + noise4) / 4)
-      end
+      audio.save_debug_samples(tone1, tone2, wave3, noise4, (tone1 + tone2 + wave3 + noise4) / 4)
 
       -- Left/Right Channel Volume
       local right_volume = bit32.rshift(bit32.band(io.ram[ports.NR50], 0x70), 4)

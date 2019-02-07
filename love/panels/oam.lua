@@ -4,19 +4,18 @@ local oam = {}
 
 oam.width = 320
 
-oam.init = function(gameboy)
+oam.init = function()
   oam.canvas = love.graphics.newCanvas(160, 400)
-  oam.gameboy = gameboy
   oam.sprite_imagedata = love.image.newImageData(8, 16)
   oam.sprite_image = love.graphics.newImage(oam.sprite_imagedata)
   oam.background_8x8_image = love.graphics.newImage("images/debug_oam_8x8_background.png")
   oam.background_8x16_image = love.graphics.newImage("images/debug_oam_8x16_background.png")
 end
 
-oam.draw_sprite = function(sprite_address, sx, sy, sprite_size)
-  local graphics = oam.gameboy.graphics
-  local io = oam.gameboy.io
-  local ports = oam.gameboy.io.ports
+oam.draw_sprite = function(sprite_address, sx, sy, sprite_size, gameboy)
+  local graphics = gameboy.graphics
+  local io = gameboy.io
+  local ports = gameboy.io.ports
 
   local sprite = graphics.cache.oam[(sprite_address - 0xFE00) / 4]
   local sprite_flags = graphics.oam[sprite_address + 3]
@@ -40,7 +39,7 @@ oam.draw_sprite = function(sprite_address, sx, sy, sprite_size)
   return sprite_tile, sprite.x, sprite.y, sprite_flags
 end
 
-oam.draw_sprites = function()
+oam.draw_sprites = function(gameboy)
   -- Clear out the sprite buffer before we start
   oam.sprite_imagedata:mapPixel(function()
     return 0, 0, 0, 0
@@ -52,7 +51,7 @@ oam.draw_sprites = function()
   local sprite_scaling = 2
 
   local sprite_size = 8
-  if oam.gameboy.graphics.registers.large_sprites then
+  if gameboy.graphics.registers.large_sprites then
     sprite_size = 16
     sprite_scaling = 1
   end
@@ -68,7 +67,7 @@ oam.draw_sprites = function()
   local y = 0
   for i = 0, 39 do
     -- draw the sprite
-    local tile, sprite_x, sprite_y, flags = oam.draw_sprite(0xFE00 + (i * 4), 0, 0, sprite_size)
+    local tile, sprite_x, sprite_y, flags = oam.draw_sprite(0xFE00 + (i * 4), 0, 0, sprite_size, gameboy)
     love.graphics.setCanvas(oam.canvas)
     love.graphics.push()
     love.graphics.scale(sprite_scaling, sprite_scaling)
@@ -89,12 +88,12 @@ oam.draw_sprites = function()
   end
 end
 
-oam.draw = function(x, y)
+oam.draw = function(x, y, gameboy)
   love.graphics.setCanvas(oam.canvas)
   love.graphics.clear()
   love.graphics.setColor(0.75, 0.75, 0.75)
   love.graphics.rectangle("fill", 0, 0, 160, 400)
-  oam.draw_sprites()
+  oam.draw_sprites(gameboy)
   love.graphics.setCanvas() -- reset to main FB
   love.graphics.setColor(1, 1, 1)
   love.graphics.push()

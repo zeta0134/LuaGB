@@ -352,7 +352,6 @@ action_keys.i = function() LuaGB.gameboy:run_until_ret() end
 
 action_keys.d = function()
   LuaGB.debug.enabled = not LuaGB.debug.enabled
-  LuaGB.gameboy.audio.debug.enabled = LuaGB.debug.enabled
   LuaGB:resize_window()
 end
 
@@ -492,7 +491,7 @@ end
 
 function love.draw()
   if LuaGB.debug.enabled then
-    panels.registers.draw(0, 288)
+    panels.registers.draw(0, 288, LuaGB.gameboy)
     LuaGB:print_instructions()
     if LuaGB.menu_active then
       filebrowser.draw(0, 0, 2)
@@ -505,7 +504,7 @@ function love.draw()
       love.graphics.scale(2, 2)
       love.graphics.draw(LuaGB.debug.separator_image, (panel_x - 10) / 2, 0)
       love.graphics.pop()
-      panel.draw(panel_x, 0)
+      panel.draw(panel_x, 0, LuaGB.gameboy)
       panel_x = panel_x + panel.width + 10
     end
   else

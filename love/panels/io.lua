@@ -2,18 +2,17 @@ local io = {}
 
 io.width = 64 * 2
 
-io.init = function(gameboy)
+io.init = function()
   io.canvas = love.graphics.newCanvas(64, 400)
-  io.gameboy = gameboy
   io.background_image = love.graphics.newImage("images/debug_io_background.png")
 end
 
-io.draw = function(x, y)
+io.draw = function(x, y, gameboy)
   love.graphics.setCanvas(io.canvas)
   love.graphics.clear()
   love.graphics.setColor(1, 1, 1)
   love.graphics.draw(io.background_image, 0, 0)
-  io.print_values(io.gameboy)
+  io.print_values(gameboy)
   love.graphics.setCanvas() -- reset to main FB
   love.graphics.setColor(1, 1, 1)
   love.graphics.push()
