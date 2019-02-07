@@ -491,7 +491,7 @@ end
 
 function love.draw()
   if LuaGB.debug.enabled then
-    panels.registers.draw(0, 288)
+    panels.registers.draw(0, 288, LuaGB.gameboy)
     LuaGB:print_instructions()
     if LuaGB.menu_active then
       filebrowser.draw(0, 0, 2)

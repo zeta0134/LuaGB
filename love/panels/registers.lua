@@ -4,17 +4,16 @@ registers.width = 160 * 2
 
 local vertical_spacing = 7
 
-registers.init = function(gameboy)
+registers.init = function()
   registers.canvas = love.graphics.newCanvas(160, 400)
-  registers.gameboy = gameboy
 end
 
-registers.draw = function(x, y)
+registers.draw = function(x, y, gameboy)
   love.graphics.setCanvas(registers.canvas)
   love.graphics.clear()
   love.graphics.setColor(0.75, 0.75, 0.75)
   love.graphics.rectangle("fill", 0, 0, 160, 400)
-  registers.print_values(registers.gameboy)
+  registers.print_values(gameboy)
   love.graphics.setCanvas() -- reset to main FB
   love.graphics.setColor(1, 1, 1)
   love.graphics.push()
