@@ -6,18 +6,17 @@ local disassembler = {}
 
 disassembler.width = 128 * 2
 
-disassembler.init = function(gameboy)
+disassembler.init = function()
   disassembler.canvas = love.graphics.newCanvas(128, 400)
-  disassembler.gameboy = gameboy
   disassembler.background_image = love.graphics.newImage("images/debug_disassembler_background.png")
 end
 
-disassembler.draw = function(x, y)
+disassembler.draw = function(x, y, gameboy)
   love.graphics.setCanvas(disassembler.canvas)
   love.graphics.clear()
   love.graphics.setColor(1, 1, 1)
   love.graphics.draw(disassembler.background_image, 0, 0)
-  disassembler.print_opcodes(disassembler.gameboy)
+  disassembler.print_opcodes(gameboy)
   love.graphics.setCanvas() -- reset to main FB
   love.graphics.setColor(1, 1, 1)
   love.graphics.push()
