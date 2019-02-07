@@ -352,7 +352,6 @@ action_keys.i = function() LuaGB.gameboy:run_until_ret() end
 
 action_keys.d = function()
   LuaGB.debug.enabled = not LuaGB.debug.enabled
-  LuaGB.gameboy.audio.debug.enabled = LuaGB.debug.enabled
   LuaGB:resize_window()
 end
 
