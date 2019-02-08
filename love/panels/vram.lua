@@ -65,19 +65,43 @@ vram.draw = function(x, y, gameboy)
 end
 
 vram.draw_palettes = function(gameboy)
-  local bg_palettes = gameboy.graphics.palette.color_bg
-  for index, palette in pairs(bg_palettes) do
+  local dmg_base_palette = gameboy.graphics.palette.dmg_colors
+  for i = 0, 3 do
+    love.graphics.setColor(dmg_base_palette[i][1] / 255, dmg_base_palette[i][2] / 255, dmg_base_palette[i][3] / 255)
+    love.graphics.rectangle("fill", 244 + (i * 4), 12, 4, 4)
+  end
+
+  local dmg_bg_palette = gameboy.graphics.palette.bg
+  for i = 0, 3 do
+    love.graphics.setColor(dmg_bg_palette[i][1] / 255, dmg_bg_palette[i][2] / 255, dmg_bg_palette[i][3] / 255)
+    love.graphics.rectangle("fill", 90 + (i * 4), 12, 4, 4)
+  end
+
+  local dmg_obj0_palette = gameboy.graphics.palette.obj1
+  for i = 0, 3 do
+    love.graphics.setColor(dmg_obj0_palette[i][1] / 255, dmg_obj0_palette[i][2] / 255, dmg_obj0_palette[i][3] / 255)
+    love.graphics.rectangle("fill", 134 + (i * 4), 12, 4, 4)
+  end
+
+  local dmg_obj1_palette = gameboy.graphics.palette.obj1
+  for i = 0, 3 do
+    love.graphics.setColor(dmg_obj1_palette[i][1] / 255, dmg_obj1_palette[i][2] / 255, dmg_obj1_palette[i][3] / 255)
+    love.graphics.rectangle("fill", 156 + (i * 4), 12, 4, 4)
+  end
+
+  local color_bg_palettes = gameboy.graphics.palette.color_bg
+  for index, palette in pairs(color_bg_palettes) do
     for i = 0, 3 do
       love.graphics.setColor(palette[i][1] / 255, palette[i][2] / 255, palette[i][3] / 255)
-      love.graphics.rectangle("fill", 83 + (index * 23) + (i * 4), 131, 4, 4)
+      love.graphics.rectangle("fill", 90 + (index * 22) + (i * 4), 131, 4, 4)
     end
   end
 
-  local obj_palettes = gameboy.graphics.palette.color_obj
-  for index, palette in pairs(obj_palettes) do
+  local color_obj_palettes = gameboy.graphics.palette.color_obj
+  for index, palette in pairs(color_obj_palettes) do
     for i = 0, 3 do
       love.graphics.setColor(palette[i][1] / 255, palette[i][2] / 255, palette[i][3] / 255)
-      love.graphics.rectangle("fill", 83 + (index * 23) + (i * 4), 122, 4, 4)
+      love.graphics.rectangle("fill", 90 + (index * 22) + (i * 4), 122, 4, 4)
     end
   end
   love.graphics.setColor(1, 1, 1)
