@@ -462,6 +462,10 @@ function Graphics.new(modules)
           if scanline_data.bg_tile_y >= 32 then
             scanline_data.bg_tile_y = scanline_data.bg_tile_y - 32
           end
+        else
+          -- The window is active; reset just our sub_y so the below tile_flip logic works
+          -- correctly
+          scanline_data.sub_y = (frame_data.window_draw_y - 1) % 8
         end
 
         local tile_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
