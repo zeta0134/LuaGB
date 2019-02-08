@@ -9,6 +9,12 @@ local bit32 = require("bit")
 local filebrowser = require("filebrowser")
 local Gameboy = require("gameboy")
 local binser = require("vendor/binser")
+local ffi = require 'ffi'
+ffi.cdef[[
+typedef struct {
+    unsigned char r, g, b, a;
+} luaGB_pixel;
+]]
 
 local panels = {}
 
@@ -41,15 +47,6 @@ LuaGB.emulator_running = false
 LuaGB.menu_active = true
 
 LuaGB.screen_scale = 3
-
--- Do the check to see if JIT is enabled. If so use the optimized FFI structs.
-local ffi_status, ffi
-if type(jit) == "table" and jit.status() then
-  ffi_status, ffi = pcall(require, "ffi")
-  if ffi_status then
-    ffi.cdef("typedef struct { unsigned char r, g, b, a; } luaGB_pixel;")
-  end
-end
 
 function LuaGB:resize_window()
   local scale = self.screen_scale
@@ -222,9 +219,7 @@ function love.load(args)
   love.graphics.setFont(small_font)
 
   LuaGB.game_screen_imagedata = love.image.newImageData(256, 256)
-  if ffi_status then
-    LuaGB.raw_game_screen_imagedata = ffi.cast("luaGB_pixel*", LuaGB.game_screen_imagedata:getPointer())
-  end
+  LuaGB.raw_game_screen_imagedata = ffi.cast("luaGB_pixel*", LuaGB.game_screen_imagedata:getPointer())
   LuaGB.game_screen_image = love.graphics.newImage(LuaGB.game_screen_imagedata)
   LuaGB.debug.separator_image = love.graphics.newImage("images/debug_separator.png")
 
