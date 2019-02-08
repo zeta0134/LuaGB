@@ -27,12 +27,35 @@ regions.bank_1 = {x=43,y=10,width=9,height=10,action=vram.set_bank_1}
 regions.map_bg = {x=30,y=129,width=13,height=10,action=vram.set_map_bg}
 regions.map_wx = {x=44,y=129,width=13,height=10,action=vram.set_map_wx}
 
-vram.mousepressed = function(x, y, button)
+regions.palette_dmg_bg =   {x= 88,y=10,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.bg end}
+regions.palette_dmg_obj0 = {x=132,y=10,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.obj0 end}
+regions.palette_dmg_obj1 = {x=154,y=10,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.obj1 end}
+regions.palette_base =     {x=242,y=10,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.dmg_colors end}
+
+regions.palette_gbc_bg0 =  {x= 88,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[0] end}
+regions.palette_gbc_bg1 =  {x=110,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[1] end}
+regions.palette_gbc_bg2 =  {x=132,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[2] end}
+regions.palette_gbc_bg3 =  {x=154,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[3] end}
+regions.palette_gbc_bg4 =  {x=176,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[4] end}
+regions.palette_gbc_bg5 =  {x=198,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[5] end}
+regions.palette_gbc_bg6 =  {x=220,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[6] end}
+regions.palette_gbc_bg7 =  {x=242,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[7] end}
+
+regions.palette_gbc_obj0 =  {x= 88,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[0] end}
+regions.palette_gbc_obj1 =  {x=110,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[1] end}
+regions.palette_gbc_obj2 =  {x=132,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[2] end}
+regions.palette_gbc_obj3 =  {x=154,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[3] end}
+regions.palette_gbc_obj4 =  {x=176,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[4] end}
+regions.palette_gbc_obj5 =  {x=198,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[5] end}
+regions.palette_gbc_obj6 =  {x=220,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[6] end}
+regions.palette_gbc_obj7 =  {x=242,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[7] end}
+
+vram.mousepressed = function(x, y, button, gameboy)
   x = x / 2
   y = y / 2
   for _, region in pairs(regions) do
     if x >= region.x and x < region.x + region.width and y >= region.y and y < region.y + region.height then
-      region.action(button)
+      region.action(gameboy)
     end
   end
 end
