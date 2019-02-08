@@ -69,7 +69,7 @@ vram.draw_palettes = function(gameboy)
   for index, palette in pairs(bg_palettes) do
     for i = 0, 3 do
       love.graphics.setColor(unpack(palette[i]))
-      love.graphics.rectangle("fill", 76 + (index * 24) + (i * 4), 131, 4, 4)
+      love.graphics.rectangle("fill", 83 + (index * 23) + (i * 4), 131, 4, 4)
     end
   end
 
@@ -77,7 +77,7 @@ vram.draw_palettes = function(gameboy)
   for index, palette in pairs(obj_palettes) do
     for i = 0, 3 do
       love.graphics.setColor(unpack(palette[i]))
-      love.graphics.rectangle("fill", 76 + (index * 24) + (i * 4), 122, 4, 4)
+      love.graphics.rectangle("fill", 83 + (index * 23) + (i * 4), 122, 4, 4)
     end
   end
   love.graphics.setColor(1, 1, 1)
