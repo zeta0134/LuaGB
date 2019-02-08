@@ -2,13 +2,14 @@ local vram = {}
 
 vram.width = 264 * 2
 
-vram.init = function()
+vram.init = function(gameboy)
   vram.canvas = love.graphics.newCanvas(264, 400)
   vram.tile_imagedata = love.image.newImageData(256, 256)
   vram.tile_image = love.graphics.newImage(vram.tile_imagedata)
 
   vram.active_bg = 0
   vram.active_bank = 0
+  vram.selected_palette = gameboy.graphics.palette.dmg_colors
 
   vram.background_image = love.graphics.newImage("images/debug_vram_background.png")
   vram.bank_1_image = love.graphics.newImage("images/debug_tiles_1.png")
@@ -26,12 +27,35 @@ regions.bank_1 = {x=43,y=10,width=9,height=10,action=vram.set_bank_1}
 regions.map_bg = {x=30,y=129,width=13,height=10,action=vram.set_map_bg}
 regions.map_wx = {x=44,y=129,width=13,height=10,action=vram.set_map_wx}
 
-vram.mousepressed = function(x, y, button)
+regions.palette_dmg_bg =   {x= 88,y=10,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.bg end}
+regions.palette_dmg_obj0 = {x=132,y=10,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.obj0 end}
+regions.palette_dmg_obj1 = {x=154,y=10,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.obj1 end}
+regions.palette_base =     {x=242,y=10,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.dmg_colors end}
+
+regions.palette_gbc_bg0 =  {x= 88,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[0] end}
+regions.palette_gbc_bg1 =  {x=110,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[1] end}
+regions.palette_gbc_bg2 =  {x=132,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[2] end}
+regions.palette_gbc_bg3 =  {x=154,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[3] end}
+regions.palette_gbc_bg4 =  {x=176,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[4] end}
+regions.palette_gbc_bg5 =  {x=198,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[5] end}
+regions.palette_gbc_bg6 =  {x=220,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[6] end}
+regions.palette_gbc_bg7 =  {x=242,y=129,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_bg[7] end}
+
+regions.palette_gbc_obj0 =  {x= 88,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[0] end}
+regions.palette_gbc_obj1 =  {x=110,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[1] end}
+regions.palette_gbc_obj2 =  {x=132,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[2] end}
+regions.palette_gbc_obj3 =  {x=154,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[3] end}
+regions.palette_gbc_obj4 =  {x=176,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[4] end}
+regions.palette_gbc_obj5 =  {x=198,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[5] end}
+regions.palette_gbc_obj6 =  {x=220,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[6] end}
+regions.palette_gbc_obj7 =  {x=242,y=120,width=20,height=8,action=function(gameboy) vram.selected_palette = gameboy.graphics.palette.color_obj[7] end}
+
+vram.mousepressed = function(x, y, button, gameboy)
   x = x / 2
   y = y / 2
   for _, region in pairs(regions) do
     if x >= region.x and x < region.x + region.width and y >= region.y and y < region.y + region.height then
-      region.action(button)
+      region.action(gameboy)
     end
   end
 end
@@ -64,27 +88,43 @@ vram.draw = function(x, y, gameboy)
   love.graphics.pop()
 end
 
+vram.draw_palette = function(palette, x, y)
+  if vram.selected_palette == palette then
+    love.graphics.setColor(0.75, 0.75, 0.75)
+    love.graphics.rectangle("line", x-1, y-1, 19, 7)
+    love.graphics.setColor(0.50, 0.50, 0.50)
+    love.graphics.rectangle("line", x, y, 19, 7)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.rectangle("line", x+1, y+1, 17, 5)
+    x = x + 1
+    y = y + 1
+  end
+  for i = 0, 3 do
+    love.graphics.setColor(palette[i][1] / 255, palette[i][2] / 255, palette[i][3] / 255)
+    love.graphics.rectangle("fill", x + (i * 4), y, 4, 4)
+  end
+end
+
 vram.draw_palettes = function(gameboy)
-  local bg_palettes = gameboy.graphics.palette.color_bg
-  for index, palette in pairs(bg_palettes) do
-    for i = 0, 3 do
-      love.graphics.setColor(unpack(palette[i]))
-      love.graphics.rectangle("fill", 76 + (index * 24) + (i * 4), 131, 4, 4)
-    end
+  vram.draw_palette(gameboy.graphics.palette.dmg_colors, 244, 12)
+  vram.draw_palette(gameboy.graphics.palette.bg        ,  90, 12)
+  vram.draw_palette(gameboy.graphics.palette.obj0      , 134, 12)
+  vram.draw_palette(gameboy.graphics.palette.obj1      , 156, 12)
+
+  local color_bg_palettes = gameboy.graphics.palette.color_bg
+  for index, palette in pairs(color_bg_palettes) do
+    vram.draw_palette(palette, 90 + (index * 22), 131)
   end
 
-  local obj_palettes = gameboy.graphics.palette.color_obj
-  for index, palette in pairs(obj_palettes) do
-    for i = 0, 3 do
-      love.graphics.setColor(unpack(palette[i]))
-      love.graphics.rectangle("fill", 76 + (index * 24) + (i * 4), 122, 4, 4)
-    end
+  local color_obj_palettes = gameboy.graphics.palette.color_obj
+  for index, palette in pairs(color_obj_palettes) do
+    vram.draw_palette(palette, 90 + (index * 22), 122)
   end
   love.graphics.setColor(1, 1, 1)
 end
 
 vram.draw_tile = function(gameboy, tile, attr, sx, sy)
-  local palette = gameboy.graphics.palette.bg
+  local palette = vram.selected_palette
   if attr ~= nil then
     palette = attr.palette
   end

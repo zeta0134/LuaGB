@@ -452,7 +452,7 @@ function love.mousepressed(x, y, button)
     local panel_x = 160 * 2 + 10 --width of the gameboy canvas in debug mode
     for _, panel in pairs(LuaGB.debug.active_panels) do
       if panel.mousepressed then
-        panel.mousepressed(x - panel_x, y, button)
+        panel.mousepressed(x - panel_x, y, button, LuaGB.gameboy)
       end
       panel_x = panel_x + panel.width + 10
     end
