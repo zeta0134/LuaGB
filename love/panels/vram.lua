@@ -68,7 +68,7 @@ vram.draw_palettes = function(gameboy)
   local bg_palettes = gameboy.graphics.palette.color_bg
   for index, palette in pairs(bg_palettes) do
     for i = 0, 3 do
-      love.graphics.setColor(unpack(palette[i]))
+      love.graphics.setColor(palette[i][1] / 255, palette[i][2] / 255, palette[i][3] / 255)
       love.graphics.rectangle("fill", 83 + (index * 23) + (i * 4), 131, 4, 4)
     end
   end
@@ -76,7 +76,7 @@ vram.draw_palettes = function(gameboy)
   local obj_palettes = gameboy.graphics.palette.color_obj
   for index, palette in pairs(obj_palettes) do
     for i = 0, 3 do
-      love.graphics.setColor(unpack(palette[i]))
+      love.graphics.setColor(palette[i][1] / 255, palette[i][2] / 255, palette[i][3] / 255)
       love.graphics.rectangle("fill", 83 + (index * 23) + (i * 4), 122, 4, 4)
     end
   end
