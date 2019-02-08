@@ -2,13 +2,14 @@ local vram = {}
 
 vram.width = 264 * 2
 
-vram.init = function()
+vram.init = function(gameboy)
   vram.canvas = love.graphics.newCanvas(264, 400)
   vram.tile_imagedata = love.image.newImageData(256, 256)
   vram.tile_image = love.graphics.newImage(vram.tile_imagedata)
 
   vram.active_bg = 0
   vram.active_bank = 0
+  vram.selected_palette = gameboy.graphics.palette.dmg_colors
 
   vram.background_image = love.graphics.newImage("images/debug_vram_background.png")
   vram.bank_1_image = love.graphics.newImage("images/debug_tiles_1.png")
@@ -64,51 +65,43 @@ vram.draw = function(x, y, gameboy)
   love.graphics.pop()
 end
 
+vram.draw_palette = function(palette, x, y)
+  if vram.selected_palette == palette then
+    love.graphics.setColor(0.75, 0.75, 0.75)
+    love.graphics.rectangle("line", x-1, y-1, 19, 7)
+    love.graphics.setColor(0.50, 0.50, 0.50)
+    love.graphics.rectangle("line", x, y, 19, 7)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.rectangle("line", x+1, y+1, 17, 5)
+    x = x + 1
+    y = y + 1
+  end
+  for i = 0, 3 do
+    love.graphics.setColor(palette[i][1] / 255, palette[i][2] / 255, palette[i][3] / 255)
+    love.graphics.rectangle("fill", x + (i * 4), y, 4, 4)
+  end
+end
+
 vram.draw_palettes = function(gameboy)
-  local dmg_base_palette = gameboy.graphics.palette.dmg_colors
-  for i = 0, 3 do
-    love.graphics.setColor(dmg_base_palette[i][1] / 255, dmg_base_palette[i][2] / 255, dmg_base_palette[i][3] / 255)
-    love.graphics.rectangle("fill", 244 + (i * 4), 12, 4, 4)
-  end
-
-  local dmg_bg_palette = gameboy.graphics.palette.bg
-  for i = 0, 3 do
-    love.graphics.setColor(dmg_bg_palette[i][1] / 255, dmg_bg_palette[i][2] / 255, dmg_bg_palette[i][3] / 255)
-    love.graphics.rectangle("fill", 90 + (i * 4), 12, 4, 4)
-  end
-
-  local dmg_obj0_palette = gameboy.graphics.palette.obj1
-  for i = 0, 3 do
-    love.graphics.setColor(dmg_obj0_palette[i][1] / 255, dmg_obj0_palette[i][2] / 255, dmg_obj0_palette[i][3] / 255)
-    love.graphics.rectangle("fill", 134 + (i * 4), 12, 4, 4)
-  end
-
-  local dmg_obj1_palette = gameboy.graphics.palette.obj1
-  for i = 0, 3 do
-    love.graphics.setColor(dmg_obj1_palette[i][1] / 255, dmg_obj1_palette[i][2] / 255, dmg_obj1_palette[i][3] / 255)
-    love.graphics.rectangle("fill", 156 + (i * 4), 12, 4, 4)
-  end
+  vram.draw_palette(gameboy.graphics.palette.dmg_colors, 244, 12)
+  vram.draw_palette(gameboy.graphics.palette.bg        ,  90, 12)
+  vram.draw_palette(gameboy.graphics.palette.obj0      , 134, 12)
+  vram.draw_palette(gameboy.graphics.palette.obj1      , 156, 12)
 
   local color_bg_palettes = gameboy.graphics.palette.color_bg
   for index, palette in pairs(color_bg_palettes) do
-    for i = 0, 3 do
-      love.graphics.setColor(palette[i][1] / 255, palette[i][2] / 255, palette[i][3] / 255)
-      love.graphics.rectangle("fill", 90 + (index * 22) + (i * 4), 131, 4, 4)
-    end
+    vram.draw_palette(palette, 90 + (index * 22), 131)
   end
 
   local color_obj_palettes = gameboy.graphics.palette.color_obj
   for index, palette in pairs(color_obj_palettes) do
-    for i = 0, 3 do
-      love.graphics.setColor(palette[i][1] / 255, palette[i][2] / 255, palette[i][3] / 255)
-      love.graphics.rectangle("fill", 90 + (index * 22) + (i * 4), 122, 4, 4)
-    end
+    vram.draw_palette(palette, 90 + (index * 22), 122)
   end
   love.graphics.setColor(1, 1, 1)
 end
 
 vram.draw_tile = function(gameboy, tile, attr, sx, sy)
-  local palette = gameboy.graphics.palette.bg
+  local palette = vram.selected_palette
   if attr ~= nil then
     palette = attr.palette
   end
