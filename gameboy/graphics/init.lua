@@ -418,6 +418,11 @@ function Graphics.new(modules)
       scanline_data.active_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
       scanline_data.active_tile = scanline_data.current_map[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
       scanline_data.window_active = true
+
+      local tile_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+      if tile_attr.vertical_flip then
+        scanline_data.sub_y = 7 - scanline_data.sub_y
+      end
     end
   end
 
