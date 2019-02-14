@@ -392,6 +392,11 @@ function Graphics.new(modules)
     scanline_data.active_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
     scanline_data.active_tile = scanline_data.current_map[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
     scanline_data.window_active = false
+
+    local tile_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+    if tile_attr.vertical_flip then
+      scanline_data.sub_y = 7 - scanline_data.sub_y
+    end
   end
 
   graphics.switch_to_window = function()
@@ -413,6 +418,11 @@ function Graphics.new(modules)
       scanline_data.active_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
       scanline_data.active_tile = scanline_data.current_map[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
       scanline_data.window_active = true
+
+      local tile_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
+      if tile_attr.vertical_flip then
+        scanline_data.sub_y = 7 - scanline_data.sub_y
+      end
     end
   end
 
@@ -457,6 +467,10 @@ function Graphics.new(modules)
           if scanline_data.bg_tile_y >= 32 then
             scanline_data.bg_tile_y = scanline_data.bg_tile_y - 32
           end
+        else
+          -- The window is active; reset just our sub_y so the below tile_flip logic works
+          -- correctly
+          scanline_data.sub_y = (frame_data.window_draw_y - 1) % 8
         end
 
         local tile_attr = scanline_data.current_map_attr[scanline_data.bg_tile_x][scanline_data.bg_tile_y]
