@@ -28,4 +28,15 @@ function DividingTimer:remainingClocks()
   return self._counter
 end
 
+function DividingTimer:clock()
+  self:advance(1)
+end
+
+function DividingTimer:advance(clocks)
+  self._counter = self._counter - clocks
+  while self._counter <= 0 do
+    self._counter = self._counter + self._period
+  end
+end
+
 return DividingTimer
