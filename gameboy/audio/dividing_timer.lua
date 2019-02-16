@@ -36,7 +36,14 @@ function DividingTimer:advance(clocks)
   self._counter = self._counter - clocks
   while self._counter <= 0 do
     self._counter = self._counter + self._period
+    if self._doWork then
+      self._doWork()
+    end
   end
+end
+
+function DividingTimer:onReset(callback)
+  self._doWork = callback
 end
 
 return DividingTimer
