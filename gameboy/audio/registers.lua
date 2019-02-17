@@ -13,6 +13,13 @@ function Registers.new(audio, modules, cache)
     return 0
   end
 
+  function square_period(high_byte, low_byte)
+    local frequency_high_bits = bit32.band(high_byte, 0x07)
+    local frequency_low_bits = low_byte
+    local frequency = bit32.lshift(frequency_high_bits, 8) + frequency_low_bits
+    return (2048 - frequency) * 4
+  end
+
   -- Channel 1 Frequency Sweep
   io.write_logic[ports.NR10] = function(byte)
     audio.generate_pending_samples()
@@ -35,12 +42,18 @@ function Registers.new(audio, modules, cache)
   io.write_logic[ports.NR13] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR13] = byte
+    local period = square_period(io.ram[ports.NR14], io.ram[ports.NR13])
+    audio.tone1.generator.timer:setPeriod(period)
   end
 
   -- Channel 1 Frequency and Trigger - High Bits
   io.write_logic[ports.NR14] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR14] = byte
+    local trigger = bit32.band(byte, 0x80) ~= 0
+    local length_enable = bit32.band(byte, 0x40) ~= 0
+    local period = square_period(io.ram[ports.NR14], io.ram[ports.NR13])
+    audio.tone1.generator.timer:setPeriod(period)
   end
 
   -- Channel 2 Sound Length / Wave Pattern Duty
@@ -59,12 +72,18 @@ function Registers.new(audio, modules, cache)
   io.write_logic[ports.NR23] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR23] = byte
+    local period = square_period(io.ram[ports.NR24], io.ram[ports.NR23])
+    audio.tone2.generator.timer:setPeriod(period)
   end
 
   -- Channel 2 Frequency and Trigger - High Bits
   io.write_logic[ports.NR24] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR24] = byte
+    local trigger = bit32.band(byte, 0x80) ~= 0
+    local length_enable = bit32.band(byte, 0x40) ~= 0
+    local period = square_period(io.ram[ports.NR24], io.ram[ports.NR23])
+    audio.tone2.generator.timer:setPeriod(period)
   end
 
   -- Channel 3 Enabled
