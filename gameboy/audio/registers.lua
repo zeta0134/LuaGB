@@ -20,6 +20,21 @@ function Registers.new(audio, modules, cache)
     return (2048 - frequency) * 4
   end
 
+  function reload_volume(volume_envelope, byte)
+    local volume = bit32.rshift(byte, 4)
+    local adjustment = bit32.rshift(bit32.band(byte, 0x08), 3)
+    if adjustment == 0 then
+      adjustment = -1
+    end
+    local period = bit32.band(byte, 0x07)
+    if period == 0 then
+      period = 8
+    end
+    volume_envelope.timer:reload(period)
+    volume_envelope:setVolume(volume)
+    volume_envelope:setAdjustment(adjustment)
+  end
+
   local square_duty = {
     [0]=0x01, -- 00000001
     [1]=0x81, -- 10000001
@@ -62,6 +77,9 @@ function Registers.new(audio, modules, cache)
     local length_enable = bit32.band(byte, 0x40) ~= 0
     local period = square_period(io.ram[ports.NR14], io.ram[ports.NR13])
     audio.tone1.generator.timer:setPeriod(period)
+    if trigger then
+      reload_volume(audio.tone1.volume_envelope, io.ram[ports.NR12])
+    end
   end
 
   -- Channel 2 Sound Length / Wave Pattern Duty
