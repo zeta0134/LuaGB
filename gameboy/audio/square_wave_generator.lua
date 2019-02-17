@@ -1,9 +1,12 @@
 local bit32 = require("bit")
+local DividingTimer = require("gameboy/audio/dividing_timer")
 
 local SquareWaveGenerator = {}
 
 function SquareWaveGenerator:new(o)
    o = o or {_waveform=0}
+   o.timer = DividingTimer:new()
+   o.timer:onReset(function() o:clock() end)
    setmetatable(o, self)
    self.__index = self
    return o
