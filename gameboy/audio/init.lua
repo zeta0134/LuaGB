@@ -121,8 +121,8 @@ function Audio.new(modules)
       audio.tone2.generator.timer:advance(128)
 
       -- Cheat, and use the period timer's output directly
-      local tone1 = audio.tone1.generator:output() * 2 - 1
-      local tone2 = audio.tone2.generator:output() * 2 - 1
+      local tone1 = audio.tone1.volume_envelope:output(audio.tone1.generator:output()) / 15 - 0.5
+      local tone2 = audio.tone2.volume_envelope:output(audio.tone2.generator:output()) / 15 - 0.5
 
       local sample = (tone1 + tone2) / 2
 
