@@ -40,4 +40,12 @@ function VolumeEnvelope:clock()
   end
 end
 
+function VolumeEnvelope:output(input_bit)
+  if input_bit ~= 0 then
+    return self._volume
+  else
+    return 0
+  end
+end
+
 return VolumeEnvelope
