@@ -57,13 +57,13 @@ describe("Audio", function()
         io.write_logic[ports.NR14](0x80) -- trigger a new note
         assert.are_same(0x7E, audio.tone1.generator:waveform())
       end)
-      it("writes to NR12 set the current volume", function()
+      it("writes to NR12 set the starting volume on the next trigger", function()
         audio.tone1.volume_envelope:setVolume(0)
         io.write_logic[ports.NR12](0x70)
         io.write_logic[ports.NR14](0x80) -- trigger a new note
         assert.are_same(0x7, audio.tone1.volume_envelope:volume())
       end)
-      it("writes to NR12 set the volume adjustment", function()
+      it("writes to NR12 set the volume adjustment on trigger", function()
         audio.tone1.volume_envelope:setAdjustment(0)
         io.write_logic[ports.NR12](0x08)
         io.write_logic[ports.NR14](0x80) -- trigger a new note
