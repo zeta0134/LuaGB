@@ -27,7 +27,8 @@ function Audio.new(modules)
   audio.tone1.generator:setWaveform(0x0F)
 
   audio.tone2 = {
-    generator=SquareWaveGenerator:new()
+    generator=SquareWaveGenerator:new(),
+    volume_envelope=VolumeEnvelope:new()
   }
   audio.tone2.generator.timer:reload(1)
   audio.tone2.generator:setWaveform(0x0F)

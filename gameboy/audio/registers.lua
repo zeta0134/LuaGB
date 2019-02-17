@@ -112,6 +112,9 @@ function Registers.new(audio, modules, cache)
     local length_enable = bit32.band(byte, 0x40) ~= 0
     local period = square_period(io.ram[ports.NR24], io.ram[ports.NR23])
     audio.tone2.generator.timer:setPeriod(period)
+    if trigger then
+      reload_volume(audio.tone2.volume_envelope, io.ram[ports.NR22])
+    end
   end
 
   -- Channel 3 Enabled
