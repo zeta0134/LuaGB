@@ -4,7 +4,7 @@ local DividingTimer = require("gameboy/audio/dividing_timer")
 local SquareWaveGenerator = {}
 
 function SquareWaveGenerator:new(o)
-   o = o or {_waveform=0}
+   o = o or {_waveform=0,_pos=0}
    o.timer = DividingTimer:new()
    o.timer:onReset(function() o:clock() end)
    setmetatable(o, self)
@@ -21,11 +21,15 @@ function SquareWaveGenerator:setWaveform(waveform)
 end
 
 function SquareWaveGenerator:output()
-  return bit32.band(self._waveform, 0x1)
+  local rotated_waveform = bit32.bor(bit32.rshift(self._waveform, self._pos), bit32.band(bit32.lshift(self._waveform, 7 - (self._pos)), 0xFE))
+  return bit32.band(rotated_waveform, 0x1)
 end
 
 function SquareWaveGenerator:clock()
-  self._waveform = bit32.bor(bit32.rshift(self._waveform, 1), bit32.band(bit32.lshift(self._waveform, 7), 0xFE))
+  self._pos = self._pos + 1
+  if self._pos >= 8 then
+    self._pos = 0
+  end
 end
 
 return SquareWaveGenerator
