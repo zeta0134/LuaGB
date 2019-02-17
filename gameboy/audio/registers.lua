@@ -20,6 +20,12 @@ function Registers.new(audio, modules, cache)
     return (2048 - frequency) * 4
   end
 
+  local square_duty = {
+    [0]=0x01, -- 00000001
+    [1]=0x81, -- 10000001
+    [2]=0x87, -- 10000111
+    [3]=0x7E} -- 01111110
+
   -- Channel 1 Frequency Sweep
   io.write_logic[ports.NR10] = function(byte)
     audio.generate_pending_samples()
@@ -30,6 +36,8 @@ function Registers.new(audio, modules, cache)
   io.write_logic[ports.NR11] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR11] = byte
+    local duty_index = bit32.rshift(byte, 6);
+    audio.tone1.generator:setWaveform(square_duty[duty_index])
   end
 
   -- Channel 1 Volume Envelope
@@ -60,6 +68,8 @@ function Registers.new(audio, modules, cache)
   io.write_logic[ports.NR21] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR21] = byte
+    local duty_index = bit32.rshift(byte, 6);
+    audio.tone2.generator:setWaveform(square_duty[duty_index])
   end
 
   -- Channel 2 Volume Envelope
