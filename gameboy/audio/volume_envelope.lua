@@ -3,7 +3,7 @@ local DividingTimer = require("gameboy/audio/dividing_timer")
 local VolumeEnvelope = {}
 
 function VolumeEnvelope:new(o)
-   o = o or {_volume,_adjustment}
+   o = o or {_volume=0,_adjustment=0}
    o.timer = DividingTimer:new()
    o.timer:onReset(function() o:clock() end)
    setmetatable(o, self)
