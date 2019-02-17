@@ -21,4 +21,8 @@ function SquareWaveGenerator:output()
   return bit32.band(self._waveform, 0x1)
 end
 
+function SquareWaveGenerator:clock()
+  self._waveform = bit32.bor(bit32.rshift(self._waveform, 1), bit32.band(bit32.lshift(self._waveform, 7), 0xFE))
+end
+
 return SquareWaveGenerator
