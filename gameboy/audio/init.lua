@@ -1,6 +1,7 @@
 local bit32 = require("bit")
 
 local Registers = require("gameboy/audio/registers")
+local SquareWaveGenerator = require("gameboy/audio/square_wave_generator")
 
 local Audio = {}
 
@@ -17,8 +18,18 @@ function Audio.new(modules)
   audio.registers = Registers.new(audio, modules)
 
   audio.buffer = {}
-  audio.tone1 = {}
-  audio.tone2 = {}
+  audio.tone1 = {
+    generator=SquareWaveGenerator:new()
+  }
+  audio.tone1.generator.timer:reload(1)
+  audio.tone1.generator:setWaveform(0x0F)
+
+  audio.tone2 = {
+    generator=SquareWaveGenerator:new()
+  }
+  audio.tone2.generator.timer:reload(1)
+  audio.tone2.generator:setWaveform(0x0F)
+
   audio.wave3 = {}
   audio.noise4 = {}
 
@@ -101,6 +112,29 @@ function Audio.new(modules)
   end
 
   audio.generate_pending_samples = function()
+    while audio.next_sample_cycle < timers.system_clock do
+      -- Clock the period timers at 512 KHz
+      audio.tone1.generator.timer:advance(128)
+      audio.tone2.generator.timer:advance(128)
+
+      -- Cheat, and use the period timer's output directly
+      local tone1 = audio.tone1.generator:output() * 2 - 1
+      local tone2 = audio.tone2.generator:output() * 2 - 1
+
+      local sample = (tone1 + tone2) / 2
+
+      -- Cheat further, and use that sample directly
+      audio.buffer[next_sample] = sample
+      next_sample = next_sample + 1
+      audio.buffer[next_sample] = sample
+      next_sample = next_sample + 1
+
+      if next_sample >= 1024 then
+        audio.__on_buffer_full(audio.buffer)
+        next_sample = 0
+      end
+      audio.next_sample_cycle = audio.next_sample_cycle + 128 --number of clocks per sample at 32 KHz
+    end
   end
 
   audio.on_buffer_full = function(callback)
