@@ -34,7 +34,7 @@ end
 
 function DividingTimer:advance(clocks)
   self._counter = self._counter - clocks
-  while self._counter <= 0 do
+  while self._counter <= 0 and self._period ~= 0 do
     self._counter = self._counter + self._period
     if self._doWork then
       self._doWork()
