@@ -51,5 +51,43 @@ describe("Audio", function()
       frame_sequencer:clock() -- step 7
       assert.spy(work).was_not.called()
     end)
+    it("volume is clocked on step 7", function()
+      local work = spy.new(function() end)
+      frame_sequencer:onVolume(work)
+      frame_sequencer:clock() -- step 0
+      frame_sequencer:clock() -- step 1
+      frame_sequencer:clock() -- step 2
+      frame_sequencer:clock() -- step 3
+      frame_sequencer:clock() -- step 4
+      frame_sequencer:clock() -- step 5
+      frame_sequencer:clock() -- step 6
+      assert.spy(work).was_not.called()
+      work:clear()
+      frame_sequencer:clock() -- step 7
+      assert.spy(work).was.called()
+      work:clear()
+    end)
+    it("sweep is clocked on steps 2 and 6", function()
+      local work = spy.new(function() end)
+      frame_sequencer:onSweep(work)
+      frame_sequencer:clock() -- step 0
+      frame_sequencer:clock() -- step 1
+      assert.spy(work).was_not.called()
+      work:clear()
+      frame_sequencer:clock() -- step 2
+      assert.spy(work).was.called()
+      work:clear()
+      frame_sequencer:clock() -- step 3
+      frame_sequencer:clock() -- step 4
+      frame_sequencer:clock() -- step 5
+      assert.spy(work).was_not.called()
+      work:clear()
+      frame_sequencer:clock() -- step 6
+      assert.spy(work).was.called()
+      work:clear()
+      frame_sequencer:clock() -- step 7
+      assert.spy(work).was_not.called()
+      work:clear()
+    end)
   end)
 end)
