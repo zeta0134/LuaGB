@@ -1,6 +1,7 @@
 local bit32 = require("bit")
 
 local Registers = require("gameboy/audio/registers")
+local FrameSequencer = require("gameboy/audio/frame_sequencer")
 local SquareWaveGenerator = require("gameboy/audio/square_wave_generator")
 local VolumeEnvelope = require("gameboy/audio/volume_envelope")
 
@@ -35,6 +36,14 @@ function Audio.new(modules)
 
   audio.wave3 = {}
   audio.noise4 = {}
+
+  audio.frame_sequencer = FrameSequencer:new()
+  audio.frame_sequencer.timer:reload(8192)
+
+  audio.frame_sequencer:onVolume(function()
+    audio.tone1.volume_envelope.timer:clock()
+    audio.tone2.volume_envelope.timer:clock()
+  end)
 
   audio.next_sample = 0
   audio.next_sample_cycle = 0
@@ -116,9 +125,12 @@ function Audio.new(modules)
 
   audio.generate_pending_samples = function()
     while audio.next_sample_cycle < timers.system_clock do
-      -- Clock the period timers at 512 KHz
+      -- Clock the period timers at 4 MHz
       audio.tone1.generator.timer:advance(128)
       audio.tone2.generator.timer:advance(128)
+
+      -- Clock the frame sequencer at 4 MHz
+      audio.frame_sequencer.timer:advance(128)
 
       -- Cheat, and use the period timer's output directly
       local tone1 = audio.tone1.volume_envelope:output(audio.tone1.generator:output()) / 15 - 0.5
