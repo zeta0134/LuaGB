@@ -11,4 +11,26 @@ function FrameSequencer:new(o)
    return o
 end
 
+function FrameSequencer:clock()
+  if self.step == 0 or self.step == 2 or self.step == 4 or self.step == 6 then
+    if self._length_callback then
+      self._length_callback()
+    end
+  end
+  if self.step == 7 then
+    if self._volume_callback then
+      self._volume_callback()
+    end
+  end
+  if self.step == 2 or self.step == 6 then
+    if self._sweep_callback then
+      self._sweep_callback()
+    end
+  end
+  self.step = self.step + 1
+  if self.step >= 8 then
+    self.step = 0
+  end
+end
+
 return FrameSequencer
