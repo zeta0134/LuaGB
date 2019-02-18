@@ -33,4 +33,16 @@ function FrameSequencer:clock()
   end
 end
 
+function FrameSequencer:onLength(callback)
+  self._length_callback = callback
+end
+
+function FrameSequencer:onVolume(callback)
+  self._volume_callback = callback
+end
+
+function FrameSequencer:onSweep(callback)
+  self._sweep_callback = callback
+end
+
 return FrameSequencer
