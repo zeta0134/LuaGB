@@ -44,7 +44,7 @@ describe("Audio", function()
         audio.tone1.generator.frequency_shadow = 0
         io.write_logic[ports.NR13](0x22)
         io.write_logic[ports.NR14](0x81)
-        assert.are_same(0x0122, audio.tone2.generator.frequency_shadow)
+        assert.are_same(0x0122, audio.tone1.generator.frequency_shadow)
       end)
       it("trigger writes to NR14 reload the sweep timer", function()
         audio.tone1.generator.sweep_timer:reload(4)

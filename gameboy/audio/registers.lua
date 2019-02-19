@@ -90,6 +90,8 @@ function Registers.new(audio, modules, cache)
       if audio.tone1.length_counter.counter == 0 then
         audio.tone1.length_counter.counter = 64
       end
+      local frequency_shadow = bit32.lshift(bit32.band(io.ram[ports.NR14], 0x07), 8) + io.ram[ports.NR13]
+      audio.tone1.generator.frequency_shadow = frequency_shadow
     end
   end
 
