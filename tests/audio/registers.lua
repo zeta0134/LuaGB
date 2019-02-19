@@ -41,19 +41,19 @@ describe("Audio", function()
         assert.are_same((2048 - 0x0300) * 4, audio.tone1.generator.timer:period())
       end)
       it("writes to NR11 set the waveform duty on the next NR14 trigger", function()
-        audio.tone1.generator:setWaveform(0x00)
+        audio.tone1.generator.waveform = 0x00
         io.write_logic[ports.NR11](bit32.lshift(0x0, 6))
         io.write_logic[ports.NR14](0x80) -- trigger a new note
-        assert.are_same(0x01, audio.tone1.generator:waveform())
+        assert.are_same(0x01, audio.tone1.generator.waveform)
         io.write_logic[ports.NR11](bit32.lshift(0x1, 6))
         io.write_logic[ports.NR14](0x80) -- trigger a new note
-        assert.are_same(0x81, audio.tone1.generator:waveform())
+        assert.are_same(0x81, audio.tone1.generator.waveform)
         io.write_logic[ports.NR11](bit32.lshift(0x2, 6))
         io.write_logic[ports.NR14](0x80) -- trigger a new note
-        assert.are_same(0x87, audio.tone1.generator:waveform())
+        assert.are_same(0x87, audio.tone1.generator.waveform)
         io.write_logic[ports.NR11](bit32.lshift(0x3, 6))
         io.write_logic[ports.NR14](0x80) -- trigger a new note
-        assert.are_same(0x7E, audio.tone1.generator:waveform())
+        assert.are_same(0x7E, audio.tone1.generator.waveform)
       end)
       it("writes to NR11 reload the length counter with (64-L)", function()
         audio.tone1.length_counter.counter = 0
@@ -125,19 +125,19 @@ describe("Audio", function()
         assert.are_same((2048 - 0x0300) * 4, audio.tone2.generator.timer:period())
       end)
       it("writes to NR21 set the waveform duty on the next NR14 trigger", function()
-        audio.tone2.generator:setWaveform(0x00)
+        audio.tone2.generator.waveform = 0x00
         io.write_logic[ports.NR21](bit32.lshift(0x0, 6))
         io.write_logic[ports.NR24](0x80) -- trigger a new note
-        assert.are_same(0x01, audio.tone2.generator:waveform())
+        assert.are_same(0x01, audio.tone2.generator.waveform)
         io.write_logic[ports.NR21](bit32.lshift(0x1, 6))
         io.write_logic[ports.NR24](0x80) -- trigger a new note
-        assert.are_same(0x81, audio.tone2.generator:waveform())
+        assert.are_same(0x81, audio.tone2.generator.waveform)
         io.write_logic[ports.NR21](bit32.lshift(0x2, 6))
         io.write_logic[ports.NR24](0x80) -- trigger a new note
-        assert.are_same(0x87, audio.tone2.generator:waveform())
+        assert.are_same(0x87, audio.tone2.generator.waveform)
         io.write_logic[ports.NR21](bit32.lshift(0x3, 6))
         io.write_logic[ports.NR24](0x80) -- trigger a new note
-        assert.are_same(0x7E, audio.tone2.generator:waveform())
+        assert.are_same(0x7E, audio.tone2.generator.waveform)
       end)
       it("writes to NR21 reload the length counter with (64-L)", function()
         audio.tone2.length_counter.counter = 0
