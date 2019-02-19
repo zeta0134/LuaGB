@@ -15,6 +15,12 @@ describe("Audio", function()
       length_counter:clock()
       assert.same(length_counter.counter, 1)
     end)
+    it("does not decrement if counter is equal to zero", function()
+      length_counter.counter = 0
+      length_counter.length_enabled = true
+      length_counter:clock()
+      assert.same(length_counter.counter, 0)
+    end)
     it("does nothing if clocked while disabled", function()
       length_counter.counter = 2
       length_counter.length_enabled = false
