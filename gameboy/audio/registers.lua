@@ -76,7 +76,7 @@ function Registers.new(audio, modules, cache)
     audio.generate_pending_samples()
     io.ram[ports.NR14] = byte
     local trigger = bit32.band(byte, 0x80) ~= 0
-    local length_enable = bit32.band(byte, 0x40) ~= 0
+    audio.tone1.length_counter.length_enabled = bit32.band(byte, 0x40) ~= 0
     if trigger then
       local period = square_period(io.ram[ports.NR14], io.ram[ports.NR13])
       audio.tone1.generator.timer:reload(period)
@@ -113,7 +113,7 @@ function Registers.new(audio, modules, cache)
     audio.generate_pending_samples()
     io.ram[ports.NR24] = byte
     local trigger = bit32.band(byte, 0x80) ~= 0
-    local length_enable = bit32.band(byte, 0x40) ~= 0
+    audio.tone2.length_counter.length_enabled = bit32.band(byte, 0x40) ~= 0
     if trigger then
       local period = square_period(io.ram[ports.NR24], io.ram[ports.NR23])
       audio.tone2.generator.timer:reload(period)
