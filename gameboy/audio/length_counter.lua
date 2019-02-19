@@ -16,4 +16,12 @@ function LengthCounter:clock()
   end
 end
 
+function LengthCounter:output(input)
+  if self.channel_enabled then
+    return input
+  else
+    return 0
+  end
+end
+
 return LengthCounter
