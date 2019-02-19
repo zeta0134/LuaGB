@@ -26,7 +26,7 @@ describe("Audio", function()
       it("writes to NR10 set the sweep period", function()
         audio.tone1.generator.sweep_timer:setPeriod(0)
         io.write_logic[ports.NR10](0x70)
-        assert.are_same(0x7, audio.tone1.generator.sweep_timer:setPeriod())
+        assert.are_same(0x7, audio.tone1.generator.sweep_timer:period())
       end)
       it("writes to NR10 set the sweep negate mode", function()
         audio.tone1.generator.sweep_negate = false

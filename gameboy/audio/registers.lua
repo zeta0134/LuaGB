@@ -45,6 +45,10 @@ function Registers.new(audio, modules, cache)
   io.write_logic[ports.NR10] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR10] = byte
+    local sweep_period = bit32.rshift(bit32.band(byte, 0x70), 4);
+    audio.tone1.generator.sweep_timer:setPeriod(sweep_period)
+    audio.tone1.generator.sweep_negate = bit32.band(byte, 0x08) ~= 0;
+    audio.tone1.generator.sweep_shift = bit32.band(byte, 0x07);
   end
 
   -- Channel 1 Sound Length / Wave Pattern Duty
