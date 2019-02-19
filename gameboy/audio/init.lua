@@ -48,6 +48,11 @@ function Audio.new(modules)
     audio.tone2.volume_envelope.timer:clock()
   end)
 
+  audio.frame_sequencer:onLength(function()
+    audio.tone1.length_counter:clock()
+    audio.tone2.length_counter:clock()
+  end)
+
   audio.next_sample = 0
   audio.next_sample_cycle = 0
 
@@ -135,9 +140,16 @@ function Audio.new(modules)
       -- Clock the frame sequencer at 4 MHz
       audio.frame_sequencer.timer:advance(128)
 
-      -- Cheat, and use the period timer's output directly
-      local tone1 = audio.tone1.volume_envelope:output(audio.tone1.generator:output()) / 15 - 0.5
-      local tone2 = audio.tone2.volume_envelope:output(audio.tone2.generator:output()) / 15 - 0.5
+      
+      local tone1 = audio.tone1.generator:output()
+      tone1 = audio.tone1.length_counter:output(tone1)
+      tone1 = audio.tone1.volume_envelope:output(tone1)
+      tone1 = tone1 / 15 - 0.5
+
+      local tone2 = audio.tone2.generator:output()
+      tone2 = audio.tone2.length_counter:output(tone2)
+      tone2 = audio.tone2.volume_envelope:output(tone2)
+      tone2 = tone2 / 15 - 0.5
 
       local sample = (tone1 + tone2) / 2
 
