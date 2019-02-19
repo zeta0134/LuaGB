@@ -10,13 +10,9 @@ describe("Audio", function()
     it("can be created", function()
       assert.are_not_same(square, nil)
     end)
-    it("waveform can be set", function()      
-      square:setWaveform(0x0F)
-      assert.are_same(square:waveform(), 0x0F)
-    end)
     it("clocks adjust the waveform phase 1 bit at a time", function()
       local test_waveform = 0x2D
-      square:setWaveform(test_waveform) -- 00101101
+      square.waveform = test_waveform -- 00101101
       for i = 1, 8 do
         assert.are_same(square:output(), bit32.band(test_waveform, 0x1))
         square:clock()
@@ -24,7 +20,7 @@ describe("Audio", function()
       end
     end)
     it("the waveform is clocked when the timer expires", function()
-      square:setWaveform(0x01)
+      square.waveform = 0x01
       assert.are_same(square:output(), 1)
       square.timer:reload(10)
       square.timer:advance(10)
@@ -47,7 +43,7 @@ describe("Audio", function()
     end)
     it("sweep silences the channel on overflow", function()
       -- setup tone1 to play a 1 no matter what
-      square:setWaveform(0xFF) -- 00101101
+      square.waveform = 0xFF -- 00101101
       -- have the sweep register exceed 2047
       square.frequency_shadow = 2040
       square.sweep_shift = 0
