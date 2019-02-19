@@ -22,8 +22,12 @@ function SquareWaveGenerator:new(o)
 end
 
 function SquareWaveGenerator:output()
-  local rotated_waveform = bit32.bor(bit32.rshift(self.waveform, self._pos), bit32.band(bit32.lshift(self.waveform, 7 - (self._pos)), 0xFE))
-  return bit32.band(rotated_waveform, 0x1)
+  if self.channel_enabled then
+    local rotated_waveform = bit32.bor(bit32.rshift(self.waveform, self._pos), bit32.band(bit32.lshift(self.waveform, 7 - (self._pos)), 0xFE))
+    return bit32.band(rotated_waveform, 0x1)
+  else
+    return 0
+  end
 end
 
 function SquareWaveGenerator:clock()

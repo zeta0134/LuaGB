@@ -46,8 +46,9 @@ describe("Audio", function()
       -- setup tone1 to play a 1 no matter what
       square.waveform = 0xFF -- 00101101
       -- have the sweep register exceed 2047
+      square.sweep_timer:setPeriod(1)
       square.frequency_shadow = 2040
-      square.sweep_shift = 0
+      square.sweep_shift = 1
       square.sweep_negate = false
       square:sweep()
       -- output should now be 0, indicating the channel has disabled itself
