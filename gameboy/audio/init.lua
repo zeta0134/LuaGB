@@ -2,6 +2,7 @@ local bit32 = require("bit")
 
 local Registers = require("gameboy/audio/registers")
 local FrameSequencer = require("gameboy/audio/frame_sequencer")
+local LengthCounter = require("gameboy/audio/length_counter")
 local SquareWaveGenerator = require("gameboy/audio/square_wave_generator")
 local VolumeEnvelope = require("gameboy/audio/volume_envelope")
 
@@ -22,14 +23,16 @@ function Audio.new(modules)
   audio.buffer = {}
   audio.tone1 = {
     generator=SquareWaveGenerator:new(),
-    volume_envelope=VolumeEnvelope:new()
+    volume_envelope=VolumeEnvelope:new(),
+    length_counter=LengthCounter:new()
   }
   audio.tone1.generator.timer:reload(1)
   audio.tone1.generator:setWaveform(0x0F)
 
   audio.tone2 = {
     generator=SquareWaveGenerator:new(),
-    volume_envelope=VolumeEnvelope:new()
+    volume_envelope=VolumeEnvelope:new(),
+    length_counter=LengthCounter:new()
   }
   audio.tone2.generator.timer:reload(1)
   audio.tone2.generator:setWaveform(0x0F)

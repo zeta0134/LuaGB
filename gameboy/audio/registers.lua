@@ -53,6 +53,8 @@ function Registers.new(audio, modules, cache)
     io.ram[ports.NR11] = byte
     local duty_index = bit32.rshift(byte, 6);
     audio.tone1.generator:setWaveform(square_duty[duty_index])
+    local length_data = bit32.band(byte, 0x3F);
+    audio.tone1.length_counter.counter = 64 - length_data
   end
 
   -- Channel 1 Volume Envelope
@@ -88,6 +90,8 @@ function Registers.new(audio, modules, cache)
     io.ram[ports.NR21] = byte
     local duty_index = bit32.rshift(byte, 6);
     audio.tone2.generator:setWaveform(square_duty[duty_index])
+    local length_data = bit32.band(byte, 0x3F);
+    audio.tone2.length_counter.counter = 64 - length_data
   end
 
   -- Channel 2 Volume Envelope
