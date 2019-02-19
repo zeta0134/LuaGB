@@ -92,6 +92,7 @@ function Registers.new(audio, modules, cache)
       end
       local frequency_shadow = bit32.lshift(bit32.band(io.ram[ports.NR14], 0x07), 8) + io.ram[ports.NR13]
       audio.tone1.generator.frequency_shadow = frequency_shadow
+      audio.tone1.generator.sweep_timer:reload()
     end
   end
 
