@@ -82,6 +82,9 @@ function Registers.new(audio, modules, cache)
       audio.tone1.generator.timer:reload(period)
       reload_volume(audio.tone1.volume_envelope, io.ram[ports.NR12])
       audio.tone1.length_counter.channel_enabled = true
+      if audio.tone1.length_counter.counter == 0 then
+        audio.tone1.length_counter.counter = 64
+      end
     end
   end
 
@@ -120,6 +123,9 @@ function Registers.new(audio, modules, cache)
       audio.tone2.generator.timer:reload(period)
       reload_volume(audio.tone2.volume_envelope, io.ram[ports.NR22])
       audio.tone2.length_counter.channel_enabled = true
+      if audio.tone2.length_counter.counter == 0 then
+        audio.tone2.length_counter.counter = 64
+      end
     end
   end
 
