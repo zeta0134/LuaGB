@@ -81,6 +81,7 @@ function Registers.new(audio, modules, cache)
       local period = square_period(io.ram[ports.NR14], io.ram[ports.NR13])
       audio.tone1.generator.timer:reload(period)
       reload_volume(audio.tone1.volume_envelope, io.ram[ports.NR12])
+      audio.tone1.length_counter.channel_enabled = true
     end
   end
 
@@ -118,6 +119,7 @@ function Registers.new(audio, modules, cache)
       local period = square_period(io.ram[ports.NR24], io.ram[ports.NR23])
       audio.tone2.generator.timer:reload(period)
       reload_volume(audio.tone2.volume_envelope, io.ram[ports.NR22])
+      audio.tone2.length_counter.channel_enabled = true
     end
   end
 
