@@ -28,14 +28,15 @@ describe("Audio", function()
     end)
     it("sweep clocks adjust the period", function()
       square.frequency_shadow = 500
+      square.sweep_timer:setPeriod(1)
       square.sweep_shift = 1
       square.sweep_negate = false
       square:sweep()
-      assert.same(square.frequency_shadow, square.period_timer:period())
       assert.same(square.frequency_shadow, bit32.rshift(500, 1) + 500)
     end)
     it("sweep negate adjusts period downwards", function()
       square.frequency_shadow = 500
+      square.sweep_timer:setPeriod(1)
       square.sweep_shift = 1
       square.sweep_negate = true
       square:sweep()
