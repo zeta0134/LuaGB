@@ -10,6 +10,9 @@ end
 function LengthCounter:clock()
   if self.length_enabled then
     self.counter = self.counter - 1
+    if self.counter == 0 then
+      self.channel_enabled = false
+    end
   end
 end
 
