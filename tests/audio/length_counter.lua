@@ -30,9 +30,9 @@ describe("Audio", function()
     end)
     it("output is silenced when the channel is disabled", function()
       length_counter.channel_enabled = true
-      assert.same(length_counter.output(1), 1)
+      assert.same(length_counter:output(1), 1)
       length_counter.channel_enabled = false
-      assert.same(length_counter.output(1), 0)
+      assert.same(length_counter:output(1), 0)
     end)
   end)
 end)
