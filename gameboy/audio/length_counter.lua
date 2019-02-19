@@ -7,4 +7,10 @@ function LengthCounter:new(o)
    return o
 end
 
+function LengthCounter:clock()
+  if self.length_enabled then
+    self.counter = self.counter - 1
+  end
+end
+
 return LengthCounter
