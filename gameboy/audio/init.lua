@@ -49,9 +49,12 @@ function Audio.new(modules)
   end)
 
   audio.frame_sequencer:onLength(function()
-    
     audio.tone1.length_counter:clock()
     audio.tone2.length_counter:clock()
+  end)
+
+  audio.frame_sequencer:onSweep(function()
+    audio.tone1.generator.sweep_timer:clock()
   end)
 
   audio.next_sample = 0
