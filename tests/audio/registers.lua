@@ -57,6 +57,29 @@ describe("Audio", function()
         io.write_logic[ports.NR14](0x80) -- trigger a new note
         assert.are_same(0x7E, audio.tone1.generator:waveform())
       end)
+      it("writes to NR11 reload the length counter with (64-L)", function()
+        audio.tone1.length_counter.counter = 0
+        io.write_logic[ports.NR11](0x3F)
+        assert.are_same(audio.tone1.length_counter.counter, 1)
+        io.write_logic[ports.NR11](0x00)
+        assert.are_same(audio.tone1.length_counter.counter, 64)
+      end)
+      it("writes to NR14 enable / disable the length counter", function()
+        io.write_logic[ports.NR14](0x40)
+        assert.truthy(audio.tone1.length_counter.length_enabled)
+        io.write_logic[ports.NR14](0x00)
+        assert.falsy(audio.tone1.length_counter.length_enabled)
+      end)
+      it("triggers on NR14 enable the channel", function()
+        audio.tone1.length_counter.channel_enabled = false
+        io.write_logic[ports.NR14](0x80) -- trigger
+        assert.truthy(audio.tone1.length_counter.channel_enabled)
+      end)
+      it("triggers on NR14 set length to 64 if it was previously 0", function()
+        audio.tone1.length_counter.counter = 0
+        io.write_logic[ports.NR14](0x80) -- trigger
+        assert.same(audio.tone1.length_counter.counter, 64)
+      end)
       it("writes to NR12 set the starting volume on the next trigger", function()
         audio.tone2.volume_envelope:setVolume(0)
         io.write_logic[ports.NR12](0x70)
@@ -119,6 +142,29 @@ describe("Audio", function()
         io.write_logic[ports.NR21](bit32.lshift(0x3, 6))
         io.write_logic[ports.NR24](0x80) -- trigger a new note
         assert.are_same(0x7E, audio.tone2.generator:waveform())
+      end)
+      it("writes to NR21 reload the length counter with (64-L)", function()
+        audio.tone2.length_counter.counter = 0
+        io.write_logic[ports.NR21](0x3F)
+        assert.are_same(audio.tone2.length_counter.counter, 1)
+        io.write_logic[ports.NR21](0x00)
+        assert.are_same(audio.tone2.length_counter.counter, 64)
+      end)
+      it("writes to NR24 enable / disable the length counter", function()
+        io.write_logic[ports.NR24](0x40)
+        assert.truthy(audio.tone2.length_counter.length_enabled)
+        io.write_logic[ports.NR24](0x00)
+        assert.falsy(audio.tone2.length_counter.length_enabled)
+      end)
+      it("triggers on NR24 enable the channel", function()
+        audio.tone2.length_counter.channel_enabled = false
+        io.write_logic[ports.NR24](0x80) -- trigger
+        assert.truthy(audio.tone2.length_counter.channel_enabled)
+      end)
+      it("triggers on NR24 set length to 64 if it was previously 0", function()
+        audio.tone2.length_counter.counter = 0
+        io.write_logic[ports.NR24](0x80) -- trigger
+        assert.same(audio.tone2.length_counter.counter, 64)
       end)
       it("writes to NR22 set the starting volume on the next trigger", function()
         audio.tone2.volume_envelope:setVolume(0)
