@@ -49,6 +49,7 @@ function Audio.new(modules)
   end)
 
   audio.frame_sequencer:onLength(function()
+    
     audio.tone1.length_counter:clock()
     audio.tone2.length_counter:clock()
   end)

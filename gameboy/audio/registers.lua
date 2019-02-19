@@ -67,8 +67,8 @@ function Registers.new(audio, modules, cache)
   io.write_logic[ports.NR13] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR13] = byte
-    --local period = square_period(io.ram[ports.NR14], io.ram[ports.NR13])
-    --audio.tone1.generator.timer:setPeriod(period)
+    local period = square_period(io.ram[ports.NR14], io.ram[ports.NR13])
+    audio.tone1.generator.timer:setPeriod(period)
   end
 
   -- Channel 1 Frequency and Trigger - High Bits
@@ -77,9 +77,10 @@ function Registers.new(audio, modules, cache)
     io.ram[ports.NR14] = byte
     local trigger = bit32.band(byte, 0x80) ~= 0
     audio.tone1.length_counter.length_enabled = bit32.band(byte, 0x40) ~= 0
+    local period = square_period(io.ram[ports.NR14], io.ram[ports.NR13])
+    audio.tone1.generator.timer:setPeriod(period)
     if trigger then
-      local period = square_period(io.ram[ports.NR14], io.ram[ports.NR13])
-      audio.tone1.generator.timer:reload(period)
+      audio.tone1.generator.timer:reload()
       reload_volume(audio.tone1.volume_envelope, io.ram[ports.NR12])
       audio.tone1.length_counter.channel_enabled = true
       if audio.tone1.length_counter.counter == 0 then
@@ -108,8 +109,8 @@ function Registers.new(audio, modules, cache)
   io.write_logic[ports.NR23] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR23] = byte
-    --local period = square_period(io.ram[ports.NR24], io.ram[ports.NR23])
-    --audio.tone2.generator.timer:setPeriod(period)
+    local period = square_period(io.ram[ports.NR24], io.ram[ports.NR23])
+    audio.tone2.generator.timer:setPeriod(period)
   end
 
   -- Channel 2 Frequency and Trigger - High Bits
@@ -118,9 +119,10 @@ function Registers.new(audio, modules, cache)
     io.ram[ports.NR24] = byte
     local trigger = bit32.band(byte, 0x80) ~= 0
     audio.tone2.length_counter.length_enabled = bit32.band(byte, 0x40) ~= 0
+    local period = square_period(io.ram[ports.NR24], io.ram[ports.NR23])
+    audio.tone2.generator.timer:setPeriod(period)
     if trigger then
-      local period = square_period(io.ram[ports.NR24], io.ram[ports.NR23])
-      audio.tone2.generator.timer:reload(period)
+      audio.tone2.generator.timer:reload()
       reload_volume(audio.tone2.volume_envelope, io.ram[ports.NR22])
       audio.tone2.length_counter.channel_enabled = true
       if audio.tone2.length_counter.counter == 0 then
