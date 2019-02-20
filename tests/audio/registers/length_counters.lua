@@ -91,7 +91,7 @@ describe("Audio", function()
         io.write_logic[ports.NR34](0x80) -- trigger
         assert.truthy(audio.wave3.length_counter.channel_enabled)
       end)
-      it("triggers on NR34 set length to 64 if it was previously 0", function()
+      it("triggers on NR34 set length to 256 if it was previously 0", function()
         audio.wave3.length_counter.counter = 0
         io.write_logic[ports.NR34](0x80) -- trigger
         assert.same(audio.wave3.length_counter.counter, 256)

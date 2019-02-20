@@ -188,8 +188,18 @@ function Registers.new(audio, modules, cache)
   io.write_logic[ports.NR34] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR34] = byte
+    local trigger = bit32.band(byte, 0x80) ~= 0
+    audio.wave3.length_counter.length_enabled = bit32.band(byte, 0x40) ~= 0
     local period = wave_period(io.ram[ports.NR34], io.ram[ports.NR33])
     audio.wave3.sampler.timer:setPeriod(period)
+    if trigger then
+      audio.wave3.sampler.position = 0
+      audio.wave3.sampler.timer:reload()
+      audio.wave3.length_counter.channel_enabled = true
+      if audio.wave3.length_counter.counter == 0 then
+        audio.wave3.length_counter.counter = 256
+      end
+    end
   end
 
   -- Channel 4 Length
