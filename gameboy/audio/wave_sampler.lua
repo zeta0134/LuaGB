@@ -32,4 +32,8 @@ function WaveSampler:clock()
   self.current_sample = bit32.band(sample_byte, 0xF)
 end
 
+function WaveSampler:output()
+  return bit32.rshift(self.current_sample, self.volume_shift)
+end
+
 return WaveSampler
