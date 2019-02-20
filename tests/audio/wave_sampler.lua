@@ -28,5 +28,9 @@ describe("Audio", function()
         assert.same(wave_sampler:output(), bit32.rshift(0xF, i))
       end
     end)
+    it("when disabled, the channel always outputs 0", function()
+      wave_sampler.channel_enabled = false
+      assert.same(wave_sampler:output(), 0)
+    end)
   end)
 end)
