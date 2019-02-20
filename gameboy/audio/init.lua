@@ -5,6 +5,7 @@ local FrameSequencer = require("gameboy/audio/frame_sequencer")
 local LengthCounter = require("gameboy/audio/length_counter")
 local SquareWaveGenerator = require("gameboy/audio/square_wave_generator")
 local VolumeEnvelope = require("gameboy/audio/volume_envelope")
+local WaveSampler = require("gameboy/audio/wave_sampler")
 
 local Audio = {}
 
@@ -37,7 +38,11 @@ function Audio.new(modules)
   audio.tone2.generator.timer:reload(1)
   audio.tone2.generator.waveform = 0x0F
 
-  audio.wave3 = {}
+  audio.wave3 = {
+    sampler=WaveSampler:new(),
+    length_counter=LengthCounter:new(),
+  }
+  
   audio.noise4 = {}
 
   audio.frame_sequencer = FrameSequencer:new()
