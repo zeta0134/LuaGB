@@ -150,7 +150,22 @@ describe("Audio", function()
         io.write_logic[ports.NR34](0x03)
         assert.are_same((2048 - 0x0300) * 2, audio.wave3.sampler.timer:period())
       end)
-
+      it("writes to NR32 set the wave's volume accordingly", function()
+        audio.wave3.sampler.volume_shift = 0
+        io.write_logic[ports.NR32](0x00) -- [-00-----]
+        assert.are_same(audio.wave3.sampler.volume_shift, 4)
+        io.write_logic[ports.NR32](0x20) -- [-01-----]
+        assert.are_same(audio.wave3.sampler.volume_shift, 0)
+        io.write_logic[ports.NR32](0x40) -- [-10-----]
+        assert.are_same(audio.wave3.sampler.volume_shift, 1)
+        io.write_logic[ports.NR32](0x60) -- [-11-----]
+        assert.are_same(audio.wave3.sampler.volume_shift, 2)
+      end)
+      it("trigger writes to NR34 reset the sample position", function()
+        audio.wave3.sampler.position = 5
+        io.write_logic[ports.NR34](0x80) -- trigger a new note
+        assert.are_same(audio.wave3.sampler.position, 0)
+      end)
     end)
   end)
 end)
