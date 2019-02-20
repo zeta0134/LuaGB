@@ -90,56 +90,6 @@ describe("Audio", function()
         io.write_logic[ports.NR14](0x80) -- trigger a new note
         assert.are_same(0x7E, audio.tone1.generator.waveform)
       end)
-      it("writes to NR11 reload the length counter with (64-L)", function()
-        audio.tone1.length_counter.counter = 0
-        io.write_logic[ports.NR11](0x3F)
-        assert.are_same(audio.tone1.length_counter.counter, 1)
-        io.write_logic[ports.NR11](0x00)
-        assert.are_same(audio.tone1.length_counter.counter, 64)
-      end)
-      it("writes to NR14 enable / disable the length counter", function()
-        io.write_logic[ports.NR14](0x40)
-        assert.truthy(audio.tone1.length_counter.length_enabled)
-        io.write_logic[ports.NR14](0x00)
-        assert.falsy(audio.tone1.length_counter.length_enabled)
-      end)
-      it("triggers on NR14 enable the channel", function()
-        audio.tone1.length_counter.channel_enabled = false
-        io.write_logic[ports.NR14](0x80) -- trigger
-        assert.truthy(audio.tone1.length_counter.channel_enabled)
-      end)
-      it("triggers on NR14 set length to 64 if it was previously 0", function()
-        audio.tone1.length_counter.counter = 0
-        io.write_logic[ports.NR14](0x80) -- trigger
-        assert.same(audio.tone1.length_counter.counter, 64)
-      end)
-      it("writes to NR12 set the starting volume on the next trigger", function()
-        audio.tone2.volume_envelope:setVolume(0)
-        io.write_logic[ports.NR12](0x70)
-        io.write_logic[ports.NR14](0x80) -- trigger a new note
-        assert.are_same(0x7, audio.tone1.volume_envelope:volume())
-      end)
-      it("writes to NR12 set the volume adjustment on trigger", function()
-        audio.tone1.volume_envelope:setAdjustment(0)
-        io.write_logic[ports.NR12](0x08)
-        io.write_logic[ports.NR14](0x80) -- trigger a new note
-        assert.are_same(1, audio.tone1.volume_envelope:adjustment())
-        io.write_logic[ports.NR12](0x00)
-        io.write_logic[ports.NR14](0x80) -- trigger a new note
-        assert.are_same(-1, audio.tone1.volume_envelope:adjustment())
-      end)
-      it("writes to NR12 set the volume envelope period", function()
-        audio.tone1.volume_envelope.timer:setPeriod(0)
-        io.write_logic[ports.NR12](0x07)
-        io.write_logic[ports.NR14](0x80) -- trigger a new note
-        assert.are_same(7, audio.tone1.volume_envelope.timer:period())
-      end)
-      it("GB quirk: writes to NR12 treat a period of 0 as 8 instead", function()
-        audio.tone1.volume_envelope.timer:setPeriod(0)
-        io.write_logic[ports.NR12](0x00)
-        io.write_logic[ports.NR14](0x80) -- trigger a new note
-        assert.are_same(8, audio.tone1.volume_envelope.timer:period())
-      end)
     end)
         describe("Tone 2", function()
       it("trigger writes to NR24 use the low bits from NR23 for the period", function()
@@ -173,56 +123,6 @@ describe("Audio", function()
         io.write_logic[ports.NR21](bit32.lshift(0x3, 6))
         io.write_logic[ports.NR24](0x80) -- trigger a new note
         assert.are_same(0x7E, audio.tone2.generator.waveform)
-      end)
-      it("writes to NR21 reload the length counter with (64-L)", function()
-        audio.tone2.length_counter.counter = 0
-        io.write_logic[ports.NR21](0x3F)
-        assert.are_same(audio.tone2.length_counter.counter, 1)
-        io.write_logic[ports.NR21](0x00)
-        assert.are_same(audio.tone2.length_counter.counter, 64)
-      end)
-      it("writes to NR24 enable / disable the length counter", function()
-        io.write_logic[ports.NR24](0x40)
-        assert.truthy(audio.tone2.length_counter.length_enabled)
-        io.write_logic[ports.NR24](0x00)
-        assert.falsy(audio.tone2.length_counter.length_enabled)
-      end)
-      it("triggers on NR24 enable the channel", function()
-        audio.tone2.length_counter.channel_enabled = false
-        io.write_logic[ports.NR24](0x80) -- trigger
-        assert.truthy(audio.tone2.length_counter.channel_enabled)
-      end)
-      it("triggers on NR24 set length to 64 if it was previously 0", function()
-        audio.tone2.length_counter.counter = 0
-        io.write_logic[ports.NR24](0x80) -- trigger
-        assert.same(audio.tone2.length_counter.counter, 64)
-      end)
-      it("writes to NR22 set the starting volume on the next trigger", function()
-        audio.tone2.volume_envelope:setVolume(0)
-        io.write_logic[ports.NR22](0x70)
-        io.write_logic[ports.NR24](0x80) -- trigger a new note
-        assert.are_same(0x7, audio.tone2.volume_envelope:volume())
-      end)
-      it("writes to NR22 set the volume adjustment on trigger", function()
-        audio.tone2.volume_envelope:setAdjustment(0)
-        io.write_logic[ports.NR22](0x08)
-        io.write_logic[ports.NR24](0x80) -- trigger a new note
-        assert.are_same(1, audio.tone2.volume_envelope:adjustment())
-        io.write_logic[ports.NR22](0x00)
-        io.write_logic[ports.NR24](0x80) -- trigger a new note
-        assert.are_same(-1, audio.tone2.volume_envelope:adjustment())
-      end)
-      it("writes to NR22 set the volume envelope period", function()
-        audio.tone2.volume_envelope.timer:setPeriod(0)
-        io.write_logic[ports.NR22](0x07)
-        io.write_logic[ports.NR24](0x80) -- trigger a new note
-        assert.are_same(7, audio.tone2.volume_envelope.timer:period())
-      end)
-      it("GB quirk: writes to NR22 treat a period of 0 as 8 instead", function()
-        audio.tone2.volume_envelope.timer:setPeriod(0)
-        io.write_logic[ports.NR22](0x00)
-        io.write_logic[ports.NR24](0x80) -- trigger a new note
-        assert.are_same(8, audio.tone2.volume_envelope.timer:period())
       end)
     end)
   end)
