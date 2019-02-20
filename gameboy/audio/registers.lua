@@ -150,6 +150,8 @@ function Registers.new(audio, modules, cache)
   io.write_logic[ports.NR31] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR31] = byte
+    local length_data = byte;
+    audio.wave3.length_counter.counter = 256 - length_data
   end
 
   -- Channel 3 Volume
