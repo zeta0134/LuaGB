@@ -8,6 +8,7 @@ function WaveSampler:new(o)
     position=0,
     volume_shift=0,
     current_sample=0,
+    channel_enabled=true
    }
    o.timer = DividingTimer:new()
    o.timer:onReset(function() o:clock() end)
@@ -33,7 +34,11 @@ function WaveSampler:clock()
 end
 
 function WaveSampler:output()
-  return bit32.rshift(self.current_sample, self.volume_shift)
+  if self.channel_enabled then
+    return bit32.rshift(self.current_sample, self.volume_shift)
+  else
+    return 0
+  end
 end
 
 return WaveSampler
