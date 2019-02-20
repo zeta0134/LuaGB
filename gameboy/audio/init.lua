@@ -42,7 +42,10 @@ function Audio.new(modules)
     sampler=WaveSampler:new(),
     length_counter=LengthCounter:new(),
   }
-  
+  audio.wave3.sampler:onRead(function(sample_byte)
+    return io.ram[0x30 + sample_byte]
+  end)
+
   audio.noise4 = {}
 
   audio.frame_sequencer = FrameSequencer:new()
@@ -56,6 +59,7 @@ function Audio.new(modules)
   audio.frame_sequencer:onLength(function()
     audio.tone1.length_counter:clock()
     audio.tone2.length_counter:clock()
+    audio.wave3.length_counter:clock()
   end)
 
   audio.frame_sequencer:onSweep(function()
@@ -145,6 +149,7 @@ function Audio.new(modules)
       -- Clock the period timers at 4 MHz
       audio.tone1.generator.timer:advance(128)
       audio.tone2.generator.timer:advance(128)
+      audio.wave3.sampler.timer:advance(128)
 
       -- Clock the frame sequencer at 4 MHz
       audio.frame_sequencer.timer:advance(128)
@@ -160,7 +165,11 @@ function Audio.new(modules)
       tone2 = audio.tone2.volume_envelope:output(tone2)
       tone2 = tone2 / 15 - 0.5
 
-      local sample = (tone1 + tone2) / 2
+      local wave3 = audio.wave3.sampler:output()
+      wave3 = audio.wave3.length_counter:output(wave3)
+      wave3 = wave3 / 15 - 0.5
+
+      local sample = (tone1 + tone2 + wave3) / 3
 
       -- Cheat further, and use that sample directly
       audio.buffer[next_sample] = sample
