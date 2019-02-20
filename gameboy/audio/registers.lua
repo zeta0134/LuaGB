@@ -143,6 +143,7 @@ function Registers.new(audio, modules, cache)
   io.write_logic[ports.NR30] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR30] = byte
+    audio.wave3.sampler.channel_enabled = bit32.band(byte, 0x80) ~= 0
   end
 
   -- Channel 3 Length
