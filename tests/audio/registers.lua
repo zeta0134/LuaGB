@@ -91,7 +91,7 @@ describe("Audio", function()
         assert.are_same(0x7E, audio.tone1.generator.waveform)
       end)
     end)
-        describe("Tone 2", function()
+    describe("Tone 2", function()
       it("trigger writes to NR24 use the low bits from NR23 for the period", function()
         -- Make sure writes to each of the low / high byte use the value from the other half:
         audio.tone2.generator.timer:setPeriod(0)
