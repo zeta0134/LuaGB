@@ -16,4 +16,20 @@ function WaveSampler:new(o)
    return o
 end
 
+function WaveSampler:onRead(callback)
+  self._read_byte = callback
+end
+
+function WaveSampler:clock()
+  self.position = self.position + 1
+  if self.position > 31 then
+    self.position = 0
+  end
+  local sample_byte = self._read_byte(bit32.rshift(self.position, 1))
+  if self.position % 2 == 0 then
+    sample_byte = bit32.rshift(sample_byte, 4)
+  end
+  self.current_sample = bit32.band(sample_byte, 0xF)
+end
+
 return WaveSampler
