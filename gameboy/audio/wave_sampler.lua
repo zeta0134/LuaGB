@@ -6,8 +6,8 @@ local WaveSampler = {}
 function WaveSampler:new(o)
    o = o or {
     position=0,
-    volume_sweep=0,
-    current_sample=false
+    volume_shift=0,
+    current_sample=0,
    }
    o.timer = DividingTimer:new()
    o.timer:onReset(function() o:clock() end)
