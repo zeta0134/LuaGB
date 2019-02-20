@@ -20,6 +20,13 @@ function Registers.new(audio, modules, cache)
     return (2048 - frequency) * 4
   end
 
+  function wave_period(high_byte, low_byte)
+    local frequency_high_bits = bit32.band(high_byte, 0x07)
+    local frequency_low_bits = low_byte
+    local frequency = bit32.lshift(frequency_high_bits, 8) + frequency_low_bits
+    return (2048 - frequency) * 2
+  end
+
   function reload_volume(volume_envelope, byte)
     local volume = bit32.rshift(byte, 4)
     local adjustment = bit32.rshift(bit32.band(byte, 0x08), 3)
@@ -173,12 +180,16 @@ function Registers.new(audio, modules, cache)
   io.write_logic[ports.NR33] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR33] = byte
+    local period = wave_period(io.ram[ports.NR34], io.ram[ports.NR33])
+    audio.wave3.sampler.timer:setPeriod(period)
   end
 
   -- Channel 3 Frequency and Trigger - High Bits
   io.write_logic[ports.NR34] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR34] = byte
+    local period = wave_period(io.ram[ports.NR34], io.ram[ports.NR33])
+    audio.wave3.sampler.timer:setPeriod(period)
   end
 
   -- Channel 4 Length
