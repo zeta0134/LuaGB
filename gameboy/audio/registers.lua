@@ -154,10 +154,19 @@ function Registers.new(audio, modules, cache)
     audio.wave3.length_counter.counter = 256 - length_data
   end
 
+  local wave_volume_table = {
+    [0]=4,
+    [1]=0,
+    [2]=1,
+    [3]=2
+  }
+
   -- Channel 3 Volume
   io.write_logic[ports.NR32] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR32] = byte
+    local volume_code = bit32.rshift(bit32.band(byte, 0x60), 5)
+    audio.wave3.sampler.volume_shift = wave_volume_table[volume_code]
   end
 
   -- Channel 3 Frequency - Low Bits
