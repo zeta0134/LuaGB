@@ -30,4 +30,20 @@ function LinearFeedbackShiftRegister:reset()
   self.current_value = 0x7FFF
 end
 
+local divisor_table = {
+  [0]=8,
+  [1]=16,
+  [2]=32,
+  [3]=48,
+  [4]=64,
+  [5]=80,
+  [6]=96,
+  [7]=112,
+}
+
+function LinearFeedbackShiftRegister:setPeriod(divisor_code, shift_amount)
+  local period = bit32.lshift(divisor_table[divisor_code], shift_amount)
+  self.timer:setPeriod(period)
+end
+
 return LinearFeedbackShiftRegister

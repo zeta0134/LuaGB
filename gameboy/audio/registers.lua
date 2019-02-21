@@ -220,6 +220,10 @@ function Registers.new(audio, modules, cache)
   io.write_logic[ports.NR43] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR43] = byte
+    local divisor_code = bit32.band(byte, 0x7)
+    local shift_amount = bit32.rshift(bit32.band(0xF0, byte), 4)    
+    audio.noise4.lfsr.width_mode = bit32.rshift(bit32.band(0x08, byte), 3)
+    audio.noise4.lfsr:setPeriod(divisor_code, shift_amount)
   end
 
   -- Channel 4 Trigger
