@@ -49,5 +49,11 @@ describe("Audio", function()
       lfsr:reset()
       assert.same(0x7FFF, lfsr.current_value)
     end)
+    it("Output is based on the low bit of the register", function()
+      lfsr.current_value = 0x7FFE
+      assert.same(0, lfsr:output())
+      lfsr.current_value = 0x0001
+      assert.same(1, lfsr:output())
+    end)
   end)
 end)
