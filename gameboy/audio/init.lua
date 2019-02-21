@@ -166,23 +166,24 @@ function Audio.new(modules)
       local tone1 = audio.tone1.generator:output()
       tone1 = audio.tone1.length_counter:output(tone1)
       tone1 = audio.tone1.volume_envelope:output(tone1)
-      tone1 = tone1 / 30
+      tone1 = tone1 / 15
 
       local tone2 = audio.tone2.generator:output()
       tone2 = audio.tone2.length_counter:output(tone2)
       tone2 = audio.tone2.volume_envelope:output(tone2)
-      tone2 = tone2 / 30
+      tone2 = tone2 / 15
 
       local wave3 = audio.wave3.sampler:output()
       wave3 = audio.wave3.length_counter:output(wave3)
-      wave3 = wave3 / 15 - 0.5
+      wave3 = wave3 / 8 - 1.0
 
       local noise4 = audio.noise4.lfsr:output()
       noise4 = audio.noise4.length_counter:output(noise4)
       noise4 = audio.noise4.volume_envelope:output(noise4)
-      noise4 = noise4 / 30
+      noise4 = noise4 / 15
 
       local sample = (tone1 + tone2 + wave3 + noise4) / 4
+      audio.save_debug_samples(tone1, tone2, wave3, noise4, sample)
 
       -- Cheat further, and use that sample directly
       audio.buffer[next_sample] = sample
