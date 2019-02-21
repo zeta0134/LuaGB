@@ -230,6 +230,16 @@ function Registers.new(audio, modules, cache)
   io.write_logic[ports.NR44] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR44] = byte
+    local trigger = bit32.band(byte, 0x80) ~= 0
+    audio.noise4.length_counter.length_enabled = bit32.band(byte, 0x40) ~= 0
+    if trigger then
+      audio.noise4.lfsr.timer:reload()
+      reload_volume(audio.noise4.volume_envelope, io.ram[ports.NR42])
+      audio.noise4.length_counter.channel_enabled = true
+      if audio.noise4.length_counter.counter == 0 then
+        audio.noise4.length_counter.counter = 64
+      end
+    end
   end
 
   return registers
