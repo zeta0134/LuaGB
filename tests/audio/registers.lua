@@ -192,13 +192,13 @@ describe("Audio", function()
         -- Note: we'll do all our tests here with the shortest period, 8
         for i = 0, 0xF do
           io.write_logic[ports.NR43](bit32.lshift(i, 4))
-          assert.are_same(audio.noise4.lfsr.timer:period(bit32.lshift(8, i)))
+          assert.are_same(audio.noise4.lfsr.timer:period(), bit32.lshift(8, i))
         end
       end)
       it("writes to NR43 set the width mode based on bit 3", function()
         io.write_logic[ports.NR43](0x00)
         assert.are_same(0, audio.noise4.lfsr.width_mode)
-        io.write_logic[ports.NR43](0x04)
+        io.write_logic[ports.NR43](0x08)
         assert.are_same(1, audio.noise4.lfsr.width_mode)
       end)
     end)
