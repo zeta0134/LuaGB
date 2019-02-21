@@ -24,13 +24,15 @@ describe("Audio", function()
     it("volume shifts the current sample accordingly", function()
       wave_sampler.current_sample = 0xF
       for i = 0, 3 do
+        local headroom = bit32.band(bit32.rshift(0xF0, i), 0x0F)
+        local offset = headroom / 2
         wave_sampler.volume_shift = i
-        assert.same(wave_sampler:output(), bit32.rshift(0xF, i))
+        assert.same(wave_sampler:output(), bit32.rshift(0xF, i) + offset)
       end
     end)
-    it("when disabled, the channel always outputs 0", function()
+    it("when disabled, channel output is centered on 8", function()
       wave_sampler.channel_enabled = false
-      assert.same(wave_sampler:output(), 0)
+      assert.same(wave_sampler:output(), 7)
     end)
   end)
 end)

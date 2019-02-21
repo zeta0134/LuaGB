@@ -33,11 +33,17 @@ function WaveSampler:clock()
   self.current_sample = bit32.band(sample_byte, 0xF)
 end
 
+function WaveSampler:_offset()
+  local headroom = bit32.band(bit32.rshift(0xF0, self.volume_shift), 0x0F)
+  return headroom / 2
+end
+
 function WaveSampler:output()
   if self.channel_enabled then
-    return bit32.rshift(self.current_sample, self.volume_shift)
+    local adjusted_sample = bit32.rshift(self.current_sample, self.volume_shift)
+    return adjusted_sample + self:_offset()
   else
-    return 0
+    return 7
   end
 end
 

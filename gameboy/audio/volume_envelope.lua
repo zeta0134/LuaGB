@@ -44,7 +44,7 @@ function VolumeEnvelope:output(input_bit)
   if input_bit ~= 0 then
     return self._volume
   else
-    return 0
+    return self._volume * -1
   end
 end
 

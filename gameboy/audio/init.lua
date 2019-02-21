@@ -166,12 +166,12 @@ function Audio.new(modules)
       local tone1 = audio.tone1.generator:output()
       tone1 = audio.tone1.length_counter:output(tone1)
       tone1 = audio.tone1.volume_envelope:output(tone1)
-      tone1 = tone1 / 15 - 0.5
+      tone1 = tone1 / 30
 
       local tone2 = audio.tone2.generator:output()
       tone2 = audio.tone2.length_counter:output(tone2)
       tone2 = audio.tone2.volume_envelope:output(tone2)
-      tone2 = tone2 / 15 - 0.5
+      tone2 = tone2 / 30
 
       local wave3 = audio.wave3.sampler:output()
       wave3 = audio.wave3.length_counter:output(wave3)
@@ -180,7 +180,7 @@ function Audio.new(modules)
       local noise4 = audio.noise4.lfsr:output()
       noise4 = audio.noise4.length_counter:output(noise4)
       noise4 = audio.noise4.volume_envelope:output(noise4)
-      noise4 = noise4 / 15 - 0.5
+      noise4 = noise4 / 30
 
       local sample = (tone1 + tone2 + wave3 + noise4) / 4
 
