@@ -202,5 +202,10 @@ describe("Audio", function()
         assert.are_same(1, audio.noise4.lfsr.width_mode)
       end)
     end)
+    it("trigger writes to NR44 reset the LFSR", function()
+      audio.noise4.lfsr.current_value = 0x0
+      io.write_logic[ports.NR44](0x80) -- trigger a new note
+      assert.are_same(audio.noise4.lfsr.current_value, 0x7FFF)
+    end)
   end)
 end)
