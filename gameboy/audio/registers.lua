@@ -206,6 +206,8 @@ function Registers.new(audio, modules, cache)
   io.write_logic[ports.NR41] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR41] = byte
+    local length_data = bit32.band(byte, 0x3F);
+    audio.noise4.length_counter.counter = 64 - length_data
   end
 
   -- Channel 4 Volume Envelope
