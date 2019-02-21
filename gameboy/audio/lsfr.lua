@@ -15,4 +15,14 @@ function LinearFeedbackShiftRegister:new(o)
    return o
 end
 
+function LineraFeedbackShiftRegiser:clock()
+  local shift_result = bit32.rshift(self.current_value, 1)
+  local xor_result = bit32.band(bit32.bxor(shift_result, self.current_value), 0x1)
+  local lfsr_result = bit32.lshift(xor_result, 14) + shift_result
+  if self.width_mode == 1 then
+    lfsr_result = bit32.bor(lfsr_result, bit32.lshift(xor_result, 6))
+  end
+  self.current_value = lsfr_result
+end
+
 return LinearFeedbackShiftRegister
