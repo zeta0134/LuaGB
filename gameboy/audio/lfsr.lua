@@ -46,4 +46,8 @@ function LinearFeedbackShiftRegister:setPeriod(divisor_code, shift_amount)
   self.timer:setPeriod(period)
 end
 
+function LinearFeedbackShiftRegister:output()
+  return bit32.band(self.current_value, 0x1)
+end
+
 return LinearFeedbackShiftRegister
