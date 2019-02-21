@@ -3,6 +3,7 @@ local bit32 = require("bit")
 local Registers = require("gameboy/audio/registers")
 local FrameSequencer = require("gameboy/audio/frame_sequencer")
 local LengthCounter = require("gameboy/audio/length_counter")
+local LinearFeedbackShiftRegister = require("gameboy/audio/lfsr")
 local SquareWaveGenerator = require("gameboy/audio/square_wave_generator")
 local VolumeEnvelope = require("gameboy/audio/volume_envelope")
 local WaveSampler = require("gameboy/audio/wave_sampler")
@@ -46,7 +47,11 @@ function Audio.new(modules)
     return io.ram[0x30 + sample_byte]
   end)
 
-  audio.noise4 = {}
+  audio.noise4 = {
+    lfsr=LinearFeedbackShiftRegister:new(),
+    volume_envelope=VolumeEnvelope:new(),
+    length_counter=LengthCounter:new()
+  }
 
   audio.frame_sequencer = FrameSequencer:new()
   audio.frame_sequencer.timer:reload(8192)
@@ -54,12 +59,14 @@ function Audio.new(modules)
   audio.frame_sequencer:onVolume(function()
     audio.tone1.volume_envelope.timer:clock()
     audio.tone2.volume_envelope.timer:clock()
+    audio.noise4.volume_envelope.timer:clock()
   end)
 
   audio.frame_sequencer:onLength(function()
     audio.tone1.length_counter:clock()
     audio.tone2.length_counter:clock()
     audio.wave3.length_counter:clock()
+    audio.noise4.length_counter:clock()
   end)
 
   audio.frame_sequencer:onSweep(function()
@@ -150,6 +157,7 @@ function Audio.new(modules)
       audio.tone1.generator.timer:advance(128)
       audio.tone2.generator.timer:advance(128)
       audio.wave3.sampler.timer:advance(128)
+      audio.noise4.lfsr.timer:advance(128)
 
       -- Clock the frame sequencer at 4 MHz
       audio.frame_sequencer.timer:advance(128)
@@ -169,7 +177,12 @@ function Audio.new(modules)
       wave3 = audio.wave3.length_counter:output(wave3)
       wave3 = wave3 / 15 - 0.5
 
-      local sample = (tone1 + tone2 + wave3) / 3
+      local noise4 = audio.noise4.lfsr:output()
+      noise4 = audio.noise4.length_counter:output(noise4)
+      noise4 = audio.noise4.volume_envelope:output(noise4)
+      noise4 = noise4 / 15 - 0.5
+
+      local sample = (tone1 + tone2 + wave3 + noise4) / 4
 
       -- Cheat further, and use that sample directly
       audio.buffer[next_sample] = sample

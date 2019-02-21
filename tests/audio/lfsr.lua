@@ -1,7 +1,7 @@
 describe("Audio", function()  
   describe("LinearFeedbackShiftRegister", function()
     setup(function()
-      LinearFeedbackShiftRegister = require("gameboy/audio/lsfr")
+      LinearFeedbackShiftRegister = require("gameboy/audio/lfsr")
       bit32 = require("bit")
     end)
     before_each(function() 
