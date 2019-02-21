@@ -239,6 +239,7 @@ function Registers.new(audio, modules, cache)
       if audio.noise4.length_counter.counter == 0 then
         audio.noise4.length_counter.counter = 64
       end
+      audio.noise4.lfsr:reset()
     end
   end
 
