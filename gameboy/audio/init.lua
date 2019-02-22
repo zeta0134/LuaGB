@@ -89,8 +89,8 @@ function Audio.new(modules)
   audio.master_enable = true
 
   audio.reset = function()
-    next_sample = 0
-    next_sample_cycle = 0
+    audio.next_sample = 0
+    audio.next_sample_cycle = 0
 
     -- initialize audio registers
     -- pulled from: http://bgb.bircd.org/pandocs.htm#powerupsequence
@@ -194,18 +194,55 @@ function Audio.new(modules)
       noise4 = audio.noise4.volume_envelope:output(noise4)
       noise4 = noise4 / 15
 
-      local sample = (tone1 + tone2 + wave3 + noise4) / 4
-      audio.save_debug_samples(tone1, tone2, wave3, noise4, sample)
+      local left_sample = 0
+      local right_sample = 0
 
-      -- Cheat further, and use that sample directly
-      audio.buffer[next_sample] = sample
-      next_sample = next_sample + 1
-      audio.buffer[next_sample] = sample
-      next_sample = next_sample + 1
+      -- Apply channel output to left and right based on master enable flags:
+      if audio.tone1.master_enable_left then
+        left_sample = left_sample + tone1
+      end
+      if audio.tone2.master_enable_left then
+        left_sample = left_sample + tone2
+      end
+      if audio.wave3.master_enable_left then
+        left_sample = left_sample + wave3
+      end
+      if audio.noise4.master_enable_left then
+        left_sample = left_sample + noise4
+      end
 
-      if next_sample >= 1024 then
+      if audio.tone1.master_enable_right then
+        right_sample = right_sample + tone1
+      end
+      if audio.tone2.master_enable_right then
+        right_sample = right_sample + tone2
+      end
+      if audio.wave3.master_enable_right then
+        right_sample = right_sample + wave3
+      end
+      if audio.noise4.master_enable_right then
+        right_sample = right_sample + noise4
+      end
+
+      -- Since each channel is already -1.0 - 1.0, adjust the combined samples accordingly:
+      left_sample = left_sample / 4
+      right_sample = right_sample / 4
+
+      -- Adjust volume of left and right channels according to master volume
+      left_sample  = left_sample  * audio.master_volume_left  / 7
+      right_sample = right_sample * audio.master_volume_right / 7
+
+      -- Finally, write these sample out
+      audio.buffer[audio.next_sample] = left_sample
+      audio.next_sample = audio.next_sample + 1
+      audio.buffer[audio.next_sample] = right_sample
+      audio.next_sample = audio.next_sample + 1
+
+      audio.save_debug_samples(tone1, tone2, wave3, noise4, left_sample + right_sample / 2)
+
+      if audio.next_sample >= 1024 then
         audio.__on_buffer_full(audio.buffer)
-        next_sample = 0
+        audio.next_sample = 0
       end
       audio.next_sample_cycle = audio.next_sample_cycle + 128 --number of clocks per sample at 32 KHz
     end
