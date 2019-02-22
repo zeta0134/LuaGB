@@ -26,7 +26,9 @@ function Audio.new(modules)
   audio.tone1 = {
     generator=SquareWaveGenerator:new(),
     volume_envelope=VolumeEnvelope:new(),
-    length_counter=LengthCounter:new()
+    length_counter=LengthCounter:new(),
+    master_enable_left = true,
+    master_enable_right = true
   }
   audio.tone1.generator.timer:reload(1)
   audio.tone1.generator.waveform = 0x0F
@@ -34,7 +36,9 @@ function Audio.new(modules)
   audio.tone2 = {
     generator=SquareWaveGenerator:new(),
     volume_envelope=VolumeEnvelope:new(),
-    length_counter=LengthCounter:new()
+    length_counter=LengthCounter:new(),
+    master_enable_left = true,
+    master_enable_right = true
   }
   audio.tone2.generator.timer:reload(1)
   audio.tone2.generator.waveform = 0x0F
@@ -42,6 +46,8 @@ function Audio.new(modules)
   audio.wave3 = {
     sampler=WaveSampler:new(),
     length_counter=LengthCounter:new(),
+    master_enable_left = true,
+    master_enable_right = true
   }
   audio.wave3.sampler:onRead(function(sample_byte)
     return io.ram[0x30 + sample_byte]
@@ -50,7 +56,9 @@ function Audio.new(modules)
   audio.noise4 = {
     lfsr=LinearFeedbackShiftRegister:new(),
     volume_envelope=VolumeEnvelope:new(),
-    length_counter=LengthCounter:new()
+    length_counter=LengthCounter:new(),
+    master_enable_left = true,
+    master_enable_right = true
   }
 
   audio.frame_sequencer = FrameSequencer:new()
@@ -75,6 +83,10 @@ function Audio.new(modules)
 
   audio.next_sample = 0
   audio.next_sample_cycle = 0
+
+  audio.master_volume_left = 7
+  audio.master_volume_right = 7
+  audio.master_enable = true
 
   audio.reset = function()
     next_sample = 0
@@ -112,12 +124,12 @@ function Audio.new(modules)
 
   audio.save_state = function()
     local state = {}
-    state.next_sample_cycle = next_sample_cycle
+    state.next_sample_cycle = audio.next_sample_cycle
     return state
   end
 
   audio.load_state = function(state)
-    next_sample_cycle = state.next_sample_cycle
+    audio.next_sample_cycle = state.next_sample_cycle
   end
 
   audio.__on_buffer_full = function(buffer) end
