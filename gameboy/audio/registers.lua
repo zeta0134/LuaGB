@@ -8,8 +8,16 @@ function Registers.new(audio, modules, cache)
 
   local registers = {}
 
+  io.write_logic[ports.NR50] = function(byte)
+    audio.generate_pending_samples()
+    io.ram[ports.NR50] = byte
+    audio.master_volume_left = bit32.rshift(bit32.band(byte, 0x70), 4)
+    audio.master_volume_right = bit32.band(byte, 0x07)
+  end
+
     -- Audio status register
   io.read_logic[ports.NR52] = function()
+    audio.generate_pending_samples()
     local status = 0
     if audio.tone1.length_counter.channel_enabled then
       status = status + 0x01
