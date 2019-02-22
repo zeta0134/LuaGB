@@ -48,6 +48,10 @@ function Registers.new(audio, modules, cache)
     return status
   end
 
+  io.write_logic[ports.NR52] = function(byte)
+    audio.master_enable = bit32.band(byte, 0x80) ~= 0;
+  end
+
   function square_period(high_byte, low_byte)
     local frequency_high_bits = bit32.band(high_byte, 0x07)
     local frequency_low_bits = low_byte
