@@ -91,13 +91,20 @@ describe("Audio", function()
         audio.tone2.length_counter.channel_enabled = true
         assert.not_same(0, bit32.band(0x02, io.read_logic[ports.NR52]()))
       end)
-      it("Bit 2 of NR52 reports Tone1's length counter status", function()
+      it("Bit 2 of NR52 reports Wave3's length counter status", function()
         audio.wave3.length_counter.channel_enabled = false
         assert.are_same(0, bit32.band(0x04, io.read_logic[ports.NR52]()))
         audio.wave3.length_counter.channel_enabled = true
         assert.not_same(0, bit32.band(0x04, io.read_logic[ports.NR52]()))
       end)
-      it("Bit 3 of NR52 reports Tone1's length counter status", function()
+      it("Bit 2 of NR52 is off if Wave3 is disabled via NR30", function()
+        -- length enabled would normally signal the channel as active:
+        audio.wave3.length_counter.channel_enabled = true
+        -- but if the whole channel is off, it suppresses the length flag:
+        audio.wave3.sampler.channel_enabled = false
+        assert.are_same(0, bit32.band(0x04, io.read_logic[ports.NR52]()))
+      end)
+      it("Bit 3 of NR52 reports Noise4's length counter status", function()
         audio.noise4.length_counter.channel_enabled = false
         assert.are_same(0, bit32.band(0x08, io.read_logic[ports.NR52]()))
         audio.noise4.length_counter.channel_enabled = true
