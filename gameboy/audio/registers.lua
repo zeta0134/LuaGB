@@ -9,8 +9,24 @@ function Registers.new(audio, modules, cache)
   local registers = {}
 
     -- Audio status register
-  io.read_logic[0x26] = function()
-    return 0
+  io.read_logic[ports.NR52] = function()
+    local status = 0
+    if audio.tone1.length_counter.channel_enabled then
+      status = status + 0x01
+    end
+    if audio.tone2.length_counter.channel_enabled then
+      status = status + 0x02
+    end
+    if audio.wave3.length_counter.channel_enabled then
+      status = status + 0x04
+    end
+    if audio.noise4.length_counter.channel_enabled then
+      status = status + 0x08
+    end
+    if audio.master_enable then
+      status = status + 0x80
+    end
+    return status
   end
 
   function square_period(high_byte, low_byte)
