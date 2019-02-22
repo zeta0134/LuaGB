@@ -262,6 +262,8 @@ function Graphics.new(modules)
     graphics.refresh_lcdstat()
   end
 
+  local vblank_delay = 1
+
   -- HBlank: Period between scanlines
   local handle_mode = {}
   handle_mode[0] = function()
@@ -279,7 +281,8 @@ function Graphics.new(modules)
       if io.ram[ports.LY] >= 144 then
         graphics.registers.status.SetMode(1)
         graphics.vblank_count = graphics.vblank_count + 1
-        interrupts.raise(interrupts.VBlank)
+        --interrupts.raise(interrupts.VBlank)
+        vblank_delay = 1
       else
         graphics.registers.status.SetMode(2)
       end
@@ -292,6 +295,12 @@ function Graphics.new(modules)
 
   --VBlank: nothing to do except wait for the next frame
   handle_mode[1] = function()
+    if vblank_delay > 0 then
+      vblank_delay = vblank_delay - 1
+      if vblank_delay == 0 then
+        interrupts.raise(interrupts.VBlank)
+      end
+    end
     if timers.system_clock - graphics.last_edge > 456 then
       graphics.last_edge = graphics.last_edge + 456
       io.ram[ports.LY] = io.ram[ports.LY] + 1
