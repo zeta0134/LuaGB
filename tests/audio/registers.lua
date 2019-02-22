@@ -81,27 +81,27 @@ describe("Audio", function()
       end)
       it("Bit 0 of NR52 reports Tone1's length counter status", function()
         audio.tone1.length_counter.channel_enabled = false
-        assert.falsy(bit32.band(0x01, io.read_logic[ports.NR52]()))
+        assert.are_same(0, bit32.band(0x01, io.read_logic[ports.NR52]()))
         audio.tone1.length_counter.channel_enabled = true
-        assert.truthy(bit32.band(0x01, io.read_logic[ports.NR52]()))
+        assert.not_same(0, bit32.band(0x01, io.read_logic[ports.NR52]()))
       end)
       it("Bit 1 of NR52 reports Tone2's length counter status", function()
         audio.tone2.length_counter.channel_enabled = false
-        assert.falsy(bit32.band(0x02, io.read_logic[ports.NR52]()))
+        assert.are_same(0, bit32.band(0x02, io.read_logic[ports.NR52]()))
         audio.tone2.length_counter.channel_enabled = true
-        assert.truthy(bit32.band(0x02, io.read_logic[ports.NR52]()))
+        assert.not_same(0, bit32.band(0x02, io.read_logic[ports.NR52]()))
       end)
       it("Bit 2 of NR52 reports Tone1's length counter status", function()
         audio.wave3.length_counter.channel_enabled = false
-        assert.falsy(bit32.band(0x04, io.read_logic[ports.NR52]()))
+        assert.are_same(0, bit32.band(0x04, io.read_logic[ports.NR52]()))
         audio.wave3.length_counter.channel_enabled = true
-        assert.truthy(bit32.band(0x04, io.read_logic[ports.NR52]()))
+        assert.not_same(0, bit32.band(0x04, io.read_logic[ports.NR52]()))
       end)
       it("Bit 3 of NR52 reports Tone1's length counter status", function()
         audio.noise4.length_counter.channel_enabled = false
-        assert.falsy(bit32.band(0x08, io.read_logic[ports.NR52]()))
+        assert.are_same(0, bit32.band(0x08, io.read_logic[ports.NR52]()))
         audio.noise4.length_counter.channel_enabled = true
-        assert.truthy(bit32.band(0x08, io.read_logic[ports.NR52]()))
+        assert.not_same(0, bit32.band(0x08, io.read_logic[ports.NR52]()))
       end)
       it("Bit 7 of NR52 controls master power", function()
         -- note: crazy power not available until GBA
