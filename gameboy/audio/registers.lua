@@ -15,7 +15,18 @@ function Registers.new(audio, modules, cache)
     audio.master_volume_right = bit32.band(byte, 0x07)
   end
 
-    -- Audio status register
+  io.write_logic[ports.NR51] = function(byte)
+    audio.tone1.master_enable_right  = bit32.band(byte, 0x01) ~= 0;
+    audio.tone2.master_enable_right  = bit32.band(byte, 0x02) ~= 0;
+    audio.wave3.master_enable_right  = bit32.band(byte, 0x04) ~= 0;
+    audio.noise4.master_enable_right = bit32.band(byte, 0x08) ~= 0;
+    audio.tone1.master_enable_left  = bit32.band(byte, 0x10) ~= 0;
+    audio.tone2.master_enable_left   = bit32.band(byte, 0x20) ~= 0;
+    audio.wave3.master_enable_left   = bit32.band(byte, 0x40) ~= 0;
+    audio.noise4.master_enable_left  = bit32.band(byte, 0x80) ~= 0;
+  end
+
+    -- Audio power / status register
   io.read_logic[ports.NR52] = function()
     audio.generate_pending_samples()
     local status = 0
