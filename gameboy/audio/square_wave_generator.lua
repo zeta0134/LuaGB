@@ -9,7 +9,7 @@ function SquareWaveGenerator:new(o)
     sweep_shift=0,
     sweep_negate=false,
     channel_enabled=true,
-    waveform=0,
+    waveform=0x0F,
      _pos=0
    }
    o.timer = DividingTimer:new()
