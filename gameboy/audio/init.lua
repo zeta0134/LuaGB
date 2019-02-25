@@ -30,8 +30,6 @@ function Audio.new(modules)
     master_enable_left = true,
     master_enable_right = true
   }
-  audio.tone1.generator.timer:reload(1)
-  audio.tone1.generator.waveform = 0x0F
 
   audio.tone2 = {
     generator=SquareWaveGenerator:new(),
@@ -40,8 +38,6 @@ function Audio.new(modules)
     master_enable_left = true,
     master_enable_right = true
   }
-  audio.tone2.generator.timer:reload(1)
-  audio.tone2.generator.waveform = 0x0F
 
   audio.wave3 = {
     sampler=WaveSampler:new(),
