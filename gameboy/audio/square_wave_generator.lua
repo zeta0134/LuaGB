@@ -45,6 +45,13 @@ function SquareWaveGenerator:_next_sweep()
   return self.frequency_shadow + sweep_adjustment
 end
 
+function SquareWaveGenerator:overflow_check()
+  local next_sweep = self:_next_sweep()
+  if next_sweep > 2047 then
+    self.channel_enabled = false
+  end
+end
+
 function SquareWaveGenerator:sweep()
   if self.sweep_shift ~= 0 and self.sweep_timer.period ~= 0 then
     local next_sweep = self:_next_sweep()

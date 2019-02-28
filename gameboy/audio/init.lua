@@ -34,7 +34,7 @@ function Audio.new(modules)
     return 
       self.generator.channel_enabled and 
       self.length_counter.channel_enabled and 
-      (bit32.band(io.ram[ports.NR12], 0xF0) ~= 0)
+      (bit32.band(io.ram[ports.NR12], 0xF8) ~= 0)
   end
 
   audio.tone2 = {
@@ -47,7 +47,7 @@ function Audio.new(modules)
   function audio.tone2:enabled()
     return 
       self.length_counter.channel_enabled and 
-      bit32.band(io.ram[ports.NR22], 0xF0) ~= 0
+      bit32.band(io.ram[ports.NR22], 0xF8) ~= 0
   end
 
   audio.wave3 = {
@@ -75,7 +75,7 @@ function Audio.new(modules)
   function audio.noise4:enabled()
     return 
       self.length_counter.channel_enabled and 
-      bit32.band(io.ram[ports.NR42], 0xF0) ~= 0
+      bit32.band(io.ram[ports.NR42], 0xF8) ~= 0
   end
 
   audio.frame_sequencer = FrameSequencer:new()

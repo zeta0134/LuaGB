@@ -82,7 +82,7 @@ describe("Audio", function()
       it("Bit 0 of NR52 is clear when Tone1's length counter disables the channel", function()
         -- firstly, make sure the volume / sweep units are NOT disabling the channel
         audio.tone1.generator.channel_enabled = true
-        io.write_logic[ports.NR12](0xF0)
+        io.write_logic[ports.NR12](0xF8)
 
         audio.tone1.length_counter.channel_enabled = false
         assert.are_same(0, bit32.band(0x01, io.read_logic[ports.NR52]()))
@@ -92,7 +92,7 @@ describe("Audio", function()
       it("Bit 0 of NR52 is clear when Tone1's sweep unit disables the channel", function()
         -- firstly, make sure the volume / sweep units are NOT disabling the channel
         audio.tone1.generator.channel_enabled = true
-        io.write_logic[ports.NR12](0xF0)
+        io.write_logic[ports.NR12](0xF8)
 
         audio.tone1.generator.channel_enabled = false
         assert.are_same(0, bit32.band(0x01, io.read_logic[ports.NR52]()))
@@ -101,7 +101,7 @@ describe("Audio", function()
       end)
       it("Bit 1 of NR52 is clear when Tone2's length counter disables the channel", function()
         -- firstly, make sure the volume unit is NOT disabling the channel
-        io.write_logic[ports.NR22](0xF0)
+        io.write_logic[ports.NR22](0xF8)
 
         audio.tone2.length_counter.channel_enabled = false
         assert.are_same(0, bit32.band(0x02, io.read_logic[ports.NR52]()))
@@ -126,7 +126,7 @@ describe("Audio", function()
       end)
       it("Bit 3 of NR52 is clear when Noise4's length counter disables the channel", function()
         -- firstly, make sure the volume unit is NOT disabling the channel
-        io.write_logic[ports.NR42](0xF0)
+        io.write_logic[ports.NR42](0xF8)
 
         audio.noise4.length_counter.channel_enabled = false
         assert.are_same(0, bit32.band(0x08, io.read_logic[ports.NR52]()))
