@@ -6,6 +6,7 @@ local SquareWaveGenerator = {}
 function SquareWaveGenerator:new(o)
    o = o or {
     frequency_shadow=0,
+    sweep_enabled=false,
     sweep_shift=0,
     sweep_negate=false,
     channel_enabled=true,
@@ -45,7 +46,7 @@ function SquareWaveGenerator:_next_sweep()
   return self.frequency_shadow + sweep_adjustment
 end
 
-function SquareWaveGenerator:overflow_check()
+function SquareWaveGenerator:check_overflow()
   local next_sweep = self:_next_sweep()
   if next_sweep > 2047 then
     self.channel_enabled = false
@@ -53,21 +54,15 @@ function SquareWaveGenerator:overflow_check()
 end
 
 function SquareWaveGenerator:sweep()
-  if self.sweep_shift ~= 0 and self.sweep_timer.period ~= 0 then
+  if self.sweep_enabled and self.sweep_timer.period ~= 0 then
+    self:check_overflow()
     local next_sweep = self:_next_sweep()
-    if next_sweep >= 0 then
-      -- first adjustment check
-      if next_sweep > 2047 then
-        self.channel_enabled = false
-      else
-        self.frequency_shadow = next_sweep
-        self.timer.period = (2048 - next_sweep) * 4
-        -- second adjustment check
-        next_sweep = self:_next_sweep()
-        if next_sweep > 2047 then
-          self.channel_enabled = false
-        end
-      end
+    if next_sweep > 0 and next_sweep < 2047 and self.sweep_shift ~= 0 then
+      -- save and immediately use the new frequency
+      self.frequency_shadow = next_sweep
+      self.timer.period = (2048 - next_sweep) * 4
+      -- perform overflow check again using the new frequency
+      self:check_overflow()
     end
   end
 end

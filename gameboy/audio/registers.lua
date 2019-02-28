@@ -141,6 +141,13 @@ function Registers.new(audio, modules, cache)
       audio.tone1.generator.frequency_shadow = frequency_shadow
       audio.tone1.generator.sweep_timer:reload()
       audio.tone1.generator.channel_enabled = true
+      audio.tone1.generator.sweep_enabled =
+        audio.tone1.generator_sweep_shift ~= 0 or
+        audio.tone1.generator.sweep_timer.period ~= 0
+
+      if audio.tone1.generator.sweep_shift ~= 0 then
+        audio.tone1.generator:check_overflow()
+      end
     end
   end
 

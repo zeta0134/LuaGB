@@ -27,6 +27,7 @@ describe("Audio", function()
       assert.are_same(square:output(), 0)
     end)
     it("sweep clocks adjust the period", function()
+      square.sweep_enabled = true
       square.frequency_shadow = 500
       square.sweep_timer.period = 1
       square.sweep_shift = 1
@@ -35,6 +36,7 @@ describe("Audio", function()
       assert.same(square.frequency_shadow, bit32.rshift(500, 1) + 500)
     end)
     it("sweep negate adjusts period downwards", function()
+      square.sweep_enabled = true
       square.frequency_shadow = 500
       square.sweep_timer.period = 1
       square.sweep_shift = 1
@@ -43,6 +45,7 @@ describe("Audio", function()
       assert.same(square.frequency_shadow, bit32.bnot(bit32.rshift(500, 1)) + 500)
     end)
     it("sweep silences the channel on overflow", function()
+      square.sweep_enabled = true
       -- setup tone1 to play a 1 no matter what
       square.waveform = 0xFF -- 00101101
       -- have the sweep register exceed 2047
