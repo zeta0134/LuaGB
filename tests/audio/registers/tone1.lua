@@ -89,6 +89,26 @@ describe("Audio", function()
         io.write_logic[ports.NR14](0x80) -- trigger a new note
         assert.are_same(0x7E, audio.tone1.generator.waveform)
       end)
+      it("trigger writes to NR14 immediately check frequency shift overflow", function()
+        audio.tone1.generator.channel_enabled = true
+        audio.tone1.generator.sweep_shift = 1
+        audio.tone1.generator.frequency_shadow = 0x7FF
+        audio.tone1.generator.sweep_negate = false
+        audio.tone1.generator.sweep_timer:reload(1)
+        io.write_logic[ports.NR14](0x80) -- trigger a new note
+        -- Channel should now be disabled
+        assert.falsy(audio.tone1.generator.channel_enabled)
+      end)
+      it("trigger writes to NR14 do not perform overflow check if sweep_shift = 0", function()
+        audio.tone1.generator.channel_enabled = true
+        audio.tone1.generator.sweep_shift = 0
+        audio.tone1.generator.frequency_shadow = 0x7FF
+        audio.tone1.generator.sweep_negate = false
+        audio.tone1.generator.sweep_timer:reload(1)
+        io.write_logic[ports.NR14](0x80) -- trigger a new note
+        -- Overflow was not performed, so channel should still be enabled
+        assert.truthy(audio.tone1.generator.channel_enabled)
+      end)
     end)
   end)
 end)
