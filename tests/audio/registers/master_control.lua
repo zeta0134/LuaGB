@@ -17,7 +17,6 @@ describe("Audio", function()
       -- create a non-local io reference, to mock writes in tests
       io = modules.io
       ports = io.ports
-      timers = modules.timers
     end)
     it("mock audio module can be created", function()
       assert.not_same(audio, nil)
