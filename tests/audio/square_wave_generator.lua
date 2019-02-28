@@ -28,7 +28,7 @@ describe("Audio", function()
     end)
     it("sweep clocks adjust the period", function()
       square.frequency_shadow = 500
-      square.sweep_timer:setPeriod(1)
+      square.sweep_timer.period = 1
       square.sweep_shift = 1
       square.sweep_negate = false
       square:sweep()
@@ -36,7 +36,7 @@ describe("Audio", function()
     end)
     it("sweep negate adjusts period downwards", function()
       square.frequency_shadow = 500
-      square.sweep_timer:setPeriod(1)
+      square.sweep_timer.period = 1
       square.sweep_shift = 1
       square.sweep_negate = true
       square:sweep()
@@ -46,7 +46,7 @@ describe("Audio", function()
       -- setup tone1 to play a 1 no matter what
       square.waveform = 0xFF -- 00101101
       -- have the sweep register exceed 2047
-      square.sweep_timer:setPeriod(1)
+      square.sweep_timer.period = 1
       square.frequency_shadow = 2040
       square.sweep_shift = 1
       square.sweep_negate = false

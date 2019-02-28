@@ -39,16 +39,16 @@ describe("Audio", function()
         assert.are_same(-1, audio.tone1.volume_envelope:adjustment())
       end)
       it("writes to NR12 set the volume envelope period", function()
-        audio.tone1.volume_envelope.timer:setPeriod(0)
+        audio.tone1.volume_envelope.timer.period = 0
         io.write_logic[ports.NR12](0x07)
         io.write_logic[ports.NR14](0x80) -- trigger a new note
-        assert.are_same(7, audio.tone1.volume_envelope.timer:period())
+        assert.are_same(7, audio.tone1.volume_envelope.timer.period)
       end)
       it("GB quirk: writes to NR12 treat a period of 0 as 8 instead", function()
-        audio.tone1.volume_envelope.timer:setPeriod(0)
+        audio.tone1.volume_envelope.timer.period = 0
         io.write_logic[ports.NR12](0x00)
         io.write_logic[ports.NR14](0x80) -- trigger a new note
-        assert.are_same(8, audio.tone1.volume_envelope.timer:period())
+        assert.are_same(8, audio.tone1.volume_envelope.timer.period)
       end)
     end)
     describe("Tone2 - Volume Envelope - ", function()
@@ -68,16 +68,16 @@ describe("Audio", function()
         assert.are_same(-1, audio.tone2.volume_envelope:adjustment())
       end)
       it("writes to NR22 set the volume envelope period", function()
-        audio.tone2.volume_envelope.timer:setPeriod(0)
+        audio.tone2.volume_envelope.timer.period = 0
         io.write_logic[ports.NR22](0x07)
         io.write_logic[ports.NR24](0x80) -- trigger a new note
-        assert.are_same(7, audio.tone2.volume_envelope.timer:period())
+        assert.are_same(7, audio.tone2.volume_envelope.timer.period)
       end)
       it("GB quirk: writes to NR22 treat a period of 0 as 8 instead", function()
-        audio.tone2.volume_envelope.timer:setPeriod(0)
+        audio.tone2.volume_envelope.timer.period = 0
         io.write_logic[ports.NR22](0x00)
         io.write_logic[ports.NR24](0x80) -- trigger a new note
-        assert.are_same(8, audio.tone2.volume_envelope.timer:period())
+        assert.are_same(8, audio.tone2.volume_envelope.timer.period)
       end)
     end)
     describe("Noise4 - Volume Envelope - ", function()
@@ -97,16 +97,16 @@ describe("Audio", function()
         assert.are_same(-1, audio.noise4.volume_envelope:adjustment())
       end)
       it("writes to NR42 set the volume envelope period", function()
-        audio.noise4.volume_envelope.timer:setPeriod(0)
+        audio.noise4.volume_envelope.timer.period = 0
         io.write_logic[ports.NR42](0x07)
         io.write_logic[ports.NR44](0x80) -- trigger a new note
-        assert.are_same(7, audio.noise4.volume_envelope.timer:period())
+        assert.are_same(7, audio.noise4.volume_envelope.timer.period)
       end)
       it("GB quirk: writes to NR42 treat a period of 0 as 8 instead", function()
-        audio.noise4.volume_envelope.timer:setPeriod(0)
+        audio.noise4.volume_envelope.timer.period = 0
         io.write_logic[ports.NR42](0x00)
         io.write_logic[ports.NR44](0x80) -- trigger a new note
-        assert.are_same(8, audio.noise4.volume_envelope.timer:period())
+        assert.are_same(8, audio.noise4.volume_envelope.timer.period)
       end)
     end)
   end)
