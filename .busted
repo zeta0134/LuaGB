@@ -1,0 +1,7 @@
+return {
+  default = {
+    lua = "luajit",
+    pattern = ".lua",
+    ROOT = {"tests"}
+  }
+}
