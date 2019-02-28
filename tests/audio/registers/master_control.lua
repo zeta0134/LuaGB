@@ -78,19 +78,25 @@ describe("Audio", function()
         io.write_logic[ports.NR51](0x80)
         assert.truthy(audio.noise4.master_enable_left)
       end)
-      it("Bit 0 of NR52 reports Tone1's length counter status", function()
+      it("Bit 0 of NR52 is clear when Tone1's length counter disables the channel", function()
         audio.tone1.length_counter.channel_enabled = false
         assert.are_same(0, bit32.band(0x01, io.read_logic[ports.NR52]()))
         audio.tone1.length_counter.channel_enabled = true
         assert.not_same(0, bit32.band(0x01, io.read_logic[ports.NR52]()))
       end)
-      it("Bit 1 of NR52 reports Tone2's length counter status", function()
+      it("Bit 0 of NR52 is clear when Tone1's sweep unit disables the channel", function()
+        audio.tone1.generator.channel_enabled = false
+        assert.are_same(0, bit32.band(0x01, io.read_logic[ports.NR52]()))
+        audio.tone1.generator.channel_enabled = true
+        assert.not_same(0, bit32.band(0x01, io.read_logic[ports.NR52]()))
+      end)
+      it("Bit 1 of NR52 is clear when Tone2's length counter disables the channel", function()
         audio.tone2.length_counter.channel_enabled = false
         assert.are_same(0, bit32.band(0x02, io.read_logic[ports.NR52]()))
         audio.tone2.length_counter.channel_enabled = true
         assert.not_same(0, bit32.band(0x02, io.read_logic[ports.NR52]()))
       end)
-      it("Bit 2 of NR52 reports Wave3's length counter status", function()
+      it("Bit 2 of NR52 is clear when Wave3's length counter disables the channel", function()
         audio.wave3.length_counter.channel_enabled = false
         assert.are_same(0, bit32.band(0x04, io.read_logic[ports.NR52]()))
         audio.wave3.length_counter.channel_enabled = true
@@ -103,7 +109,7 @@ describe("Audio", function()
         audio.wave3.sampler.channel_enabled = false
         assert.are_same(0, bit32.band(0x04, io.read_logic[ports.NR52]()))
       end)
-      it("Bit 3 of NR52 reports Noise4's length counter status", function()
+      it("Bit 3 of NR52 is clear when Noise4's length counter disables the channel", function()
         audio.noise4.length_counter.channel_enabled = false
         assert.are_same(0, bit32.band(0x08, io.read_logic[ports.NR52]()))
         audio.noise4.length_counter.channel_enabled = true
