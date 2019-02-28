@@ -31,16 +31,16 @@ function Registers.new(audio, modules, cache)
   io.read_logic[ports.NR52] = function()
     audio.generate_pending_samples()
     local status = 0
-    if audio.tone1.length_counter.channel_enabled then
+    if audio.tone1:enabled() then
       status = status + 0x01
     end
-    if audio.tone2.length_counter.channel_enabled then
+    if audio.tone2:enabled() then
       status = status + 0x02
     end
-    if audio.wave3.length_counter.channel_enabled and audio.wave3.sampler.channel_enabled then
+    if audio.wave3:enabled() then
       status = status + 0x04
     end
-    if audio.noise4.length_counter.channel_enabled then
+    if audio.noise4:enabled() then
       status = status + 0x08
     end
     if audio.master_enable then

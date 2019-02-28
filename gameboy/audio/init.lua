@@ -30,6 +30,12 @@ function Audio.new(modules)
     master_enable_left = true,
     master_enable_right = true
   }
+  function audio.tone1:enabled()
+    return 
+      self.generator.channel_enabled and 
+      self.length_counter.channel_enabled and 
+      (bit32.band(io.ram[ports.NR12], 0xF0) ~= 0)
+  end
 
   audio.tone2 = {
     generator=SquareWaveGenerator:new(),
@@ -38,6 +44,11 @@ function Audio.new(modules)
     master_enable_left = true,
     master_enable_right = true
   }
+  function audio.tone2:enabled()
+    return 
+      self.length_counter.channel_enabled and 
+      bit32.band(io.ram[ports.NR22], 0xF0) ~= 0
+  end
 
   audio.wave3 = {
     sampler=WaveSampler:new(),
@@ -48,6 +59,11 @@ function Audio.new(modules)
   audio.wave3.sampler:onRead(function(sample_byte)
     return io.ram[0x30 + sample_byte]
   end)
+  function audio.wave3:enabled()
+    return 
+      self.sampler.channel_enabled and 
+      self.length_counter.channel_enabled
+  end
 
   audio.noise4 = {
     lfsr=LinearFeedbackShiftRegister:new(),
@@ -56,6 +72,11 @@ function Audio.new(modules)
     master_enable_left = true,
     master_enable_right = true
   }
+  function audio.noise4:enabled()
+    return 
+      self.length_counter.channel_enabled and 
+      bit32.band(io.ram[ports.NR42], 0xF0) ~= 0
+  end
 
   audio.frame_sequencer = FrameSequencer:new()
   audio.frame_sequencer.timer:reload(8192)
