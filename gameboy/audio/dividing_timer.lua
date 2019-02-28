@@ -1,26 +1,18 @@
 local DividingTimer = {}
 
 function DividingTimer:new(o)
-   o = o or {_period=0,_counter=0}
+   o = o or {period=0,_counter=0}
    setmetatable(o, self)
    self.__index = self
    return o
 end
 
-function DividingTimer:setPeriod(clocks)
-  self._period = clocks
-end
-
-function DividingTimer:period()
-  return self._period
-end
-
 function DividingTimer:reload(optLength)
   if optLength then
-    self._period = optLength
+    self.period = optLength
     self._counter = optLength
   else
-    self._counter = self._period
+    self._counter = self.period
   end
 end
 
@@ -34,8 +26,8 @@ end
 
 function DividingTimer:advance(clocks)
   self._counter = self._counter - clocks
-  while self._counter <= 0 and self._period ~= 0 do
-    self._counter = self._counter + self._period
+  while self._counter <= 0 and self.period ~= 0 do
+    self._counter = self._counter + self.period
     if self._doWork then
       self._doWork()
     end
