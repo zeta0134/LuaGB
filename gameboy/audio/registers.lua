@@ -93,7 +93,7 @@ function Registers.new(audio, modules, cache)
     audio.generate_pending_samples()
     io.ram[ports.NR10] = byte
     local sweep_period = bit32.rshift(bit32.band(byte, 0x70), 4);
-    audio.tone1.generator.sweep_timer:setPeriod(sweep_period)
+    audio.tone1.generator.sweep_timer.period = sweep_period
     audio.tone1.generator.sweep_negate = bit32.band(byte, 0x08) ~= 0;
     audio.tone1.generator.sweep_shift = bit32.band(byte, 0x07);
   end
@@ -119,7 +119,7 @@ function Registers.new(audio, modules, cache)
     audio.generate_pending_samples()
     io.ram[ports.NR13] = byte
     local period = square_period(io.ram[ports.NR14], io.ram[ports.NR13])
-    audio.tone1.generator.timer:setPeriod(period)
+    audio.tone1.generator.timer.period = period
   end
 
   -- Channel 1 Frequency and Trigger - High Bits
@@ -129,7 +129,7 @@ function Registers.new(audio, modules, cache)
     local trigger = bit32.band(byte, 0x80) ~= 0
     audio.tone1.length_counter.length_enabled = bit32.band(byte, 0x40) ~= 0
     local period = square_period(io.ram[ports.NR14], io.ram[ports.NR13])
-    audio.tone1.generator.timer:setPeriod(period)
+    audio.tone1.generator.timer.period = period
     if trigger then
       audio.tone1.generator.timer:reload()
       reload_volume(audio.tone1.volume_envelope, io.ram[ports.NR12])
@@ -165,7 +165,7 @@ function Registers.new(audio, modules, cache)
     audio.generate_pending_samples()
     io.ram[ports.NR23] = byte
     local period = square_period(io.ram[ports.NR24], io.ram[ports.NR23])
-    audio.tone2.generator.timer:setPeriod(period)
+    audio.tone2.generator.timer.period = period
   end
 
   -- Channel 2 Frequency and Trigger - High Bits
@@ -175,7 +175,7 @@ function Registers.new(audio, modules, cache)
     local trigger = bit32.band(byte, 0x80) ~= 0
     audio.tone2.length_counter.length_enabled = bit32.band(byte, 0x40) ~= 0
     local period = square_period(io.ram[ports.NR24], io.ram[ports.NR23])
-    audio.tone2.generator.timer:setPeriod(period)
+    audio.tone2.generator.timer.period = period
     if trigger then
       audio.tone2.generator.timer:reload()
       reload_volume(audio.tone2.volume_envelope, io.ram[ports.NR22])
@@ -221,7 +221,7 @@ function Registers.new(audio, modules, cache)
     audio.generate_pending_samples()
     io.ram[ports.NR33] = byte
     local period = wave_period(io.ram[ports.NR34], io.ram[ports.NR33])
-    audio.wave3.sampler.timer:setPeriod(period)
+    audio.wave3.sampler.timer.period = period
   end
 
   -- Channel 3 Frequency and Trigger - High Bits
@@ -231,7 +231,7 @@ function Registers.new(audio, modules, cache)
     local trigger = bit32.band(byte, 0x80) ~= 0
     audio.wave3.length_counter.length_enabled = bit32.band(byte, 0x40) ~= 0
     local period = wave_period(io.ram[ports.NR34], io.ram[ports.NR33])
-    audio.wave3.sampler.timer:setPeriod(period)
+    audio.wave3.sampler.timer.period = period
     if trigger then
       audio.wave3.sampler.position = 0
       audio.wave3.sampler.timer:reload()

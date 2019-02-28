@@ -43,7 +43,7 @@ local divisor_table = {
 
 function LinearFeedbackShiftRegister:setPeriod(divisor_code, shift_amount)
   local period = bit32.lshift(divisor_table[divisor_code], shift_amount)
-  self.timer:setPeriod(period)
+  self.timer.period = period
 end
 
 function LinearFeedbackShiftRegister:output()

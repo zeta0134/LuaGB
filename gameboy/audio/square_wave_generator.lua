@@ -46,7 +46,7 @@ function SquareWaveGenerator:_next_sweep()
 end
 
 function SquareWaveGenerator:sweep()
-  if self.sweep_shift ~= 0 and self.sweep_timer:period() ~= 0 then
+  if self.sweep_shift ~= 0 and self.sweep_timer.period ~= 0 then
     local next_sweep = self:_next_sweep()
     if next_sweep >= 0 then
       -- first adjustment check
@@ -54,7 +54,7 @@ function SquareWaveGenerator:sweep()
         self.channel_enabled = false
       else
         self.frequency_shadow = next_sweep
-        self.timer:setPeriod((2048 - next_sweep) * 4)
+        self.timer.period = (2048 - next_sweep) * 4
         -- second adjustment check
         next_sweep = self:_next_sweep()
         if next_sweep > 2047 then

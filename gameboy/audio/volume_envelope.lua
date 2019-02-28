@@ -28,7 +28,7 @@ function VolumeEnvelope:adjustment()
 end
 
 function VolumeEnvelope:clock()
-  if self.timer:period() ~= 8 then
+  if self.timer.period ~= 8 then
     local volume = self._volume + self._adjustment
     if volume > 15 then
       self._volume = 15
