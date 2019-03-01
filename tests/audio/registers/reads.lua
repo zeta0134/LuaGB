@@ -62,7 +62,16 @@ describe("Audio", function()
       end
       assert.same(memory.read_byte(0xFF24), 0x00)
       assert.same(memory.read_byte(0xFF25), 0x00)
-      assert.same(memory.read_byte(0xFF25), 0x70)
+      assert.same(memory.read_byte(0xFF26), 0x70)
+    end)
+    it("Wnen powered off via NR52, writes to all registers are ignored", function()
+      -- disable APU entirely; should immediately silence ALL channels
+      memory.write_byte(0xFF26, 0x00)
+      for address = 0xFF10, 0xFF23 do
+        local mask = read_masks[address - 0xFF10 + 1]
+        memory.write_byte(address, 0xFF)
+        assert.same(memory.read_byte(address), bit32.bor(0x00, mask))
+      end
     end)
   end)
 end)
