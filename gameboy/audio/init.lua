@@ -28,13 +28,14 @@ function Audio.new(modules)
     volume_envelope=VolumeEnvelope:new(),
     length_counter=LengthCounter:new(),
     master_enable_left = true,
-    master_enable_right = true
+    master_enable_right = true,
+    dac_enabled = true
   }
   function audio.tone1:enabled()
     return 
       self.generator.channel_enabled and 
       self.length_counter.channel_enabled and 
-      (bit32.band(io.ram[ports.NR12], 0xF8) ~= 0)
+      self.dac_enabled
   end
 
   audio.tone2 = {
@@ -42,12 +43,13 @@ function Audio.new(modules)
     volume_envelope=VolumeEnvelope:new(),
     length_counter=LengthCounter:new(),
     master_enable_left = true,
-    master_enable_right = true
+    master_enable_right = true,
+    dac_enabled = true
   }
   function audio.tone2:enabled()
     return 
       self.length_counter.channel_enabled and 
-      bit32.band(io.ram[ports.NR22], 0xF8) ~= 0
+      self.dac_enabled
   end
 
   audio.wave3 = {
@@ -70,12 +72,13 @@ function Audio.new(modules)
     volume_envelope=VolumeEnvelope:new(),
     length_counter=LengthCounter:new(),
     master_enable_left = true,
-    master_enable_right = true
+    master_enable_right = true,
+    dac_enabled = true
   }
   function audio.noise4:enabled()
     return 
       self.length_counter.channel_enabled and 
-      bit32.band(io.ram[ports.NR42], 0xF8) ~= 0
+      self.dac_enabled
   end
 
   audio.frame_sequencer = FrameSequencer:new()
