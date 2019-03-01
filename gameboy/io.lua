@@ -93,6 +93,7 @@ function Io.new(modules)
   io.write_logic = {}
   io.read_logic = {}
   io.write_mask = {}
+  io.read_mask = {}
 
   io.ram = memory.generate_block(0x100)
   io.block = {}
@@ -102,7 +103,11 @@ function Io.new(modules)
     if io.read_logic[address] then
       return io.read_logic[address]()
     else
-      return io.ram[address]
+      local value = io.ram[address]
+      if io.read_mask[address] then
+        value = bit32.bor(value, io.read_mask[address])
+      end
+      return value
     end
   end
 

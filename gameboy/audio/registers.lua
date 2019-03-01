@@ -8,6 +8,37 @@ function Registers.new(audio, modules, cache)
 
   local registers = {}
 
+  io.read_mask[ports.NR10] = 0x80
+  io.read_mask[ports.NR11] = 0x3F
+  io.read_mask[ports.NR12] = 0x00
+  io.read_mask[ports.NR13] = 0xFF
+  io.read_mask[ports.NR14] = 0xBF
+
+  io.read_mask[0x15] = 0xFF
+  io.read_mask[ports.NR21] = 0x3F
+  io.read_mask[ports.NR22] = 0x00
+  io.read_mask[ports.NR23] = 0xFF
+  io.read_mask[ports.NR24] = 0xBF
+
+  io.read_mask[ports.NR30] = 0x7F
+  io.read_mask[ports.NR31] = 0xFF
+  io.read_mask[ports.NR32] = 0x9F
+  io.read_mask[ports.NR33] = 0xFF
+  io.read_mask[ports.NR34] = 0xBF
+
+  io.read_mask[0x1F] = 0xFF
+  io.read_mask[ports.NR41] = 0xFF
+  io.read_mask[ports.NR42] = 0x00
+  io.read_mask[ports.NR43] = 0x00
+  io.read_mask[ports.NR44] = 0xBF
+
+  io.read_mask[ports.NR50] = 0x00
+  io.read_mask[ports.NR51] = 0x00
+
+  for i = 0x27, 0x2F do
+    io.read_mask[i] = 0xFF
+  end
+
   io.write_logic[ports.NR50] = function(byte)
     audio.generate_pending_samples()
     io.ram[ports.NR50] = byte
@@ -46,7 +77,7 @@ function Registers.new(audio, modules, cache)
     if audio.master_enable then
       status = status + 0x80
     end
-    return status
+    return bit32.bor(status, 0x70)
   end
 
   io.write_logic[ports.NR52] = function(byte)
