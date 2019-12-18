@@ -48,6 +48,11 @@ LuaGB.menu_active = true
 
 LuaGB.screen_scale = 3
 
+LuaGB.recording_active = false
+LuaGB.recording_folder = ""
+LuaGB.recording_frame = 0
+
+
 function LuaGB:resize_window()
   local scale = self.screen_scale
   if self.debug.enabled then
@@ -229,6 +234,7 @@ function love.load(args)
   love.filesystem.createDirectory("games")
   love.filesystem.createDirectory("states")
   love.filesystem.createDirectory("saves")
+  love.filesystem.createDirectory("recording")
 
   LuaGB:reset()
 
@@ -303,6 +309,11 @@ function LuaGB:draw_game_screen(dx, dy, scale)
   self.game_screen_image:replacePixels(image_data)
   love.graphics.draw(LuaGB.game_screen_image, dx / scale, dy / scale)
   love.graphics.pop()
+
+  if LuaGB.recording_active then
+    screenshot(LuaGB.recording_folder .. string.format("%010d.png", LuaGB.recording_frame))
+    LuaGB.recording_frame = LuaGB.recording_frame + 1
+  end
 end
 
 function LuaGB:run_n_cycles(n)
@@ -401,6 +412,20 @@ end
 action_keys.s = function()
   screenshot("screenshot.png")
   print("Took screenshot.")
+end
+
+action_keys.c = function()
+  if LuaGB.recording_active then
+    LuaGB.recording_active = false
+    print("Stopped recording. Saved " .. LuaGB.recording_frame .. " frames.")
+  else
+    LuaGB.recording_active = true
+    LuaGB.recording_frame = 0
+    LuaGB.recording_folder = "recording/"..LuaGB.gameboy.cartridge.header.title.."_"..os.date("%Y-%m-%d_%H.%M.%S").."/"
+    love.filesystem.createDirectory(LuaGB.recording_folder)
+    print("Started recording to " .. LuaGB.recording_folder)
+    print(os.date())
+  end
 end
 
 action_keys.lshift = function()
