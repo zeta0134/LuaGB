@@ -61,7 +61,7 @@ rom_header.parse_cartridge_header = function(data)
   header.mbc_name = rom_header.mbc_names[header.mbc_type]
 
   local rom_size = data[0x148]
-  if rom_size < 0x8 then
+  if rom_size <= 0x8 then
     header.rom_size = bit32.lshift(32 * 1024, rom_size)
   end
 
