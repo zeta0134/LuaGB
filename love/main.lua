@@ -398,6 +398,11 @@ action_keys.a = function()
   end
 end
 
+action_keys.s = function()
+  screenshot("screenshot.png")
+  print("Took screenshot.")
+end
+
 action_keys.lshift = function()
   if profile_enabled then
     profilerStop()
@@ -482,6 +487,15 @@ function love.update()
 
   -- Apply any changed local settings to the gameboy
   LuaGB.gameboy.graphics.palette.set_dmg_colors(filebrowser.palette[0], filebrowser.palette[1], filebrowser.palette[2], filebrowser.palette[3])
+end
+
+local screenshotCanvas = love.graphics.newCanvas(160,144)
+
+function screenshot(filename)
+  love.graphics.setCanvas(screenshotCanvas)
+  love.graphics.draw(LuaGB.game_screen_image, 0, 0)
+  love.graphics.setCanvas()
+  screenshotCanvas:newImageData():encode("png", filename)
 end
 
 function love.draw()
